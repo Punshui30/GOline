@@ -26,7 +26,7 @@ export interface OutcomeIntent {
   overshootTolerance: number; // 0-1: tolerance for terpene overshoot
   temporalProfile?: "single-phase" | "multi-phase";
   phases?: {
-    phase: "Primary / Early" | "Later / Wind-Down";
+    phase: "Top / Opening" | "Middle / Core" | "End / Landing" | "Primary / Early" | "Later / Wind-Down"; // Support both 2-phase and 3-phase models
     activationTarget: number;
     anxietySensitivity: number;
     cognitiveEndurance: number;
@@ -319,12 +319,14 @@ interface ResolutionTier {
 export type ResolutionMode = "BLENDED" | "STACKED";
 
 interface StackedPhase {
-  phase: "Primary / Early" | "Later / Wind-Down";
+  phase: "Top / Opening" | "Middle / Core" | "End / Landing" | "Primary / Early" | "Later / Wind-Down"; // Support both 2-phase and 3-phase models
   intentFocus: string;
   composition: BlendComponent[];
   compositionFit: number;
   systemNotes: string[];
   instructions: string; // Real-world mixing/timing instructions
+  purpose?: string; // User-friendly purpose description (e.g., "social lift, focus, creativity")
+  whatYoullFeel?: string; // User-friendly outcome description (e.g., "upbeat, clear, energized")
 }
 
 export interface OutcomeResult {
@@ -565,22 +567,45 @@ function generateCompositionalBlend(
 }
 
 /**
+ * Detect when stacking is appropriate (PART 5.A)
+ * Stacking should be considered when ANY of the following are true:
+ * - User expresses multiple desired outcomes over time
+ * - Desired outcome contains conflicting phases
+ * - User wants multiple experiences in one session
+ * - System detects that a single blend would require excessive compromise
+ */
+function shouldUseStacking(intent: OutcomeIntent): boolean {
+  // Multi-phase intent explicitly requested
+  if (intent.temporalProfile === 'multi-phase' && intent.phases && intent.phases.length >= 2) {
+    return true;
+  }
+  
+  // Check for conflicting single-phase goals that suggest stacking
+  // If activation is high early but sedation is desired later, stacking may be better
+  // This is detected at the strategic guidance level, so if we get here with single-phase,
+  // trust the guidance layer and default to blending
+  return false;
+}
+
+/**
  * Select composition strategy based on intent and temporal requirements
  * This decision happens BEFORE cultivar selection
  */
 function selectCompositionStrategy(intent: OutcomeIntent): CompositionStrategy {
-  // Multi-phase intent → layered_stack
-  if (intent.temporalProfile === 'multi-phase' && intent.phases && intent.phases.length >= 2) {
-    // Check if phases are sufficiently different to warrant stacking
-    const phase1 = intent.phases[0];
-    const phase2 = intent.phases[1];
-    
-    const activationDiff = Math.abs(phase1.activationTarget - phase2.activationTarget);
-    const cognitiveDiff = Math.abs(phase1.cognitiveEndurance - phase2.cognitiveEndurance);
-    
-    // If phases are very different (e.g., energized now, calm later), use layered stack
-    if (activationDiff > 0.3 || cognitiveDiff > 0.3) {
-      return 'layered_stack';
+  // Enhanced stacking detection
+  if (shouldUseStacking(intent)) {
+    if (intent.phases && intent.phases.length >= 2) {
+      // Check if phases are sufficiently different to warrant stacking
+      const phase1 = intent.phases[0];
+      const phase2 = intent.phases[intent.phases.length - 1]; // Compare first and last
+      
+      const activationDiff = Math.abs(phase1.activationTarget - phase2.activationTarget);
+      const cognitiveDiff = Math.abs(phase1.cognitiveEndurance - phase2.cognitiveEndurance);
+      
+      // If phases are very different (e.g., energized now, calm later), use layered stack
+      if (activationDiff > 0.3 || cognitiveDiff > 0.3 || intent.phases.length > 2) {
+        return 'layered_stack';
+      }
     }
   }
   
@@ -947,57 +972,226 @@ function attemptUnifiedBlended(
 /**
  * Generate stacked resolution for multi-phase intent (layered_stack strategy)
  * 
- * Each phase has its own composition optimized for that temporal window.
- * Ratios may differ by phase. Aggregate chemistry is evaluated across the full experience.
+ * PART 5.C & 5.D: Each phase has its own terpene vector and CBD rules are applied:
+ * - CBD may appear only in later phases
+ * - CBD should be heavier in the end/landing phase
+ * - CBD omitted entirely in early phases if activation is desired
+ * - CBD rarely dominates opening phase unless calm onset is explicitly desired
+ * 
+ * Supports both 2-phase (Primary/Early, Later/Wind-Down) and 3-phase (Top/Opening, Middle/Core, End/Landing) models
  */
 function generateStackedResolution(
   phase1: OutcomeIntent,
-  phase2: OutcomeIntent
+  phase2: OutcomeIntent,
+  phase3?: OutcomeIntent
 ): StackedPhase[] {
   const phases: StackedPhase[] = [];
+  const is3Phase = phase3 !== undefined;
 
-  // Resolve Phase 1 (Early/Primary phase)
-  const phase1Result = resolveOutcome(phase1);
+  // Helper: Filter out CBD from composition for early phases (unless calm onset desired)
+  const filterCBDForEarlyPhase = (composition: BlendComponent[], intent: OutcomeIntent): BlendComponent[] => {
+    // CBD allowed in opening phase ONLY if calm onset is desired (activation < 0.4)
+    if (intent.activationTarget >= 0.4) {
+      return composition.filter(comp => {
+        const chemotype = canonicalChemotypes.find(cv => cv.id === comp.cultivarId);
+        return !chemotype || !isNonPsychoactive(chemotype);
+      });
+    }
+    return composition;
+  };
+
+  // Helper: Enhance end phase with CBD if needed
+  const enhanceEndPhaseWithCBD = (composition: BlendComponent[], intent: OutcomeIntent): BlendComponent[] => {
+    // If end phase needs calming and doesn't already have CBD, consider adding it
+    if (intent.activationTarget < 0.5) {
+      const hasCBD = composition.some(comp => {
+        const chemotype = canonicalChemotypes.find(cv => cv.id === comp.cultivarId);
+        return chemotype && isNonPsychoactive(chemotype);
+      });
+      
+      // If no CBD and calming is desired, try to add it (but don't force if composition is already good)
+      if (!hasCBD) {
+        // Find CBD cultivar
+        const cbdCultivar = canonicalChemotypes.find(cv => isNonPsychoactive(cv));
+        if (cbdCultivar) {
+          // Add CBD as 15-25% of end phase
+          const newComposition = [...composition];
+          const cbdRatio = Math.min(25, 100 - newComposition.reduce((sum, c) => sum + c.ratio, 0));
+          if (cbdRatio > 0) {
+            // Reduce other components proportionally
+            const otherTotal = newComposition.reduce((sum, c) => sum + c.ratio, 0);
+            const scaleFactor = (100 - cbdRatio) / otherTotal;
+            newComposition.forEach(c => c.ratio = Math.round(c.ratio * scaleFactor));
+            newComposition.push({
+              cultivarId: cbdCultivar.id,
+              displayName: cbdCultivar.displayName || 'CBD Flower',
+              role: 'corrective',
+              ratio: cbdRatio,
+            });
+            return newComposition;
+          }
+        }
+      }
+    }
+    return composition;
+  };
+
+  // Helper: Generate purpose and whatYoullFeel descriptions
+  const generatePurpose = (intent: OutcomeIntent, phaseType: string): string => {
+    if (phaseType === 'Top / Opening' || phaseType === 'Primary / Early') {
+      if (intent.activationTarget > 0.6) return 'social lift, focus, creativity';
+      if (intent.activationTarget < 0.4) return 'calm onset, gentle start';
+      return 'balanced activation';
+    }
+    if (phaseType === 'Middle / Core') {
+      if (intent.activationTarget > 0.6) return 'sustained energy, peak experience';
+      if (intent.activationTarget < 0.4) return 'relaxed balance, steady calm';
+      return 'main outcome delivery';
+    }
+    if (phaseType === 'End / Landing' || phaseType === 'Later / Wind-Down') {
+      if (intent.activationTarget < 0.4) return 'calm, relief, sleep, closure';
+      return 'smooth wind-down, gentle transition';
+    }
+    return 'optimized for this phase';
+  };
+
+  const generateWhatYoullFeel = (intent: OutcomeIntent, phaseType: string): string => {
+    if (phaseType === 'Top / Opening' || phaseType === 'Primary / Early') {
+      if (intent.activationTarget > 0.6) return 'upbeat, clear, energized';
+      if (intent.activationTarget < 0.4) return 'gentle, calm, relaxed';
+      return 'balanced, alert';
+    }
+    if (phaseType === 'Middle / Core') {
+      if (intent.activationTarget > 0.6) return 'peak energy, focused, engaged';
+      if (intent.activationTarget < 0.4) return 'balanced, relaxed, steady';
+      return 'sustained, aligned with goals';
+    }
+    if (phaseType === 'End / Landing' || phaseType === 'Later / Wind-Down') {
+      if (intent.activationTarget < 0.4) return 'smooth calm, no crash, easy wind-down';
+      return 'gentle transition, balanced ending';
+    }
+    return 'aligned with this phase\'s goals';
+  };
+
+  // Phase 1: Opening/Top (or Primary/Early for 2-phase)
+  // Ensure single-phase to avoid recursion
+  const phase1SinglePhase: OutcomeIntent = {
+    ...phase1,
+    temporalProfile: 'single-phase',
+    phases: undefined,
+  };
+  const phase1Result = resolveOutcome(phase1SinglePhase);
   if (phase1Result.tiers && phase1Result.tiers.length > 0) {
     const bestPhase1 = phase1Result.tiers[0];
+    let phase1Composition = [...bestPhase1.composition];
+    
+    // PART 5.D: Apply CBD rules - filter CBD from early phases unless calm onset desired
+    phase1Composition = filterCBDForEarlyPhase(phase1Composition, phase1);
+    
+    // Normalize ratios after filtering
+    const phase1Total = phase1Composition.reduce((sum, c) => sum + c.ratio, 0);
+    if (phase1Total > 0) {
+      phase1Composition.forEach(c => c.ratio = Math.round((c.ratio / phase1Total) * 100));
+    }
+    
+    const phase1PhaseLabel = is3Phase ? 'Top / Opening' : 'Primary / Early';
     const phase1IntentFocus = phase1.activationTarget > 0.6 ? 'alert / social / active' : 
                               phase1.activationTarget < 0.4 ? 'relaxed / calm' : 'balanced';
     
-    // Generate instructions for early phase (top/base guidance)
-    const phase1Instructions = bestPhase1.composition.length === 1
-      ? `Use ${bestPhase1.composition[0].displayName} for the early/primary phase. Start with this composition.`
-      : `Mix ${bestPhase1.composition.map(c => `${c.displayName} (${c.ratio}%)`).join(', ')} for the early/primary phase. Combine and use first.`;
+    const phase1Instructions = phase1Composition.length === 1
+      ? `Use ${phase1Composition[0].displayName} for the ${phase1PhaseLabel.toLowerCase()} phase. Start with this composition.`
+      : `Mix ${phase1Composition.map(c => `${c.displayName} (${c.ratio}%)`).join(', ')} for the ${phase1PhaseLabel.toLowerCase()} phase. Combine and use first.`;
     
     phases.push({
-      phase: 'Primary / Early',
+      phase: phase1PhaseLabel as any,
       intentFocus: phase1IntentFocus,
-      composition: bestPhase1.composition,
+      composition: phase1Composition,
       compositionFit: bestPhase1.compositionFit,
       systemNotes: bestPhase1.systemNotes,
       instructions: phase1Instructions,
+      purpose: generatePurpose(phase1, phase1PhaseLabel),
+      whatYoullFeel: generateWhatYoullFeel(phase1, phase1PhaseLabel),
     });
   }
 
-  // Resolve Phase 2 (Later/Wind-down phase)
-  const phase2Result = resolveOutcome(phase2);
+  // Phase 2: Core/Middle (or Later/Wind-Down for 2-phase)
+  // Ensure single-phase to avoid recursion
+  const phase2SinglePhase: OutcomeIntent = {
+    ...phase2,
+    temporalProfile: 'single-phase',
+    phases: undefined,
+  };
+  const phase2Result = resolveOutcome(phase2SinglePhase);
   if (phase2Result.tiers && phase2Result.tiers.length > 0) {
     const bestPhase2 = phase2Result.tiers[0];
-    const phase2IntentFocus = phase2.activationTarget < 0.4 ? 'relaxation / recovery' :
-                              phase2.activationTarget > 0.6 ? 'sustained energy' : 'balanced transition';
+    let phase2Composition = [...bestPhase2.composition];
     
-    // Generate instructions for later phase (timing guidance)
-    const phase2Instructions = bestPhase2.composition.length === 1
-      ? `Use ${bestPhase2.composition[0].displayName} for the later/wind-down phase. Transition to this after the early phase.`
-      : `Mix ${bestPhase2.composition.map(c => `${c.displayName} (${c.ratio}%)`).join(', ')} for the later/wind-down phase. Use after the early phase composition.`;
+    // CBD allowed in middle/core phase but not required
+    // Only filter if activation is high (activation > 0.6)
+    if (phase2.activationTarget > 0.6) {
+      phase2Composition = filterCBDForEarlyPhase(phase2Composition, phase2);
+      const phase2Total = phase2Composition.reduce((sum, c) => sum + c.ratio, 0);
+      if (phase2Total > 0) {
+        phase2Composition.forEach(c => c.ratio = Math.round((c.ratio / phase2Total) * 100));
+      }
+    }
+    
+    const phase2PhaseLabel = is3Phase ? 'Middle / Core' : 'Later / Wind-Down';
+    const phase2IntentFocus = phase2.activationTarget < 0.4 ? 
+                              (is3Phase ? 'relaxed balance' : 'relaxation / recovery') :
+                              phase2.activationTarget > 0.6 ? 'sustained energy' : 
+                              (is3Phase ? 'main outcome delivery' : 'balanced transition');
+    
+    const phase2Instructions = phase2Composition.length === 1
+      ? `Use ${phase2Composition[0].displayName} for the ${phase2PhaseLabel.toLowerCase()} phase. ${is3Phase ? 'Continue with this after the opening phase.' : 'Transition to this after the early phase.'}`
+      : `Mix ${phase2Composition.map(c => `${c.displayName} (${c.ratio}%)`).join(', ')} for the ${phase2PhaseLabel.toLowerCase()} phase. ${is3Phase ? 'Use after the opening phase.' : 'Use after the early phase composition.'}`;
     
     phases.push({
-      phase: 'Later / Wind-Down',
+      phase: phase2PhaseLabel as any,
       intentFocus: phase2IntentFocus,
-      composition: bestPhase2.composition,
+      composition: phase2Composition,
       compositionFit: bestPhase2.compositionFit,
       systemNotes: bestPhase2.systemNotes,
       instructions: phase2Instructions,
+      purpose: generatePurpose(phase2, phase2PhaseLabel),
+      whatYoullFeel: generateWhatYoullFeel(phase2, phase2PhaseLabel),
     });
+  }
+
+  // Phase 3: End/Landing (only for 3-phase)
+  if (phase3 && is3Phase) {
+    // Ensure single-phase to avoid recursion
+    const phase3SinglePhase: OutcomeIntent = {
+      ...phase3,
+      temporalProfile: 'single-phase',
+      phases: undefined,
+    };
+    const phase3Result = resolveOutcome(phase3SinglePhase);
+    if (phase3Result.tiers && phase3Result.tiers.length > 0) {
+      const bestPhase3 = phase3Result.tiers[0];
+      let phase3Composition = [...bestPhase3.composition];
+      
+      // PART 5.D: Enhance end phase with CBD (heavier in end phase)
+      phase3Composition = enhanceEndPhaseWithCBD(phase3Composition, phase3);
+      
+      const phase3IntentFocus = phase3.activationTarget < 0.4 ? 'calm / relief / closure' :
+                                phase3.activationTarget > 0.6 ? 'sustained energy' : 'balanced wind-down';
+      
+      const phase3Instructions = phase3Composition.length === 1
+        ? `Use ${phase3Composition[0].displayName} for the end/landing phase. Transition to this for the final phase.`
+        : `Mix ${phase3Composition.map(c => `${c.displayName} (${c.ratio}%)`).join(', ')} for the end/landing phase. Use for the final phase of your experience.`;
+      
+      phases.push({
+        phase: 'End / Landing',
+        intentFocus: phase3IntentFocus,
+        composition: phase3Composition,
+        compositionFit: bestPhase3.compositionFit,
+        systemNotes: bestPhase3.systemNotes,
+        instructions: phase3Instructions,
+        purpose: generatePurpose(phase3, 'End / Landing'),
+        whatYoullFeel: generateWhatYoullFeel(phase3, 'End / Landing'),
+      });
+    }
   }
 
   return phases;
@@ -1028,14 +1222,15 @@ export function resolveOutcome(intent: OutcomeIntent): OutcomeResult {
     throw new Error('Invalid intent: temporalProfile must be "single-phase" or "multi-phase"');
   }
 
-  // Validate phases if multi-phase
+  // Validate phases if multi-phase (supports 2-phase and 3-phase models)
   if (intent.temporalProfile === 'multi-phase') {
-    if (!intent.phases || !Array.isArray(intent.phases) || intent.phases.length < 2) {
-      throw new Error('Invalid intent: multi-phase requires at least 2 phases');
+    if (!intent.phases || !Array.isArray(intent.phases) || intent.phases.length < 2 || intent.phases.length > 3) {
+      throw new Error('Invalid intent: multi-phase requires 2 or 3 phases');
     }
+    const validPhaseLabels = ['Top / Opening', 'Middle / Core', 'End / Landing', 'Primary / Early', 'Later / Wind-Down'];
     for (const phase of intent.phases) {
-      if (!phase.phase || (phase.phase !== 'Primary / Early' && phase.phase !== 'Later / Wind-Down')) {
-        throw new Error('Invalid intent: phase.phase must be "Primary / Early" or "Later / Wind-Down"');
+      if (!phase.phase || !validPhaseLabels.includes(phase.phase)) {
+        throw new Error(`Invalid intent: phase.phase must be one of: ${validPhaseLabels.join(', ')}`);
       }
       for (const field of requiredFields) {
         if (typeof (phase as any)[field] !== 'number' || (phase as any)[field] < 0 || (phase as any)[field] > 1) {
@@ -1045,10 +1240,11 @@ export function resolveOutcome(intent: OutcomeIntent): OutcomeResult {
     }
   }
 
-  // Handle multi-phase intent
+  // Handle multi-phase intent (supports 2-phase and 3-phase models)
   if (intent.temporalProfile === 'multi-phase' && intent.phases && intent.phases.length >= 2) {
     const phase1 = intent.phases[0];
     const phase2 = intent.phases[1];
+    const phase3 = intent.phases.length === 3 ? intent.phases[2] : undefined;
 
     // Attempt unified blended solution
     const clampedIntent1: OutcomeIntent = {
@@ -1109,23 +1305,37 @@ export function resolveOutcome(intent: OutcomeIntent): OutcomeResult {
         refused: false,
       };
     } else {
-      // Stacked resolution required
-      const phases = generateStackedResolution(clampedIntent1, clampedIntent2);
+      // Stacked resolution required (3-phase support)
+      const clampedIntent3 = phase3 ? {
+        activationTarget: Math.max(0, Math.min(1, phase3.activationTarget)),
+        anxietySensitivity: Math.max(0, Math.min(1, phase3.anxietySensitivity)),
+        cognitiveEndurance: Math.max(0, Math.min(1, phase3.cognitiveEndurance)),
+        overshootTolerance: Math.max(0, Math.min(1, phase3.overshootTolerance)),
+      } : undefined;
+      
+      const phases = generateStackedResolution(clampedIntent1, clampedIntent2, clampedIntent3);
       
       // Add explanation to first phase about why stacking was chosen
       if (phases.length > 0) {
+        const is3Phase = phases.length === 3;
         phases[0].systemNotes.unshift(
-          'Your goal included both an active phase and a later wind-down phase.',
+          is3Phase 
+            ? 'Your goal includes multiple phases: opening, core, and landing.',
+            : 'Your goal included both an active phase and a later wind-down phase.',
           'Combining these into a single blend would require compromises that increase early-phase risk.',
           'Separating them allows each phase to be optimized safely.'
         );
       }
       
+      // PART 7: Ensure phases never collapse - if we're stacking, we MUST return stacked mode
+      // Never silently collapse stacked into blended
+      const minRequiredPhases = phase3 ? 3 : 2;
+      
       return {
         resolutionMode: 'STACKED',
         phases,
-        refused: phases.length < 2,
-        tiers: undefined,
+        refused: phases.length < minRequiredPhases,
+        tiers: undefined, // Explicitly undefined to ensure UI shows stacked mode
       };
     }
   }

@@ -884,6 +884,24 @@ export default function GOLineCalculator() {
             </div>
           </div>
 
+          {/* Conversation output */}
+          {conversation.length > 0 && (
+            <div className="mb-12 mt-6 space-y-4">
+              {conversation.map((msg, idx) => (
+                <div
+                  key={idx}
+                  className={`max-w-[85%] rounded-lg px-4 py-3 text-sm leading-relaxed ${
+                    msg.role === 'assistant'
+                      ? 'bg-neutral-800 text-neutral-100'
+                      : 'ml-auto bg-neutral-700 text-neutral-100'
+                  }`}
+                >
+                  {msg.content}
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* Error Display */}
           {error && (
             <div className="mb-8 p-4 bg-[#1a0f0f] border border-red-500/20 rounded-sm">
@@ -1086,22 +1104,46 @@ export default function GOLineCalculator() {
                 </div>
               )}
 
-              {/* Stacked Phases */}
+              {/* Stacked Phases - PART 6: Novice-Friendly UI */}
               {outcome.resolutionMode === 'STACKED' && outcome.phases && outcome.phases.length > 0 && (
                 <div className="space-y-6">
-                  {outcome.phases.map((phaseData, phaseIndex) => (
-                    <div key={phaseIndex} className="bg-[#111216] border border-white/10 rounded-sm p-6">
-                      <div className="mb-4">
-                        <h2 className="text-lg font-medium text-white mb-2">
-                          {phaseData.phase}
-                        </h2>
-                        <p className="text-sm text-white/60 mb-2">
-                          Intent Focus: {phaseData.intentFocus}
-                        </p>
-                        <p className="text-xs text-white/50 italic mb-4">
-                          Chemotypes are selected based on chemical balance, not strain category.
-                        </p>
-                      </div>
+                  {/* Header */}
+                  <div className="bg-[#111216] border border-white/10 rounded-sm p-6 mb-6">
+                    <h2 className="text-2xl font-medium text-white mb-2 flex items-center gap-2">
+                      <span className="text-2xl">🔥</span>
+                      Your Stacked Experience
+                    </h2>
+                    <p className="text-sm text-white/60 italic">
+                      (Designed to change as you go)
+                    </p>
+                  </div>
+
+                  {outcome.phases.map((phaseData, phaseIndex) => {
+                    // Determine phase indicator and color
+                    const isOpening = phaseData.phase === 'Top / Opening' || phaseData.phase === 'Primary / Early';
+                    const isCore = phaseData.phase === 'Middle / Core';
+                    const isLanding = phaseData.phase === 'End / Landing' || phaseData.phase === 'Later / Wind-Down';
+                    
+                    const phaseIndicator = isOpening ? '🟢' : isCore ? '🔵' : '🟣';
+                    const phaseLabel = isOpening ? 'Start' : isCore ? 'Middle' : 'End';
+                    const phaseTitle = phaseData.phase;
+
+                    return (
+                      <div key={phaseIndex} className="bg-[#111216] border border-white/10 rounded-sm p-6">
+                        <div className="mb-4">
+                          <h2 className="text-lg font-medium text-white mb-2 flex items-center gap-2">
+                            <span className="text-xl">{phaseIndicator}</span>
+                            <span>{phaseLabel} — {phaseTitle}</span>
+                          </h2>
+                          {phaseData.purpose && (
+                            <p className="text-sm text-white/70 mb-2">
+                              <span className="text-white/50">Purpose:</span> {phaseData.purpose}
+                            </p>
+                          )}
+                          <p className="text-xs text-white/50 italic mb-4">
+                            Chemotypes are selected based on chemical balance, not strain category.
+                          </p>
+                        </div>
 
                       <div className="space-y-3 mb-4">
                         {phaseData.composition.map((component) => (
@@ -1147,6 +1189,17 @@ export default function GOLineCalculator() {
                           </div>
                         )}
 
+                        {phaseData.whatYoullFeel && (
+                          <div className="mt-4 pt-4 border-t border-white/10">
+                            <h3 className="text-sm font-medium text-white/90 mb-2">
+                              What you'll feel:
+                            </h3>
+                            <p className="text-white/80 text-sm leading-relaxed italic">
+                              {phaseData.whatYoullFeel}
+                            </p>
+                          </div>
+                        )}
+
                         {phaseData.systemNotes.length > 0 && (
                           <div className="mt-4 pt-4 border-t border-white/5">
                             <h3 className="text-sm font-medium text-white/80 mb-2">System Notes</h3>
@@ -1161,7 +1214,46 @@ export default function GOLineCalculator() {
                         )}
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
+
+                  {/* Why This Is Stacked - PART 6 */}
+                  <div className="bg-[#111216] border border-white/10 rounded-sm p-6">
+                    <h3 className="text-lg font-medium text-white mb-3 flex items-center gap-2">
+                      <span>⚙️</span>
+                      Why This Is Stacked
+                    </h3>
+                    <p className="text-white/70 text-sm leading-relaxed mb-3">
+                      Instead of forcing one blend to do everything, this sequence:
+                    </p>
+                    <ul className="space-y-2 text-white/70 text-sm">
+                      <li>• Delivers energy without anxiety</li>
+                      <li>• Maintains the core experience</li>
+                      <li>• Ends smoothly without abrupt drop-off</li>
+                    </ul>
+                  </div>
+
+                  {/* Optional Adjustments - PART 6 */}
+                  <div className="bg-[#111216] border border-white/10 rounded-sm p-6">
+                    <h3 className="text-lg font-medium text-white mb-3 flex items-center gap-2">
+                      <span>🔧</span>
+                      Optional Adjustments
+                    </h3>
+                    <ul className="space-y-2 text-white/70 text-sm">
+                      <li>• <span className="text-white/90">Want a faster start?</span> → increase Opening Phase activation cultivar</li>
+                      <li>• <span className="text-white/90">Want a softer ending?</span> → increase CBD or calming cultivar in End Phase</li>
+                    </ul>
+                  </div>
+
+                  {/* Important Note - PART 6 */}
+                  <div className="bg-[#1a0f1a] border border-purple-500/20 rounded-sm p-4">
+                    <p className="text-white/90 text-sm leading-relaxed flex items-start gap-2">
+                      <span className="text-lg">❗</span>
+                      <span>
+                        <span className="font-medium">Important Note:</span> Each phase is intentional. Changing phase order or ratios will change the experience.
+                      </span>
+                    </p>
+                  </div>
                 </div>
               )}
 
