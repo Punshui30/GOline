@@ -638,9 +638,9 @@ export default function GOLineCalculator() {
               <Image 
                 src="/go-logo.png" 
                 alt="GO Line" 
-                width={300} 
-                height={100} 
-                className="w-auto h-auto max-w-full object-contain"
+                width={200} 
+                height={60} 
+                className="w-auto h-auto max-w-[60%] sm:max-w-[50%] md:max-w-[40%] object-contain"
               />
             </div>
           </div>
