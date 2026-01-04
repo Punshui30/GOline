@@ -634,19 +634,15 @@ export default function GOLineCalculator() {
         <div className="max-w-[900px] mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header */}
           <div className="mb-12 text-center border-b border-white/5 pb-8 go-fade-in">
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-light text-white mb-4 tracking-tight flex items-center justify-center gap-3">
+            <div className="flex items-center justify-center mb-4">
               <Image 
                 src="/go-logo.png" 
-                alt="GO" 
-                width={80} 
-                height={80} 
-                className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 object-contain"
+                alt="GO Line" 
+                width={300} 
+                height={100} 
+                className="w-auto h-auto max-w-full object-contain"
               />
-              Line
-            </h1>
-            <p className="text-base md:text-lg text-white/50 font-light leading-relaxed max-w-2xl mx-auto">
-              Outcome Resolution Layer
-            </p>
+            </div>
           </div>
 
           {/* Outcome Constellation - Dimension-based visual emphasis */}
