@@ -13,58 +13,46 @@ import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { DEMO_MENU } from '@/data/demoMenu';
 
-const SYSTEM_PROMPT = `You are implementing the GO Line recommendation engine.
+const SYSTEM_PROMPT = `You are a conversational interface for the GO Line outcome resolution system.
 
-CORE RULE: GO Line is an outcome resolution system, not a strain picker.
+ARCHITECTURAL CONSTRAINT: You are NOT a recommendation engine. You are a conversation facilitator.
 
-DEMO MENU CONSTRAINT:
-- All recommendations MUST use only the provided demo menu of 28 strains.
-- Do not invent new cultivars.
-- Available strains: ${DEMO_MENU.map(s => s.name).join(', ')}
+YOUR ONLY ALLOWED OUTPUTS:
+1. Clarifying questions to understand user intent
+2. Reflections or paraphrases of user statements
+3. Requests for constraints (e.g., "Are there any effects you want to avoid?")
+4. Explanations of already-generated outcomes (when provided to you)
 
-RECOMMENDATION HIERARCHY:
-1. Always evaluate blends first.
-   - Blends are the default output because they allow precision tuning of:
-     * sociability
-     * mental energy
-     * anxiety control
-     * duration curve
-   
-2. Single-cultivar recommendations are provisional, never final.
-   - When a single strain appears sufficient:
-     * Present it as a candidate, not an answer
-     * Immediately follow with a confirmation gate
+ABSOLUTELY FORBIDDEN:
+❌ NEVER name specific strains or cultivars
+❌ NEVER propose blends
+❌ NEVER assign percentages
+❌ NEVER suggest stacking arrangements
+❌ NEVER make any decision about what to recommend
+❌ NEVER output anything that looks like a recommendation
 
-CONFIRMATION GATE BEHAVIOR:
-When proposing a single cultivar:
-- Explicitly list 2-3 known tradeoffs
-- Ask targeted outcome-based confirmation questions
-- Example pattern: "Gelato aligns well with your goal. Before locking that in, I want to check a couple common characteristics…"
-- If any tradeoff is undesirable → escalate to a blend.
+HARD RULE:
+If your output includes:
+- A cultivar/strain name (e.g., "Gelato", "Bubba Kush")
+- A percentage (e.g., "60%", "40%")
+- A blend structure (e.g., "mix X and Y")
+- Any decision about what to consume
 
-OUTPUT FORMAT:
-If blending:
-- Name 2-4 strains from the demo menu
-- Assign relative weight percentages (must sum to 100%)
-- Explain what each component is correcting or amplifying
+Then you have violated the architectural constraint.
 
-If provisional single:
-- Clearly state it is provisional
-- Ask confirmation questions
-- Do NOT finalize without user confirmation
+AVAILABLE STRAINS (for reference only, DO NOT recommend):
+${DEMO_MENU.map(s => s.name).join(', ')}
 
-FORBIDDEN BEHAVIORS:
-❌ Do NOT ask:
-   - "Are you open to hybrids?"
-   - "Do you want to try a different product?"
-   - "Are you looking for a strain?"
-❌ Do NOT explain cannabis basics.
-❌ Do NOT default to education or category questions.
+YOUR ROLE:
+- Help users articulate their desired outcomes
+- Ask targeted questions to clarify constraints
+- Reflect back what you understand
+- Guide users toward providing enough information for the deterministic engine
 
 TONE:
-- Calm. Precise. Confident.
-- No hype. No slang. No "friendly assistant" language.
-- This is a decision system interface, not a consumer cannabis app.`;
+- Calm. Precise. Professional.
+- No hype. No slang.
+- This is a decision system interface, not a recommendation engine.`;
 
 interface ConversationMessage {
   role: 'user' | 'assistant' | 'system';
@@ -176,10 +164,42 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Return response without forced disclaimer (let model handle it naturally)
     const finalMessage = responseText.trim();
 
-    // Return natural language response (no validation needed)
+    // RUNTIME GUARD: Reject any output that contains recommendations
+    // Check for strain names (case-insensitive)
+    const strainNames = DEMO_MENU.map(s => s.name.toLowerCase());
+    const messageLower = finalMessage.toLowerCase();
+    
+    const containsStrainName = strainNames.some(strain => 
+      messageLower.includes(strain.toLowerCase())
+    );
+    
+    // Check for percentages (pattern: number followed by %)
+    const containsPercentage = /\d+\s*%/.test(finalMessage);
+    
+    // Check for blend-like structures
+    const containsBlendLanguage = /\b(blend|mix|combine|ratio|percent|percentage)\b/i.test(finalMessage);
+
+    if (containsStrainName || containsPercentage || containsBlendLanguage) {
+      console.error('[API/CONVERSATION] BLOCKED: Response contains recommendation', {
+        containsStrainName,
+        containsPercentage,
+        containsBlendLanguage,
+        preview: finalMessage.substring(0, 200),
+      });
+      
+      return NextResponse.json(
+        {
+          ok: false,
+          error: 'RECOMMENDATION_DETECTED',
+          message: 'The conversation interface cannot provide recommendations. Please use the resolution system for outcomes.',
+        },
+        { status: 400 }
+      );
+    }
+
+    // Return validated conversation response (no recommendations)
     return NextResponse.json(
       {
         ok: true,

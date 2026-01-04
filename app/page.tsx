@@ -338,85 +338,23 @@ function generateBlendSummary(tier: ResolutionTier): string {
   return `This blend ${parts.join(', ')}, with controlled balance across components.`;
 }
 
-// Parse blend recommendation from assistant response
-interface ParsedBlendComponent {
+// BlendResolutionPanel Component
+// NOTE: This component only renders structured ResolutionResult objects from resolveOutcome()
+// NO regex parsing or prose extraction is allowed
+
+// Blend data structure for UI display (derived from OutcomeResult only)
+interface BlendDisplayComponent {
   name: string;
   percentage: number;
   rationale?: string;
 }
 
-interface ParsedBlendResolution {
-  components: ParsedBlendComponent[];
+interface BlendDisplayData {
+  components: BlendDisplayComponent[];
   isValid: boolean;
 }
-
-function parseBlendRecommendation(text: string, menuNames: string[]): ParsedBlendResolution {
-  const components: ParsedBlendComponent[] = [];
-  const textLower = text.toLowerCase();
-  
-  // Look for percentage patterns: "Name — XX%" or "Name: XX%" or "Name (XX%)"
-  const percentagePatterns = [
-    /([A-Z][A-Za-z\s]+?)\s*[—\-:]\s*(\d+)\s*%/g,
-    /([A-Z][A-Za-z\s]+?)\s*\((\d+)\s*%\)/g,
-    /(\d+)\s*%\s*([A-Z][A-Za-z\s]+)/g,
-  ];
-  
-  // Try each pattern
-  for (const pattern of percentagePatterns) {
-    let match;
-    while ((match = pattern.exec(text)) !== null) {
-      let name = '';
-      let percentage = 0;
-      
-      if (pattern === percentagePatterns[2]) {
-        // Reversed pattern: percentage first
-        percentage = parseInt(match[1]);
-        name = match[2].trim();
-      } else {
-        name = match[1].trim();
-        percentage = parseInt(match[2]);
-      }
-      
-      // Normalize name and check against menu
-      const normalizedName = name.trim();
-      const menuMatch = menuNames.find(menuName => 
-        menuName.toLowerCase() === normalizedName.toLowerCase() ||
-        normalizedName.toLowerCase().includes(menuName.toLowerCase()) ||
-        menuName.toLowerCase().includes(normalizedName.toLowerCase())
-      );
-      
-      if (menuMatch && percentage > 0 && percentage <= 100) {
-        // Avoid duplicates
-        if (!components.find(c => c.name.toLowerCase() === menuMatch.toLowerCase())) {
-          components.push({
-            name: menuMatch, // Use canonical menu name
-            percentage: percentage,
-          });
-        }
-      }
-    }
-  }
-  
-  // If we found at least 2 components with percentages, it's likely a blend
-  const isValid = components.length >= 2 && 
-    components.reduce((sum, c) => sum + c.percentage, 0) <= 110; // Allow some variance
-  
-  // Normalize percentages to sum to 100 if close
-  if (isValid && components.length > 0) {
-    const total = components.reduce((sum, c) => sum + c.percentage, 0);
-    if (total > 80 && total < 120) {
-      components.forEach(c => {
-        c.percentage = Math.round((c.percentage / total) * 100);
-      });
-    }
-  }
-  
-  return { components, isValid };
-}
-
-// BlendResolutionPanel Component
 interface BlendResolutionPanelProps {
-  blend: ParsedBlendResolution;
+  blend: BlendDisplayData;
   onAdjustment?: (type: 'energy' | 'duration' | 'pain', value: number) => void;
 }
 
@@ -685,9 +623,8 @@ export default function GOLineCalculator() {
   const [intentSummary, setIntentSummary] = useState<string>('');
   const [axesClosed, setAxesClosed] = useState(false);
   
-  // Parsed blend recommendation from assistant response
-  const [parsedBlend, setParsedBlend] = useState<ParsedBlendResolution | null>(null);
-  const [conversationWithoutBlend, setConversationWithoutBlend] = useState<{ role: 'user' | 'assistant'; content: string }[]>([]);
+  // Note: All recommendations must come from structured OutcomeResult objects only
+  // No regex parsing or prose-based extraction is allowed
 
   // Initialize speech recognition
   useEffect(() => {
@@ -746,10 +683,10 @@ export default function GOLineCalculator() {
           if (explicitStopRef.current) {
             // User explicitly stopped - finalize transcript and reset
             explicitStopRef.current = false;
-          setIsListening(false);
-          if (interimTranscriptRef.current) {
-            setUserInput((prev) => prev + interimTranscriptRef.current + ' ');
-            interimTranscriptRef.current = '';
+            setIsListening(false);
+            if (interimTranscriptRef.current) {
+              setUserInput((prev) => prev + interimTranscriptRef.current + ' ');
+              interimTranscriptRef.current = '';
             }
           } else {
             // Auto-ended (silence, etc.) - ignore and keep listening
@@ -850,30 +787,13 @@ export default function GOLineCalculator() {
         throw new Error('Invalid conversation response');
       }
 
-      // Parse blend recommendation from assistant response
-      const menuNames = DEMO_MENU.map(s => s.name);
-      const parsed = parseBlendRecommendation(data.message, menuNames);
-      
-      if (parsed.isValid) {
-        // Blend detected - store it and filter out from chat
-        setParsedBlend(parsed);
-        // Keep conversation for context but don't show assistant message in chat
-        const conversationWithoutBlend = [
-          ...updatedConversation,
-          // Don't add assistant message if it contains a blend
-        ];
-        setConversationWithoutBlend(conversationWithoutBlend);
-        setConversation(conversationWithoutBlend);
-      } else {
-        // No blend detected - show normal chat
+      // Add assistant response to conversation
+      // NO parsing of recommendations - all recommendations must come from structured OutcomeResult
       const newConversation = [
         ...updatedConversation,
         { role: 'assistant' as const, content: data.message },
       ];
       setConversation(newConversation);
-        setConversationWithoutBlend(newConversation);
-        setParsedBlend(null); // Clear any previous blend
-      }
 
       // Build structured summary from conversation (not raw messages)
       const summary = updatedConversation
@@ -1215,10 +1135,17 @@ export default function GOLineCalculator() {
               </div>
             </div>
 
-          {/* Blend Resolution Panel - Show when blend is detected */}
-          {parsedBlend && parsedBlend.isValid ? (
+          {/* Blend Resolution Panel - ONLY from structured OutcomeResult */}
+          {/* Hard constraint: UI renders recommendations ONLY from resolveOutcome() output */}
+          {outcome && outcome.tiers && outcome.tiers.length > 0 && outcome.tiers[0].composition && (
             <BlendResolutionPanel 
-              blend={parsedBlend}
+              blend={{
+                components: outcome.tiers[0].composition.map(c => ({
+                  name: c.displayName,
+                  percentage: c.ratio,
+                })),
+                isValid: true,
+              }}
               onAdjustment={(type, value) => {
                 // Re-run engine with adjusted intent
                 if (intent) {
@@ -1243,34 +1170,34 @@ export default function GOLineCalculator() {
                 }
               }}
             />
-          ) : (
-            /* Conversation Output - Only show if no blend recommendation */
-            (conversation.length > 0 || isProcessing) && !outcome && !parsedBlend ? (
-              <div className="mb-20 space-y-6">
-                {conversation.map((msg, idx) => (
-                  <div
-                    key={idx}
-                    className={
-                      msg.role === "assistant"
-                        ? "text-white text-sm leading-relaxed whitespace-pre-wrap max-w-[85%]"
-                        : "text-white/50 text-sm ml-auto text-right max-w-[80%]"
-                    }
-                  >
-                    {msg.content}
-          </div>
-                ))}
-
-                {isProcessing && (
-                  <div className="text-white/40 text-sm">
-                    Resolving outcome...
-                  </div>
-                )}
-              </div>
-            ) : null
           )}
 
-          {/* How GO Line Works - Show when recommendation is finalized or blend is displayed */}
-          {(outcome || (parsedBlend && parsedBlend.isValid)) && (
+          {/* Conversation Output - Only show if no structured resolution */}
+          {(conversation.length > 0 || isProcessing) && !outcome && (
+            <div className="mb-20 space-y-6">
+              {conversation.map((msg, idx) => (
+                <div
+                  key={idx}
+                  className={
+                    msg.role === "assistant"
+                      ? "text-white text-sm leading-relaxed whitespace-pre-wrap max-w-[85%]"
+                      : "text-white/50 text-sm ml-auto text-right max-w-[80%]"
+                  }
+                >
+                  {msg.content}
+                </div>
+              ))}
+
+              {isProcessing && (
+                <div className="text-white/40 text-sm">
+                  Resolving outcome...
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* How GO Line Works - Show when structured resolution exists */}
+          {outcome && outcome.tiers && outcome.tiers.length > 0 && (
             <div className="mb-16 pt-8 border-t border-white/5">
               <div className="text-xs uppercase tracking-wider text-white/40 mb-3">
                 How GO Line works
@@ -1428,182 +1355,6 @@ export default function GOLineCalculator() {
             </div>
           )}
 
-          {/* Results Section - Only show if LLM succeeded */}
-          {!llmFailed && intent && outcome && (
-            <div className="space-y-8">
-              {/* Outcome Constraints */}
-              <div className="bg-[#111216] border border-white/10 rounded-sm p-6">
-                <h2 className="text-lg font-medium text-white mb-4 border-b border-white/10 pb-2">
-                  Outcome Constraints
-                </h2>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-3">
-                  <div>
-                    <div className="text-white/50 text-xs mb-1">Energy Level</div>
-                    <div className="text-white">{valueToQualitative(intent.activationTarget)}</div>
-                  </div>
-                  <div>
-                    <div className="text-white/50 text-xs mb-1">Anxiety Guardrails</div>
-                    <div className="text-white">{valueToQualitative(intent.anxietySensitivity)}</div>
-                  </div>
-                  <div>
-                    <div className="text-white/50 text-xs mb-1">Mental Stability Over Time</div>
-                    <div className="text-white">{valueToQualitative(intent.cognitiveEndurance)}</div>
-                  </div>
-                  <div>
-                    <div className="text-white/50 text-xs mb-1">Blend Aggressiveness</div>
-                    <div className="text-white">
-                      {intent.overshootTolerance < 0.4 ? 'Conservative' : 
-                       intent.overshootTolerance < 0.7 ? 'Moderate' : 'Aggressive'}
-                    </div>
-                  </div>
-                </div>
-                <p className="text-xs text-white/40 italic mt-4">
-                  These describe how the system constrained the blend — not predicted effects.
-                </p>
-              </div>
-
-              {/* Resolution Mode Display */}
-              {outcome.resolutionMode === 'STACKED' && outcome.phases && (
-                <div className="bg-[#111216] border border-white/10 rounded-sm p-6 mb-6">
-                  <div className="mb-4">
-                    <h2 className="text-lg font-medium text-white mb-2">
-                      Resolution Mode: Stacked (Now / Later)
-                    </h2>
-                    <p className="text-sm text-white/60">
-                      Your goal included both an active phase and a later wind-down phase.
-                      Combining these into a single blend would require compromises that increase early-phase risk.
-                      Separating them allows each phase to be optimized safely.
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {outcome.resolutionMode === 'BLENDED' && (
-                <div className="bg-[#111216] border border-white/10 rounded-sm p-6 mb-6">
-                  <div className="mb-4">
-                    <h2 className="text-lg font-medium text-white mb-2">
-                      Resolution Mode: Single Composition
-                    </h2>
-                  </div>
-                </div>
-              )}
-
-              {/* Stacked Phases - PART 6: Novice-Friendly UI */}
-              {outcome.resolutionMode === 'STACKED' && outcome.phases && outcome.phases.length > 0 && (
-                <div className="space-y-6">
-                  {/* Stacked Phases */}
-                  <div className="mb-16">
-                    <div className="text-xs uppercase tracking-wider text-white/40 mb-8">Stacked Resolution</div>
-                    
-                    {outcome.phases.map((phaseData, phaseIndex) => {
-                      const phaseTitle = phaseData.phase;
-
-                      return (
-                        <div key={phaseIndex} className="mb-12">
-                          <div className="text-sm text-white/60 mb-4 uppercase tracking-wider">
-                            {phaseTitle}
-                      </div>
-                          {phaseData.purpose && (
-                            <div className="text-xs text-white/40 mb-4 uppercase tracking-wider">
-                              {phaseData.purpose}
-                            </div>
-                          )}
-
-                      <div className="space-y-3 mb-4">
-                        {phaseData.composition.map((component) => (
-                          <div
-                            key={component.cultivarId}
-                            className="flex items-center justify-between py-2 border-b border-white/5 last:border-0"
-                          >
-                            <div className="flex items-center gap-3">
-                              <div className="text-white font-medium">{component.displayName}</div>
-                              <span className="text-xs text-white/40 font-mono px-2 py-0.5 bg-white/5 rounded">
-                                {roleToLabel(component.role)}
-                              </span>
-                            </div>
-                            <div className="text-white/60 font-mono text-sm">
-                              {component.ratio}%
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-
-                      <div className="mt-4 pt-4 border-t border-white/10 space-y-3">
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <span className="text-white/60 text-sm">Composition Fit</span>
-                            <span className="text-white font-medium">
-                              {getCompositionFitLabel(phaseData.compositionFit).label}
-                            </span>
-                          </div>
-                          <p className="text-xs text-white/50 italic">
-                            {getCompositionFitLabel(phaseData.compositionFit).explanation}
-                          </p>
-                        </div>
-
-                        {/* Mixing Instructions */}
-                        {phaseData.instructions && (
-                          <div className="mt-4 pt-4 border-t border-white/5">
-                            <div className="text-xs uppercase tracking-wider text-white/40 mb-2">Instructions</div>
-                            <p className="text-white/70 text-sm leading-relaxed">
-                              {phaseData.instructions}
-                            </p>
-                          </div>
-                        )}
-
-
-                        {phaseData.systemNotes.length > 0 && (
-                          <div className="mt-4 pt-4 border-t border-white/5">
-                            <div className="text-xs uppercase tracking-wider text-white/40 mb-2">Notes</div>
-                            <ul className="space-y-1">
-                              {phaseData.systemNotes.map((note, index) => (
-                                <li key={index} className="text-white/60 text-xs leading-relaxed">
-                                  {note}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    );
-                  })}
-
-                  {/* Why This Is Stacked */}
-                  <div className="mb-12 mt-12 pt-8 border-t border-white/5">
-                    <div className="text-xs uppercase tracking-wider text-white/40 mb-4">Rationale</div>
-                    <p className="text-white/70 text-sm leading-relaxed mb-4">
-                      Separating phases allows each to be optimized without compromising early-phase risk or late-phase experience.
-                    </p>
-                  </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Blended Resolution Tiers */}
-              {outcome.refused ? (
-                <div className="bg-[#111216] border border-white/10 rounded-sm p-6">
-                  <div className="py-4">
-                    <p className="text-white/70 text-sm mb-2">No safe composition found under current constraints.</p>
-                    <p className="text-white/50 text-xs">Consider refining intent parameters or adjusting overshoot tolerance.</p>
-                  </div>
-                </div>
-              ) : outcome.resolutionMode !== 'STACKED' && outcome.tiers && outcome.tiers.length > 0 ? (
-                <div>
-                  {/* Show only the first (Optimal) tier in premium format */}
-                  <ResolvedBlend tier={outcome.tiers[0]} />
-                </div>
-              ) : null}
-
-              {/* Static Explainer */}
-              <div className="bg-[#111216] border border-white/10 rounded-sm p-6">
-                <p className="text-sm text-white/70 leading-relaxed">
-                  This system prioritizes balance and consistency over intensity.
-                  When goals conflict chemically, it defaults to safer, more stable compositions.
-                </p>
-              </div>
-            </div>
-          )}
 
           {/* Footer Disclosure */}
           <div className="mt-32 pt-8 border-t border-white/5">

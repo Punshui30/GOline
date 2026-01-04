@@ -329,11 +329,22 @@ interface StackedPhase {
   whatYoullFeel?: string; // User-friendly outcome description (e.g., "upbeat, clear, energized")
 }
 
+/**
+ * Formal output contract for GO Line deterministic engine
+ * 
+ * This is the SINGLE SOURCE OF TRUTH for all recommendations.
+ * No other path may generate recommendations.
+ */
 export interface OutcomeResult {
   resolutionMode?: ResolutionMode;
   tiers?: ResolutionTier[];
   phases?: StackedPhase[];
   refused?: boolean;
+  
+  // Formal contract fields (canonical schema)
+  confidenceScore?: number; // 0-1: How well the resolution matches intent
+  tradeoffs?: string[]; // Explicit tradeoffs made in this resolution
+  rationaleSummary?: string; // Human-readable explanation (non-secret methodology)
 }
 
 function computeBlendMetrics(
