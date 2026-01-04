@@ -11,30 +11,52 @@ export const runtime = "nodejs";
 
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
+import { DEMO_MENU } from '@/data/demoMenu';
 
 const SYSTEM_PROMPT = `You are a helpful assistant helping someone find the right cannabis product for their needs.
+
+IMPORTANT - DEMO MENU CONSTRAINTS:
+- For demo purposes, use the static dispensary menu provided in DEMO_MENU.
+- All strain suggestions and blends must be derived exclusively from this menu.
+- You may reference known strains conversationally.
+- You may suggest 2-4 strain blends with percentages.
+- Explain why each strain was chosen relative to the user's stated outcome.
+- NEVER suggest strains outside of the DEMO_MENU list.
+
+Available menu:
+${JSON.stringify(DEMO_MENU.map(item => ({
+  name: item.name,
+  category: item.category,
+  thc: item.thc,
+  terpenes: item.terpenes,
+  effects: item.effects,
+  commonUses: item.commonUses
+})), null, 2)}
 
 Your role:
 - Listen to what the user wants
 - Ask clarifying questions when needed
 - Summarize what you understand
 - Respond naturally and conversationally
+- Suggest strain blends from the DEMO_MENU
 
 You should:
 - Be calm, precise, and confident
 - Ask one question at a time when clarification is needed
 - Summarize understanding before asking new questions
 - Respond in natural language (not JSON)
+- Reference strains from the DEMO_MENU by name
+- Suggest blends with 2-4 strains and percentages when appropriate
 
 You should NOT:
-- Make recommendations about specific products
-- Compute ratios or percentages
-- Make claims about effects
+- Suggest strains outside the DEMO_MENU
+- Make claims about effects not listed in the menu
 - Output structured data (no JSON)
 - Output numeric intent parameters
-- Output recommendations or final answers
+- Hallucinate strain names
 
-Keep responses concise and helpful.`;
+Keep responses concise and helpful. Always end responses with this disclaimer:
+"[Demo uses a static snapshot of a dispensary menu for illustrative purposes only.]"`;
 
 interface ConversationMessage {
   role: 'user' | 'assistant' | 'system';
@@ -146,11 +168,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Ensure disclaimer is appended (in case model didn't include it)
+    const finalMessage = responseText.trim();
+    const hasDisclaimer = finalMessage.includes('Demo uses a static snapshot');
+    const messageWithDisclaimer = hasDisclaimer 
+      ? finalMessage 
+      : `${finalMessage}\n\n[Demo uses a static snapshot of a dispensary menu for illustrative purposes only.]`;
+
     // Return natural language response (no validation needed)
     return NextResponse.json(
       {
         ok: true,
-        message: responseText.trim(),
+        message: messageWithDisclaimer,
       },
       {
         status: 200,

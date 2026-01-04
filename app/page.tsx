@@ -709,15 +709,15 @@ export default function GOLineCalculator() {
             </div>
           </div>
 
-          {/* Intent Presets (Offline Testing) */}
+          {/* Intent Presets (Mode Toggles) */}
           <div className="mb-6">
-            <div className="bg-[#111216] border border-white/10 rounded-sm p-4">
+            <div className="bg-[#111216] border border-white/10 rounded-xl p-4">
               <div className="flex items-center justify-between mb-3">
                 <label className="text-xs font-medium text-white/60 uppercase tracking-wider">
-                  Preset Intent (AI Offline)
+                  Quick Modes
                 </label>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="flex flex-wrap gap-3">
                 <button
                   onClick={() => {
                     const preset: OutcomeIntent = {
@@ -734,9 +734,10 @@ export default function GOLineCalculator() {
                     setLlmFailed(false);
                     setError(null);
                   }}
-                  className="px-4 py-2.5 bg-white/5 border border-white/10 rounded-sm text-white text-sm font-mono hover:bg-white/10 hover:border-white/20 transition-colors text-left"
+                  className="px-4 py-2.5 bg-white/5 border border-white/10 rounded-full text-white text-sm hover:bg-white/10 hover:border-white/20 hover:shadow-lg hover:shadow-white/5 transition-all flex items-center gap-2"
                 >
-                  Social & upbeat
+                  <span>💬</span>
+                  <span>Social</span>
                 </button>
                 <button
                   onClick={() => {
@@ -754,9 +755,10 @@ export default function GOLineCalculator() {
                     setLlmFailed(false);
                     setError(null);
                   }}
-                  className="px-4 py-2.5 bg-white/5 border border-white/10 rounded-sm text-white text-sm font-mono hover:bg-white/10 hover:border-white/20 transition-colors text-left"
+                  className="px-4 py-2.5 bg-white/5 border border-white/10 rounded-full text-white text-sm hover:bg-white/10 hover:border-white/20 hover:shadow-lg hover:shadow-white/5 transition-all flex items-center gap-2"
                 >
-                  Relaxed but alert
+                  <span>⚡</span>
+                  <span>Focus</span>
                 </button>
                 <button
                   onClick={() => {
@@ -790,13 +792,14 @@ export default function GOLineCalculator() {
                     setLlmFailed(false);
                     setError(null);
                   }}
-                  className="px-4 py-2.5 bg-white/5 border border-white/10 rounded-sm text-white text-sm font-mono hover:bg-white/10 hover:border-white/20 transition-colors text-left"
+                  className="px-4 py-2.5 bg-white/5 border border-white/10 rounded-full text-white text-sm hover:bg-white/10 hover:border-white/20 hover:shadow-lg hover:shadow-white/5 transition-all flex items-center gap-2"
                 >
-                  Wind down later
+                  <span>🌙</span>
+                  <span>Wind Down</span>
                 </button>
               </div>
               <p className="text-xs text-white/40 mt-3 italic">
-                Use these presets to test the engine without AI interpretation.
+                Quick test modes for engine demonstration
               </p>
             </div>
           </div>
@@ -885,32 +888,63 @@ export default function GOLineCalculator() {
                   <button
                     onClick={() => axesClosed ? handleAnalyze() : handleConversation(userInput)}
                     disabled={isProcessing || !userInput.trim()}
-                    className="px-6 py-2.5 bg-white/10 border border-white/20 text-white font-light text-sm rounded-sm hover:bg-white/15 hover:border-white/30 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                    className="px-6 py-2.5 bg-white/10 border border-white/20 text-white font-light text-sm rounded-sm hover:bg-white/15 hover:border-white/30 disabled:opacity-30 disabled:cursor-not-allowed transition-all flex items-center gap-2"
                   >
-                    {isProcessing ? (axesClosed ? 'Resolving...' : 'Processing...') : (axesClosed ? 'Resolve' : 'Send')}
+                    {isProcessing && (
+                      <span className="inline-block w-2 h-2 bg-white/60 rounded-full animate-pulse"></span>
+                    )}
+                    <span>{isProcessing ? (axesClosed ? 'Resolving...' : 'Processing...') : (axesClosed ? 'Resolve' : 'Send')}</span>
                   </button>
                 )}
               </div>
             </div>
           </div>
 
-          {/* Conversation output */}
-          {conversation.length > 0 && (
-            <div className="mb-12 mt-6 space-y-4">
+          {/* Assistant Output Panel */}
+          <section className="mb-12 mt-6 rounded-xl border border-white/10 bg-white/5 p-4">
+            <h3 className="text-sm uppercase tracking-wide text-white/60 mb-3 flex items-center gap-2">
+              <span>🤖</span>
+              <span>GO Line Recommendation</span>
+            </h3>
+
+            <div className="space-y-4">
+              {conversation.length === 0 && !isProcessing && (
+                <p className="text-white/40 text-sm italic">
+                  Start a conversation to get recommendations based on your desired outcome.
+                </p>
+              )}
+
               {conversation.map((msg, idx) => (
                 <div
                   key={idx}
-                  className={`max-w-[85%] rounded-lg px-4 py-3 text-sm leading-relaxed ${
-                    msg.role === 'assistant'
-                      ? 'bg-neutral-800 text-neutral-100'
-                      : 'ml-auto bg-neutral-700 text-neutral-100'
-                  }`}
+                  className={
+                    msg.role === "assistant"
+                      ? "bg-white/10 rounded-lg p-4 text-white/90 text-sm leading-relaxed whitespace-pre-wrap"
+                      : "text-white/70 text-sm ml-auto text-right max-w-[80%]"
+                  }
                 >
                   {msg.content}
                 </div>
               ))}
+
+              {isProcessing && (
+                <div className="bg-white/10 rounded-lg p-4">
+                  <div className="flex items-center gap-2 text-white/70 text-sm">
+                    <span className="inline-block w-2 h-2 bg-white/60 rounded-full animate-pulse"></span>
+                    <span>Resolving outcome...</span>
+                  </div>
+                </div>
+              )}
             </div>
-          )}
+
+            {(conversation.length > 0 || isProcessing) && (
+              <div className="mt-4 pt-4 border-t border-white/10">
+                <p className="text-xs text-white/40 italic">
+                  Using a static snapshot of a dispensary menu for demo purposes.
+                </p>
+              </div>
+            )}
+          </section>
 
           {/* Error Display */}
           {error && (
