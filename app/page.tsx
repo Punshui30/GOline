@@ -307,6 +307,134 @@ function generateConservativeExplanations(intent: OutcomeIntent, tier: Resolutio
   return explanations.slice(0, 3); // Max 3 explanations
 }
 
+// Generate summary from tier data
+function generateBlendSummary(tier: ResolutionTier): string {
+  const primaryStrains = tier.composition.filter(c => c.role === 'primary');
+  const correctiveStrains = tier.composition.filter(c => c.role === 'corrective');
+  
+  const parts: string[] = [];
+  
+  if (primaryStrains.length > 0) {
+    parts.push(`primary target delivery`);
+  }
+  
+  if (correctiveStrains.length > 0) {
+    parts.push(`adjustment for ${correctiveStrains.map(c => c.displayName.toLowerCase()).join(' and ')}`);
+  }
+  
+  if (tier.systemNotes.some(note => note.toLowerCase().includes('anxiety'))) {
+    parts.push('anxiety control');
+  }
+  
+  if (tier.systemNotes.some(note => note.toLowerCase().includes('duration'))) {
+    parts.push('extended duration');
+  }
+  
+  if (parts.length === 0) {
+    return 'Optimized blend based on your stated outcome.';
+  }
+  
+  return `This blend ${parts.join(', ')}, with controlled balance across components.`;
+}
+
+// Premium ResolvedBlend Component
+function ResolvedBlend({ tier }: { tier: ResolutionTier }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const summary = generateBlendSummary(tier);
+  
+  return (
+    <div className="border-t border-white/10 pt-12 pb-8">
+      <div className="mb-8">
+        <div className="text-xs uppercase tracking-wider text-white/40 mb-2">
+          GO LINE RECOMMENDATION
+        </div>
+        <div className="text-xs text-white/50 mb-6">
+          Optimized blend based on your stated outcome
+        </div>
+        <p className="text-sm text-white/70 leading-relaxed max-w-2xl">
+          {summary}
+        </p>
+      </div>
+
+      <div className="mb-8">
+        <div className="text-xs uppercase tracking-wider text-white/40 mb-6">
+          BLEND BREAKDOWN
+        </div>
+        <div className="space-y-4">
+          {tier.composition.map((component) => (
+            <div key={component.cultivarId} className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="text-sm font-medium text-white">
+                  {component.displayName}
+                </div>
+                <div className="text-sm text-white/60 font-mono">
+                  {component.ratio}%
+                </div>
+              </div>
+              <div className="relative h-1 bg-white/5 overflow-hidden">
+                <div
+                  className="h-full bg-white/20 transition-all"
+                  style={{ width: `${component.ratio}%` }}
+                />
+              </div>
+              {component.role === 'primary' && (
+                <div className="text-xs text-white/50 leading-relaxed">
+                  Primary target delivery
+                </div>
+              )}
+              {component.role === 'corrective' && (
+                <div className="text-xs text-white/50 leading-relaxed">
+                  Corrective adjustment
+                </div>
+              )}
+              {component.role === 'supporting' && (
+                <div className="text-xs text-white/50 leading-relaxed">
+                  Supporting balance
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="border-t border-white/5 pt-6">
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="flex items-center gap-2 text-xs uppercase tracking-wider text-white/50 hover:text-white/70 transition-colors mb-4"
+        >
+          <span className={`transform transition-transform ${isExpanded ? 'rotate-90' : ''}`}>
+            ▸
+          </span>
+          Why this blend works
+        </button>
+        
+        {isExpanded && (
+          <div className="space-y-3 text-xs text-white/60 leading-relaxed">
+            {tier.whyChosen && tier.whyChosen.length > 0 ? (
+              tier.whyChosen.map((reason, index) => (
+                <div key={index}>{reason}</div>
+              ))
+            ) : (
+              <div>Blend composition optimized for stated outcome constraints.</div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {tier.instructions && (
+        <div className="mt-6 pt-6 border-t border-white/5">
+          <div className="text-xs uppercase tracking-wider text-white/40 mb-3">
+            INSTRUCTIONS
+          </div>
+          <p className="text-xs text-white/60 leading-relaxed">
+            {tier.instructions}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Browser Speech Recognition types
 interface SpeechRecognition extends EventTarget {
   continuous: boolean;
@@ -870,8 +998,8 @@ export default function GOLineCalculator() {
             </div>
           </div>
 
-          {/* Conversation Output */}
-          {conversation.length > 0 || isProcessing ? (
+          {/* Conversation Output - Only show if no final recommendation yet */}
+          {(conversation.length > 0 || isProcessing) && !outcome ? (
             <div className="mb-20 space-y-6">
               {conversation.map((msg, idx) => (
                 <div
@@ -894,8 +1022,8 @@ export default function GOLineCalculator() {
             </div>
           ) : null}
 
-          {/* How GO Line Works */}
-          {(conversation.length > 0 || isProcessing) && (
+          {/* How GO Line Works - Show when recommendation is finalized */}
+          {outcome && (
             <div className="mb-16 pt-8 border-t border-white/5">
               <div className="text-xs uppercase tracking-wider text-white/40 mb-3">
                 How GO Line works
@@ -1214,119 +1342,9 @@ export default function GOLineCalculator() {
                   </div>
                 </div>
               ) : outcome.resolutionMode !== 'STACKED' && outcome.tiers && outcome.tiers.length > 0 ? (
-                <div className="space-y-6">
-                  {outcome.tiers.map((tier, tierIndex) => (
-                    <div key={tierIndex} className="bg-[#111216] border border-white/10 rounded-sm p-6">
-                      <div className="mb-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <h2 className="text-lg font-medium text-white">
-                            {tier.tierLabel}
-                          </h2>
-                          <span className="text-xs text-white/40 font-mono px-2 py-1 bg-white/5 rounded">
-                            {getResolutionTypeLabel(tier.resolutionType)}
-                          </span>
-                        </div>
-                        <p className="text-sm text-white/60 mb-4">
-                          {getTierDescription(tier)}
-                        </p>
-                      </div>
-
-                        <p className="text-xs text-white/50 mb-4 italic">
-                          Chemotypes are selected based on chemical balance, not strain category.
-                        </p>
-
-                      <div className="space-y-3 mb-4">
-                        {tier.composition.map((component) => (
-                          <div
-                            key={component.cultivarId}
-                            className="flex items-center justify-between py-2 border-b border-white/5 last:border-0"
-                          >
-                            <div className="flex items-center gap-3">
-                              <div className="text-white font-medium">{component.displayName}</div>
-                              <span className="text-xs text-white/40 font-mono px-2 py-0.5 bg-white/5 rounded">
-                                {roleToLabel(component.role)}
-                              </span>
-                            </div>
-                            <div className="text-white/60 font-mono text-sm">
-                              {component.ratio}%
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-
-                      <div className="mt-4 pt-4 border-t border-white/10 space-y-3">
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <span className="text-white/60 text-sm">Composition Fit</span>
-                            <span className="text-white font-medium">
-                              {getCompositionFitLabel(tier.compositionFit).label}
-                            </span>
-                          </div>
-                          <p className="text-xs text-white/50 italic">
-                            {getCompositionFitLabel(tier.compositionFit).explanation}
-                          </p>
-                        </div>
-
-                        {/* Mixing Instructions */}
-                        {tier.instructions && (
-                          <div className="mt-4 pt-4 border-t border-white/10">
-                            <h3 className="text-sm font-medium text-white/90 mb-2">
-                              Mixing Instructions
-                            </h3>
-                            <p className="text-white/80 text-sm leading-relaxed">
-                              {tier.instructions}
-                            </p>
-                          </div>
-                        )}
-
-                        {/* Why This Was Chosen */}
-                        {tier.whyChosen && tier.whyChosen.length > 0 && (
-                          <div className="mt-4 pt-4 border-t border-white/5">
-                            <h3 className="text-sm font-medium text-white/80 mb-2">
-                              Why This Was Chosen
-                            </h3>
-                            <ul className="space-y-1">
-                              {tier.whyChosen.map((reason, index) => (
-                                <li key={index} className="text-white/70 text-xs leading-relaxed">
-                                  • {reason}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-
-                        {/* Tradeoffs */}
-                        {tier.tradeoffs && tier.tradeoffs.length > 0 && (
-                          <div className="mt-4 pt-4 border-t border-white/5">
-                            <h3 className="text-sm font-medium text-white/80 mb-2">
-                              Tradeoffs
-                            </h3>
-                            <ul className="space-y-1">
-                              {tier.tradeoffs.map((tradeoff, index) => (
-                                <li key={index} className="text-white/70 text-xs leading-relaxed">
-                                  • {tradeoff}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-
-                        {/* System Notes */}
-                        {tier.systemNotes.length > 0 && (
-                          <div className="mt-4 pt-4 border-t border-white/5">
-                            <h3 className="text-sm font-medium text-white/80 mb-2">System Notes</h3>
-                            <ul className="space-y-1">
-                              {tier.systemNotes.map((note, index) => (
-                                <li key={index} className="text-white/70 text-xs leading-relaxed">
-                                  • {note}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+                <div>
+                  {/* Show only the first (Optimal) tier in premium format */}
+                  <ResolvedBlend tier={outcome.tiers[0]} />
                 </div>
               ) : null}
 
