@@ -46,12 +46,14 @@ interface OutcomeResult {
   resolutionMode?: "BLENDED" | "STACKED";
   tiers?: ResolutionTier[];
   phases?: Array<{
-    phase: "Primary / Early" | "Later / Wind-Down";
+    phase: "Top / Opening" | "Middle / Core" | "End / Landing" | "Primary / Early" | "Later / Wind-Down";
     intentFocus: string;
     composition: BlendComponent[];
     compositionFit: number;
     systemNotes: string[];
     instructions: string;
+    purpose?: string;
+    whatYoullFeel?: string;
   }>;
   refused?: boolean;
 }

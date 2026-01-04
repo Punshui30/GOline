@@ -1320,7 +1320,7 @@ export function resolveOutcome(intent: OutcomeIntent): OutcomeResult {
         const is3Phase = phases.length === 3;
         phases[0].systemNotes.unshift(
           is3Phase 
-            ? 'Your goal includes multiple phases: opening, core, and landing.',
+            ? 'Your goal includes multiple phases: opening, core, and landing.'
             : 'Your goal included both an active phase and a later wind-down phase.',
           'Combining these into a single blend would require compromises that increase early-phase risk.',
           'Separating them allows each phase to be optimized safely.'
