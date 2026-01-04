@@ -9,6 +9,7 @@
  */
 
 import { useState, useEffect, useRef } from 'react';
+import Image from 'next/image';
 import { OutcomeIntent, ResolutionType } from '@/lib/goOutcomeEngine';
 import { resolveOutcome } from '@/lib/goOutcomeEngine';
 import { StrategicGuidance, ClarificationQuestion } from '@/lib/strategicGuidance';
@@ -633,8 +634,15 @@ export default function GOLineCalculator() {
         <div className="max-w-[900px] mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header */}
           <div className="mb-12 text-center border-b border-white/5 pb-8 go-fade-in">
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-light text-white mb-4 tracking-tight">
-              GO Line
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-light text-white mb-4 tracking-tight flex items-center justify-center gap-3">
+              <Image 
+                src="/go-logo.png" 
+                alt="GO" 
+                width={80} 
+                height={80} 
+                className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 object-contain"
+              />
+              Line
             </h1>
             <p className="text-base md:text-lg text-white/50 font-light leading-relaxed max-w-2xl mx-auto">
               Outcome Resolution Layer
