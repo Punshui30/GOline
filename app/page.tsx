@@ -346,6 +346,7 @@ export default function GOLineCalculator() {
   const [speechSupported, setSpeechSupported] = useState(false);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const interimTranscriptRef = useRef<string>('');
+  const explicitStopRef = useRef<boolean>(false); // Track explicit user stop vs auto-end
 
   // Phase management
   const [phase, setPhase] = useState<InteractionPhase>('FREE');
@@ -368,7 +369,7 @@ export default function GOLineCalculator() {
       if (SpeechRecognition) {
         setSpeechSupported(true);
         const recognition = new SpeechRecognition();
-        recognition.continuous = false;
+        recognition.continuous = true; // Enable continuous listening
         recognition.interimResults = true;
         recognition.lang = 'en-US';
 
@@ -400,20 +401,44 @@ export default function GOLineCalculator() {
 
         recognition.onerror = (event: any) => {
           console.error('Speech recognition error:', event.error);
-          setIsListening(false);
+          // Don't stop on 'no-speech' errors - allow pauses
           if (event.error === 'no-speech') {
-            setError('No speech detected. Please try again.');
+            // Silently ignore - user can pause while speaking
+            return;
           } else if (event.error === 'not-allowed') {
+            setIsListening(false);
             setError('Microphone permission denied. Please enable microphone access.');
+          } else if (event.error === 'network' || event.error === 'aborted') {
+            // Only stop on critical errors
+            setIsListening(false);
           }
         };
 
         recognition.onend = () => {
-          setIsListening(false);
-          // Append any remaining interim transcript
-          if (interimTranscriptRef.current) {
-            setUserInput((prev) => prev + interimTranscriptRef.current + ' ');
-            interimTranscriptRef.current = '';
+          // Only stop if user explicitly stopped, not on auto-end
+          if (explicitStopRef.current) {
+            // User explicitly stopped - finalize transcript and reset
+            explicitStopRef.current = false;
+            setIsListening(false);
+            if (interimTranscriptRef.current) {
+              setUserInput((prev) => prev + interimTranscriptRef.current + ' ');
+              interimTranscriptRef.current = '';
+            }
+          } else {
+            // Auto-ended (silence, etc.) - ignore and keep listening
+            // The continuous mode should handle this, but if it auto-ends, try to restart
+            if (recognitionRef.current) {
+              setTimeout(() => {
+                if (recognitionRef.current && !explicitStopRef.current) {
+                  try {
+                    recognitionRef.current.start();
+                  } catch (err) {
+                    // Can't restart - user may have stopped, so reset state
+                    setIsListening(false);
+                  }
+                }
+              }, 100);
+            }
           }
         };
 
@@ -431,17 +456,37 @@ export default function GOLineCalculator() {
   const startListening = () => {
     if (recognitionRef.current && !isListening) {
       try {
+        setError(null);
+        explicitStopRef.current = false; // Reset explicit stop flag
         recognitionRef.current.start();
-      } catch (err) {
+      } catch (err: any) {
         console.error('Failed to start recognition:', err);
-        setError('Failed to start voice input. Please try again.');
+        // Check if it's already running
+        if (err.message && err.message.includes('already started')) {
+          setIsListening(true);
+        } else {
+          setError('Failed to start voice input. Please try again.');
+        }
       }
     }
   };
 
   const stopListening = () => {
     if (recognitionRef.current && isListening) {
-      recognitionRef.current.stop();
+      try {
+        explicitStopRef.current = true; // Mark as explicit stop
+        recognitionRef.current.stop();
+        // Transcript will be finalized in onend handler
+      } catch (err) {
+        console.error('Failed to stop recognition:', err);
+        // Fallback: manually finalize if stop() fails
+        explicitStopRef.current = false;
+        setIsListening(false);
+        if (interimTranscriptRef.current) {
+          setUserInput((prev) => prev + interimTranscriptRef.current + ' ');
+          interimTranscriptRef.current = '';
+        }
+      }
     }
   };
 
@@ -620,14 +665,6 @@ export default function GOLineCalculator() {
     return guidance.clarificationNeeded.every(q => clarificationAnswers[q.type] !== undefined);
   };
 
-  // Determine visual phase for styling
-  const visualPhase = isProcessing ? 'clarifying' : phase === 'FREE' ? 'listening' : phase === 'LOCKED' ? 'resolving' : 'clarifying';
-  
-  // Compute dimensional weights from intent (vector-based, not categorical)
-  const dimensionWeights = computeDimensionWeights(intent);
-  const dimensionColor = computeDimensionColor(dimensionWeights);
-  const outcomeEmphasis = computeOutcomeIconEmphasis(dimensionWeights);
-
   return (
     <main className="min-h-screen w-full go-bg-primary text-white">
       <div className="pt-16 pb-20">
@@ -645,278 +682,204 @@ export default function GOLineCalculator() {
             </div>
           </div>
 
-          {/* Outcome Constellation - Dimension-based visual emphasis */}
-          <div className="mb-12 go-fade-in">
-            <div className="go-bg-elevated rounded-sm p-6">
-              <div className="grid grid-cols-4 gap-4">
-                {/* RELAX - calm + low energy */}
-                <div 
-                  className="flex flex-col items-center gap-2 p-4 rounded transition-all duration-500"
-                  style={{
-                    color: `rgba(${dimensionColor}, ${0.2 + outcomeEmphasis.relax * 0.6})`,
-                    opacity: 0.3 + outcomeEmphasis.relax * 0.7,
-                  }}
-                >
-                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                  </svg>
-                  <span className="text-xs font-light tracking-wide">RELAX</span>
-                </div>
-                {/* STUDY - clarity + moderate energy */}
-                <div 
-                  className="flex flex-col items-center gap-2 p-4 rounded transition-all duration-500"
-                  style={{
-                    color: `rgba(${dimensionColor}, ${0.2 + outcomeEmphasis.study * 0.6})`,
-                    opacity: 0.3 + outcomeEmphasis.study * 0.7,
-                  }}
-                >
-                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                  </svg>
-                  <span className="text-xs font-light tracking-wide">STUDY</span>
-                </div>
-                {/* MOVE - energy + mood_lift */}
-                <div 
-                  className="flex flex-col items-center gap-2 p-4 rounded transition-all duration-500"
-                  style={{
-                    color: `rgba(${dimensionColor}, ${0.2 + outcomeEmphasis.move * 0.6})`,
-                    opacity: 0.3 + outcomeEmphasis.move * 0.7,
-                  }}
-                >
-                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                  <span className="text-xs font-light tracking-wide">MOVE</span>
-                </div>
-                {/* SLEEP - sedation + calm */}
-                <div 
-                  className="flex flex-col items-center gap-2 p-4 rounded transition-all duration-500"
-                  style={{
-                    color: `rgba(${dimensionColor}, ${0.2 + outcomeEmphasis.sleep * 0.6})`,
-                    opacity: 0.3 + outcomeEmphasis.sleep * 0.7,
-                  }}
-                >
-                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                  </svg>
-                  <span className="text-xs font-light tracking-wide">SLEEP</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Intent Presets (Mode Toggles) */}
-          <div className="mb-6">
-            <div className="bg-[#111216] border border-white/10 rounded-xl p-4">
-              <div className="flex items-center justify-between mb-3">
-                <label className="text-xs font-medium text-white/60 uppercase tracking-wider">
-                  Quick Modes
-                </label>
-              </div>
-              <div className="flex flex-wrap gap-3">
-                <button
-                  onClick={() => {
-                    const preset: OutcomeIntent = {
-                      activationTarget: 0.75,
-                      anxietySensitivity: 0.3,
-                      cognitiveEndurance: 0.6,
-                      overshootTolerance: 0.5,
-                      temporalProfile: 'single-phase',
-                    };
-                    setIntent(preset);
-                    setUserInput('Social & upbeat');
-                    const resolvedOutcome = resolveOutcome(preset);
-                    setOutcome(resolvedOutcome);
-                    setLlmFailed(false);
-                    setError(null);
-                  }}
-                  className="px-4 py-2.5 bg-white/5 border border-white/10 rounded-full text-white text-sm hover:bg-white/10 hover:border-white/20 hover:shadow-lg hover:shadow-white/5 transition-all flex items-center gap-2"
-                >
-                  <span>💬</span>
-                  <span>Social</span>
-                </button>
-                <button
-                  onClick={() => {
-                    const preset: OutcomeIntent = {
-                      activationTarget: 0.45,
-                      anxietySensitivity: 0.5,
-                      cognitiveEndurance: 0.7,
-                      overshootTolerance: 0.4,
-                      temporalProfile: 'single-phase',
-                    };
-                    setIntent(preset);
-                    setUserInput('Relaxed but alert');
-                    const resolvedOutcome = resolveOutcome(preset);
-                    setOutcome(resolvedOutcome);
-                    setLlmFailed(false);
-                    setError(null);
-                  }}
-                  className="px-4 py-2.5 bg-white/5 border border-white/10 rounded-full text-white text-sm hover:bg-white/10 hover:border-white/20 hover:shadow-lg hover:shadow-white/5 transition-all flex items-center gap-2"
-                >
-                  <span>⚡</span>
-                  <span>Focus</span>
-                </button>
-                <button
-                  onClick={() => {
-                    const preset: OutcomeIntent = {
-                      activationTarget: 0.6,
-                      anxietySensitivity: 0.4,
-                      cognitiveEndurance: 0.5,
-                      overshootTolerance: 0.6,
-                      temporalProfile: 'multi-phase',
-                      phases: [
-                        {
-                          phase: 'Primary / Early',
-                          activationTarget: 0.7,
-                          anxietySensitivity: 0.4,
-                          cognitiveEndurance: 0.6,
-                          overshootTolerance: 0.5,
-                        },
-                        {
-                          phase: 'Later / Wind-Down',
-                          activationTarget: 0.3,
-                          anxietySensitivity: 0.5,
-                          cognitiveEndurance: 0.4,
-                          overshootTolerance: 0.6,
-                        },
-                      ],
-                    };
-                    setIntent(preset);
-                    setUserInput('Wind down later');
-                    const resolvedOutcome = resolveOutcome(preset);
-                    setOutcome(resolvedOutcome);
-                    setLlmFailed(false);
-                    setError(null);
-                  }}
-                  className="px-4 py-2.5 bg-white/5 border border-white/10 rounded-full text-white text-sm hover:bg-white/10 hover:border-white/20 hover:shadow-lg hover:shadow-white/5 transition-all flex items-center gap-2"
-                >
-                  <span>🌙</span>
-                  <span>Wind Down</span>
-                </button>
-              </div>
-              <p className="text-xs text-white/40 mt-3 italic">
-                Quick test modes for engine demonstration
-              </p>
+          {/* Mode Selector */}
+          <div className="mb-16">
+            <div className="text-xs uppercase tracking-wider text-white/40 mb-2">MODE</div>
+            <div className="flex gap-6 text-sm text-white/70">
+              <button
+                onClick={() => {
+                  const preset: OutcomeIntent = {
+                    activationTarget: 0.75,
+                    anxietySensitivity: 0.3,
+                    cognitiveEndurance: 0.6,
+                    overshootTolerance: 0.5,
+                    temporalProfile: 'single-phase',
+                  };
+                  setIntent(preset);
+                  setUserInput('Social & upbeat');
+                  const resolvedOutcome = resolveOutcome(preset);
+                  setOutcome(resolvedOutcome);
+                  setLlmFailed(false);
+                  setError(null);
+                }}
+                className="hover:text-white transition-colors"
+              >
+                Social
+              </button>
+              <span className="text-white/20">/</span>
+              <button
+                onClick={() => {
+                  const preset: OutcomeIntent = {
+                    activationTarget: 0.45,
+                    anxietySensitivity: 0.5,
+                    cognitiveEndurance: 0.7,
+                    overshootTolerance: 0.4,
+                    temporalProfile: 'single-phase',
+                  };
+                  setIntent(preset);
+                  setUserInput('Relaxed but alert');
+                  const resolvedOutcome = resolveOutcome(preset);
+                  setOutcome(resolvedOutcome);
+                  setLlmFailed(false);
+                  setError(null);
+                }}
+                className="hover:text-white transition-colors"
+              >
+                Focus
+              </button>
+              <span className="text-white/20">/</span>
+              <button
+                onClick={() => {
+                  const preset: OutcomeIntent = {
+                    activationTarget: 0.6,
+                    anxietySensitivity: 0.4,
+                    cognitiveEndurance: 0.5,
+                    overshootTolerance: 0.6,
+                    temporalProfile: 'multi-phase',
+                    phases: [
+                      {
+                        phase: 'Primary / Early',
+                        activationTarget: 0.7,
+                        anxietySensitivity: 0.4,
+                        cognitiveEndurance: 0.6,
+                        overshootTolerance: 0.5,
+                      },
+                      {
+                        phase: 'Later / Wind-Down',
+                        activationTarget: 0.3,
+                        anxietySensitivity: 0.5,
+                        cognitiveEndurance: 0.4,
+                        overshootTolerance: 0.6,
+                      },
+                    ],
+                  };
+                  setIntent(preset);
+                  setUserInput('Wind down later');
+                  const resolvedOutcome = resolveOutcome(preset);
+                  setOutcome(resolvedOutcome);
+                  setLlmFailed(false);
+                  setError(null);
+                }}
+                className="hover:text-white transition-colors"
+              >
+                Wind-down
+              </button>
             </div>
           </div>
 
           {/* Input Section */}
-          <div className="mb-12">
-            <div className="bg-[#111216] border border-white/10 rounded-sm p-6">
-              <label htmlFor="outcome-input" className="block text-sm font-medium text-white/80 mb-3">
-                Describe desired outcome
-              </label>
-              <p className="text-xs text-white/40 mb-3 italic">
-                Describe what you want now — and later, if applicable.
-              </p>
-              <div className="relative">
-                <textarea
-                  id="outcome-input"
-                  value={userInput + (isListening && interimTranscriptRef.current ? interimTranscriptRef.current : '')}
-                  onChange={(e) => setUserInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && phase === 'FREE') {
-                      handleAnalyze();
-                    }
-                  }}
-                  placeholder="Example: I need something energizing for afternoon work, but I'm sensitive to anxiety..."
-                  className={`w-full h-32 px-4 py-3 pr-20 bg-[#050506] border rounded-sm text-white placeholder-white/20 font-light text-sm focus:outline-none resize-none transition-all ${
-                    phase === 'LOCKED' 
-                      ? 'border-white/5 opacity-50 cursor-not-allowed' 
-                      : 'border-white/8 focus:border-white/20 focus:go-border-metallic'
-                  }`}
-                  disabled={isProcessing || phase === 'LOCKED'}
-                />
-                {speechSupported && (
-                  <button
-                    type="button"
-                    onMouseDown={startListening}
-                    onMouseUp={stopListening}
-                    onTouchStart={(e) => {
-                      e.preventDefault();
-                      startListening();
-                    }}
-                    onTouchEnd={(e) => {
-                      e.preventDefault();
-                      stopListening();
-                    }}
-                    disabled={isProcessing}
-                    className={`absolute right-3 top-3 p-2 rounded-sm transition-all ${
-                      isListening
-                        ? 'bg-red-500/20 border-red-500/50 animate-pulse'
-                        : 'bg-white/5 border-white/20 hover:bg-white/10'
-                    } border disabled:opacity-50 disabled:cursor-not-allowed`}
-                    title={isListening ? 'Release to stop recording' : 'Hold to speak'}
-                  >
-                    <svg
-                      className={`w-5 h-5 ${isListening ? 'text-red-400' : 'text-white/60'}`}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
+          <div className="mb-16">
+            <div className="text-xs uppercase tracking-wider text-white/40 mb-3">
+              OUTCOME INPUT
+            </div>
+            <div className="relative">
+              <textarea
+                id="outcome-input"
+                value={userInput + (isListening && interimTranscriptRef.current ? interimTranscriptRef.current : '')}
+                onChange={(e) => setUserInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && phase === 'FREE') {
+                    handleAnalyze();
+                  }
+                }}
+                placeholder="Describe desired outcome..."
+                className={`w-full h-32 px-4 py-3 pr-24 bg-transparent border-b border-white/10 text-white placeholder-white/20 text-sm focus:outline-none focus:border-white/30 resize-none transition-colors ${
+                  phase === 'LOCKED' 
+                    ? 'border-white/5 opacity-50 cursor-not-allowed' 
+                    : ''
+                }`}
+                disabled={isProcessing || phase === 'LOCKED'}
+              />
+              
+              {speechSupported && phase === 'FREE' && !isProcessing && (
+                <div className="absolute right-2 top-2">
+                  {!isListening ? (
+                    <button
+                      type="button"
+                      onClick={startListening}
+                      className="p-2 text-white/60 hover:text-white transition-colors"
+                      title="Start listening"
                     >
-                      {isListening ? (
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
-                      ) : (
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
                         <path
                           strokeLinecap="round"
                           strokeLinejoin="round"
                           strokeWidth={2}
                           d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
                         />
-                      )}
-                    </svg>
-                  </button>
-                )}
-              </div>
-              {isListening && (
-                <p className="mt-2 text-xs text-red-400/80 flex items-center gap-2">
-                  <span className="inline-block w-2 h-2 bg-red-400 rounded-full animate-pulse"></span>
-                  Listening... Release to stop
-                </p>
+                      </svg>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={stopListening}
+                      className="p-2 text-white/80 hover:text-white transition-colors"
+                      title="Stop listening"
+                    >
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 10h6v4H9z"
+                        />
+                      </svg>
+                    </button>
+                  )}
+                </div>
               )}
-              <div className="flex items-center justify-between mt-4">
-                {phase === 'FREE' && (
-                  <button
-                    onClick={() => axesClosed ? handleAnalyze() : handleConversation(userInput)}
-                    disabled={isProcessing || !userInput.trim()}
-                    className="px-6 py-2.5 bg-white/10 border border-white/20 text-white font-light text-sm rounded-sm hover:bg-white/15 hover:border-white/30 disabled:opacity-30 disabled:cursor-not-allowed transition-all flex items-center gap-2"
-                  >
-                    {isProcessing && (
-                      <span className="inline-block w-2 h-2 bg-white/60 rounded-full animate-pulse"></span>
-                    )}
-                    <span>{isProcessing ? (axesClosed ? 'Resolving...' : 'Processing...') : (axesClosed ? 'Resolve' : 'Send')}</span>
-                  </button>
-                )}
+            </div>
+            
+            {isListening && (
+              <div className="mt-2 space-y-1">
+                <div className="text-xs text-white/40 uppercase tracking-wider">
+                  Listening...
+                </div>
+                <div className="text-xs text-white/30">
+                  You can pause while speaking — press Stop when you're done.
+                </div>
               </div>
+            )}
+            
+            <div className="flex items-center justify-between mt-6">
+              {phase === 'FREE' && (
+                <button
+                  onClick={() => axesClosed ? handleAnalyze() : handleConversation(userInput)}
+                  disabled={isProcessing || !userInput.trim()}
+                  className="px-4 py-2 text-white/80 text-sm hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors uppercase tracking-wider"
+                >
+                  {isProcessing ? (axesClosed ? 'Resolving...' : 'Processing...') : (axesClosed ? 'Resolve' : 'Send')}
+                </button>
+              )}
             </div>
           </div>
 
-          {/* Assistant Output Panel */}
-          <section className="mb-12 mt-6 rounded-xl border border-white/10 bg-white/5 p-4">
-            <h3 className="text-sm uppercase tracking-wide text-white/60 mb-3 flex items-center gap-2">
-              <span>🤖</span>
-              <span>GO Line Recommendation</span>
-            </h3>
-
-            <div className="space-y-4">
-              {conversation.length === 0 && !isProcessing && (
-                <p className="text-white/40 text-sm italic">
-                  Start a conversation to get recommendations based on your desired outcome.
-                </p>
-              )}
-
+          {/* Conversation Output */}
+          {conversation.length > 0 || isProcessing ? (
+            <div className="mb-20 space-y-6">
               {conversation.map((msg, idx) => (
                 <div
                   key={idx}
                   className={
                     msg.role === "assistant"
-                      ? "bg-white/10 rounded-lg p-4 text-white/90 text-sm leading-relaxed whitespace-pre-wrap"
-                      : "text-white/70 text-sm ml-auto text-right max-w-[80%]"
+                      ? "text-white text-sm leading-relaxed whitespace-pre-wrap max-w-[85%]"
+                      : "text-white/50 text-sm ml-auto text-right max-w-[80%]"
                   }
                 >
                   {msg.content}
@@ -924,28 +887,34 @@ export default function GOLineCalculator() {
               ))}
 
               {isProcessing && (
-                <div className="bg-white/10 rounded-lg p-4">
-                  <div className="flex items-center gap-2 text-white/70 text-sm">
-                    <span className="inline-block w-2 h-2 bg-white/60 rounded-full animate-pulse"></span>
-                    <span>Resolving outcome...</span>
-                  </div>
+                <div className="text-white/40 text-sm">
+                  Resolving outcome...
                 </div>
               )}
             </div>
+          ) : null}
 
-            {(conversation.length > 0 || isProcessing) && (
-              <div className="mt-4 pt-4 border-t border-white/10">
-                <p className="text-xs text-white/40 italic">
-                  Using a static snapshot of a dispensary menu for demo purposes.
+          {/* How GO Line Works */}
+          {(conversation.length > 0 || isProcessing) && (
+            <div className="mb-16 pt-8 border-t border-white/5">
+              <div className="text-xs uppercase tracking-wider text-white/40 mb-3">
+                How GO Line works
+              </div>
+              <div className="text-sm text-white/50 leading-relaxed space-y-3 max-w-2xl">
+                <p>
+                  GO Line recommendations are not generated randomly or purely conversationally. Each suggestion is produced by a deterministic decision engine that evaluates multiple variables simultaneously—drawing from established cannabinoid and terpene research, chemotype patterning, reported effect correlations, and constraint-based outcome modeling.
+                </p>
+                <p>
+                  The system continuously balances desired effects, avoidance thresholds, and known interaction patterns to resolve toward the most appropriate recommendation for the stated outcome. While the underlying methodology is proprietary, every output is the result of structured analysis rather than guesswork.
                 </p>
               </div>
-            )}
-          </section>
+            </div>
+          )}
 
           {/* Error Display */}
           {error && (
-            <div className="mb-8 p-4 bg-[#1a0f0f] border border-red-500/20 rounded-sm">
-              <p className="text-sm text-red-400/80">{error}</p>
+            <div className="mb-8 text-sm text-white/60">
+              {error}
             </div>
           )}
 
@@ -1147,43 +1116,23 @@ export default function GOLineCalculator() {
               {/* Stacked Phases - PART 6: Novice-Friendly UI */}
               {outcome.resolutionMode === 'STACKED' && outcome.phases && outcome.phases.length > 0 && (
                 <div className="space-y-6">
-                  {/* Header */}
-                  <div className="bg-[#111216] border border-white/10 rounded-sm p-6 mb-6">
-                    <h2 className="text-2xl font-medium text-white mb-2 flex items-center gap-2">
-                      <span className="text-2xl">🔥</span>
-                      Your Stacked Experience
-                    </h2>
-                    <p className="text-sm text-white/60 italic">
-                      (Designed to change as you go)
-                    </p>
-                  </div>
-
-                  {outcome.phases.map((phaseData, phaseIndex) => {
-                    // Determine phase indicator and color
-                    const isOpening = phaseData.phase === 'Top / Opening' || phaseData.phase === 'Primary / Early';
-                    const isCore = phaseData.phase === 'Middle / Core';
-                    const isLanding = phaseData.phase === 'End / Landing' || phaseData.phase === 'Later / Wind-Down';
+                  {/* Stacked Phases */}
+                  <div className="mb-16">
+                    <div className="text-xs uppercase tracking-wider text-white/40 mb-8">Stacked Resolution</div>
                     
-                    const phaseIndicator = isOpening ? '🟢' : isCore ? '🔵' : '🟣';
-                    const phaseLabel = isOpening ? 'Start' : isCore ? 'Middle' : 'End';
-                    const phaseTitle = phaseData.phase;
+                    {outcome.phases.map((phaseData, phaseIndex) => {
+                      const phaseTitle = phaseData.phase;
 
-                    return (
-                      <div key={phaseIndex} className="bg-[#111216] border border-white/10 rounded-sm p-6">
-                        <div className="mb-4">
-                          <h2 className="text-lg font-medium text-white mb-2 flex items-center gap-2">
-                            <span className="text-xl">{phaseIndicator}</span>
-                            <span>{phaseLabel} — {phaseTitle}</span>
-                          </h2>
+                      return (
+                        <div key={phaseIndex} className="mb-12">
+                          <div className="text-sm text-white/60 mb-4 uppercase tracking-wider">
+                            {phaseTitle}
+                          </div>
                           {phaseData.purpose && (
-                            <p className="text-sm text-white/70 mb-2">
-                              <span className="text-white/50">Purpose:</span> {phaseData.purpose}
-                            </p>
+                            <div className="text-xs text-white/40 mb-4 uppercase tracking-wider">
+                              {phaseData.purpose}
+                            </div>
                           )}
-                          <p className="text-xs text-white/50 italic mb-4">
-                            Chemotypes are selected based on chemical balance, not strain category.
-                          </p>
-                        </div>
 
                       <div className="space-y-3 mb-4">
                         {phaseData.composition.map((component) => (
@@ -1219,34 +1168,22 @@ export default function GOLineCalculator() {
 
                         {/* Mixing Instructions */}
                         {phaseData.instructions && (
-                          <div className="mt-4 pt-4 border-t border-white/10">
-                            <h3 className="text-sm font-medium text-white/90 mb-2">
-                              Mixing Instructions
-                            </h3>
-                            <p className="text-white/80 text-sm leading-relaxed">
+                          <div className="mt-4 pt-4 border-t border-white/5">
+                            <div className="text-xs uppercase tracking-wider text-white/40 mb-2">Instructions</div>
+                            <p className="text-white/70 text-sm leading-relaxed">
                               {phaseData.instructions}
                             </p>
                           </div>
                         )}
 
-                        {phaseData.whatYoullFeel && (
-                          <div className="mt-4 pt-4 border-t border-white/10">
-                            <h3 className="text-sm font-medium text-white/90 mb-2">
-                              What you'll feel:
-                            </h3>
-                            <p className="text-white/80 text-sm leading-relaxed italic">
-                              {phaseData.whatYoullFeel}
-                            </p>
-                          </div>
-                        )}
 
                         {phaseData.systemNotes.length > 0 && (
                           <div className="mt-4 pt-4 border-t border-white/5">
-                            <h3 className="text-sm font-medium text-white/80 mb-2">System Notes</h3>
+                            <div className="text-xs uppercase tracking-wider text-white/40 mb-2">Notes</div>
                             <ul className="space-y-1">
                               {phaseData.systemNotes.map((note, index) => (
-                                <li key={index} className="text-white/70 text-xs leading-relaxed">
-                                  • {note}
+                                <li key={index} className="text-white/60 text-xs leading-relaxed">
+                                  {note}
                                 </li>
                               ))}
                             </ul>
@@ -1257,42 +1194,13 @@ export default function GOLineCalculator() {
                     );
                   })}
 
-                  {/* Why This Is Stacked - PART 6 */}
-                  <div className="bg-[#111216] border border-white/10 rounded-sm p-6">
-                    <h3 className="text-lg font-medium text-white mb-3 flex items-center gap-2">
-                      <span>⚙️</span>
-                      Why This Is Stacked
-                    </h3>
-                    <p className="text-white/70 text-sm leading-relaxed mb-3">
-                      Instead of forcing one blend to do everything, this sequence:
+                  {/* Why This Is Stacked */}
+                  <div className="mb-12 mt-12 pt-8 border-t border-white/5">
+                    <div className="text-xs uppercase tracking-wider text-white/40 mb-4">Rationale</div>
+                    <p className="text-white/70 text-sm leading-relaxed mb-4">
+                      Separating phases allows each to be optimized without compromising early-phase risk or late-phase experience.
                     </p>
-                    <ul className="space-y-2 text-white/70 text-sm">
-                      <li>• Delivers energy without anxiety</li>
-                      <li>• Maintains the core experience</li>
-                      <li>• Ends smoothly without abrupt drop-off</li>
-                    </ul>
                   </div>
-
-                  {/* Optional Adjustments - PART 6 */}
-                  <div className="bg-[#111216] border border-white/10 rounded-sm p-6">
-                    <h3 className="text-lg font-medium text-white mb-3 flex items-center gap-2">
-                      <span>🔧</span>
-                      Optional Adjustments
-                    </h3>
-                    <ul className="space-y-2 text-white/70 text-sm">
-                      <li>• <span className="text-white/90">Want a faster start?</span> → increase Opening Phase activation cultivar</li>
-                      <li>• <span className="text-white/90">Want a softer ending?</span> → increase CBD or calming cultivar in End Phase</li>
-                    </ul>
-                  </div>
-
-                  {/* Important Note - PART 6 */}
-                  <div className="bg-[#1a0f1a] border border-purple-500/20 rounded-sm p-4">
-                    <p className="text-white/90 text-sm leading-relaxed flex items-start gap-2">
-                      <span className="text-lg">❗</span>
-                      <span>
-                        <span className="font-medium">Important Note:</span> Each phase is intentional. Changing phase order or ratios will change the experience.
-                      </span>
-                    </p>
                   </div>
                 </div>
               )}
@@ -1432,11 +1340,10 @@ export default function GOLineCalculator() {
             </div>
           )}
 
-          {/* Disclaimer */}
-          <div className="mt-16 pt-8 border-t border-white/10">
-            <p className="text-xs text-white/40 leading-relaxed text-center max-w-2xl mx-auto">
-              This prototype uses canonical chemotype profiles representing common terpene + cannabinoid patterns.
-              Live GO systems operate exclusively on QR-verified batch data from accredited testing laboratories.
+          {/* Footer Disclosure */}
+          <div className="mt-32 pt-8 border-t border-white/5">
+            <p className="text-xs text-white/30 leading-relaxed text-center max-w-2xl mx-auto">
+              Demo system using a static dispensary inventory for concept validation.
             </p>
           </div>
         </div>
