@@ -13,6 +13,7 @@ import Image from 'next/image';
 import { OutcomeIntent, ResolutionType } from '@/lib/goOutcomeEngine';
 import { resolveOutcome } from '@/lib/goOutcomeEngine';
 import { StrategicGuidance, ClarificationQuestion } from '@/lib/strategicGuidance';
+import { DEMO_MENU } from '@/data/demoMenu';
 import { translateGuidanceToIntent } from '@/lib/guidanceToIntent';
 
 type InteractionPhase = 'FREE' | 'GUIDED' | 'LOCKED';
@@ -337,6 +338,200 @@ function generateBlendSummary(tier: ResolutionTier): string {
   return `This blend ${parts.join(', ')}, with controlled balance across components.`;
 }
 
+// Parse blend recommendation from assistant response
+interface ParsedBlendComponent {
+  name: string;
+  percentage: number;
+  rationale?: string;
+}
+
+interface ParsedBlendResolution {
+  components: ParsedBlendComponent[];
+  isValid: boolean;
+}
+
+function parseBlendRecommendation(text: string, menuNames: string[]): ParsedBlendResolution {
+  const components: ParsedBlendComponent[] = [];
+  const textLower = text.toLowerCase();
+  
+  // Look for percentage patterns: "Name — XX%" or "Name: XX%" or "Name (XX%)"
+  const percentagePatterns = [
+    /([A-Z][A-Za-z\s]+?)\s*[—\-:]\s*(\d+)\s*%/g,
+    /([A-Z][A-Za-z\s]+?)\s*\((\d+)\s*%\)/g,
+    /(\d+)\s*%\s*([A-Z][A-Za-z\s]+)/g,
+  ];
+  
+  // Try each pattern
+  for (const pattern of percentagePatterns) {
+    let match;
+    while ((match = pattern.exec(text)) !== null) {
+      let name = '';
+      let percentage = 0;
+      
+      if (pattern === percentagePatterns[2]) {
+        // Reversed pattern: percentage first
+        percentage = parseInt(match[1]);
+        name = match[2].trim();
+      } else {
+        name = match[1].trim();
+        percentage = parseInt(match[2]);
+      }
+      
+      // Normalize name and check against menu
+      const normalizedName = name.trim();
+      const menuMatch = menuNames.find(menuName => 
+        menuName.toLowerCase() === normalizedName.toLowerCase() ||
+        normalizedName.toLowerCase().includes(menuName.toLowerCase()) ||
+        menuName.toLowerCase().includes(normalizedName.toLowerCase())
+      );
+      
+      if (menuMatch && percentage > 0 && percentage <= 100) {
+        // Avoid duplicates
+        if (!components.find(c => c.name.toLowerCase() === menuMatch.toLowerCase())) {
+          components.push({
+            name: menuMatch, // Use canonical menu name
+            percentage: percentage,
+          });
+        }
+      }
+    }
+  }
+  
+  // If we found at least 2 components with percentages, it's likely a blend
+  const isValid = components.length >= 2 && 
+    components.reduce((sum, c) => sum + c.percentage, 0) <= 110; // Allow some variance
+  
+  // Normalize percentages to sum to 100 if close
+  if (isValid && components.length > 0) {
+    const total = components.reduce((sum, c) => sum + c.percentage, 0);
+    if (total > 80 && total < 120) {
+      components.forEach(c => {
+        c.percentage = Math.round((c.percentage / total) * 100);
+      });
+    }
+  }
+  
+  return { components, isValid };
+}
+
+// BlendResolutionPanel Component
+interface BlendResolutionPanelProps {
+  blend: ParsedBlendResolution;
+  onAdjustment?: (type: 'energy' | 'duration' | 'pain', value: number) => void;
+}
+
+function BlendResolutionPanel({ blend, onAdjustment }: BlendResolutionPanelProps) {
+  const [energyValue, setEnergyValue] = useState(50);
+  const [durationValue, setDurationValue] = useState(50);
+  const [painValue, setPainValue] = useState(50);
+  
+  return (
+    <div className="border-t border-white/10 pt-12 pb-8">
+      <div className="mb-10">
+        <div className="text-xs uppercase tracking-wider text-white/40 mb-1">
+          GO Line — Resolved Composition
+        </div>
+        <div className="text-xs text-white/30 mb-6">
+          Outcome-balanced cultivar blend
+        </div>
+      </div>
+
+      {/* Blend Visualization */}
+      <div className="mb-12 space-y-6">
+        {blend.components.map((component, index) => (
+          <div key={index} className="space-y-2">
+            <div className="flex items-center justify-between mb-1">
+              <div className="text-sm font-medium text-white tracking-tight">
+                {component.name}
+              </div>
+              <div className="text-sm text-white/50 font-mono">
+                {component.percentage}%
+              </div>
+            </div>
+            <div className="relative h-1.5 bg-white/5 overflow-hidden">
+              <div
+                className="h-full bg-white/25 transition-all"
+                style={{ width: `${component.percentage}%` }}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Adjustment Controls */}
+      {onAdjustment && (
+        <div className="border-t border-white/5 pt-8 space-y-8">
+          <div className="text-xs uppercase tracking-wider text-white/40 mb-6">
+            Adjustment Controls
+          </div>
+          
+          <div className="space-y-6">
+            {/* Energy ↔ Calm */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <div className="text-xs text-white/60 uppercase tracking-wider">Energy ↔ Calm</div>
+                <div className="text-xs text-white/40 font-mono">{energyValue}</div>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={energyValue}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value);
+                  setEnergyValue(val);
+                  onAdjustment('energy', val);
+                }}
+                className="w-full h-1 bg-white/5 appearance-none cursor-pointer accent-white/20"
+              />
+            </div>
+
+            {/* Duration ↔ Intensity */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <div className="text-xs text-white/60 uppercase tracking-wider">Duration ↔ Intensity</div>
+                <div className="text-xs text-white/40 font-mono">{durationValue}</div>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={durationValue}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value);
+                  setDurationValue(val);
+                  onAdjustment('duration', val);
+                }}
+                className="w-full h-1 bg-white/5 appearance-none cursor-pointer accent-white/20"
+              />
+            </div>
+
+            {/* Pain Relief ↔ Cognitive Lift */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <div className="text-xs text-white/60 uppercase tracking-wider">Pain Relief ↔ Cognitive Lift</div>
+                <div className="text-xs text-white/40 font-mono">{painValue}</div>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={painValue}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value);
+                  setPainValue(val);
+                  onAdjustment('pain', val);
+                }}
+                className="w-full h-1 bg-white/5 appearance-none cursor-pointer accent-white/20"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Premium ResolvedBlend Component
 function ResolvedBlend({ tier }: { tier: ResolutionTier }) {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -489,6 +684,10 @@ export default function GOLineCalculator() {
   const [conversation, setConversation] = useState<{ role: 'user' | 'assistant'; content: string }[]>([]);
   const [intentSummary, setIntentSummary] = useState<string>('');
   const [axesClosed, setAxesClosed] = useState(false);
+  
+  // Parsed blend recommendation from assistant response
+  const [parsedBlend, setParsedBlend] = useState<ParsedBlendResolution | null>(null);
+  const [conversationWithoutBlend, setConversationWithoutBlend] = useState<{ role: 'user' | 'assistant'; content: string }[]>([]);
 
   // Initialize speech recognition
   useEffect(() => {
@@ -547,10 +746,10 @@ export default function GOLineCalculator() {
           if (explicitStopRef.current) {
             // User explicitly stopped - finalize transcript and reset
             explicitStopRef.current = false;
-            setIsListening(false);
-            if (interimTranscriptRef.current) {
-              setUserInput((prev) => prev + interimTranscriptRef.current + ' ');
-              interimTranscriptRef.current = '';
+          setIsListening(false);
+          if (interimTranscriptRef.current) {
+            setUserInput((prev) => prev + interimTranscriptRef.current + ' ');
+            interimTranscriptRef.current = '';
             }
           } else {
             // Auto-ended (silence, etc.) - ignore and keep listening
@@ -593,7 +792,7 @@ export default function GOLineCalculator() {
         if (err.message && err.message.includes('already started')) {
           setIsListening(true);
         } else {
-          setError('Failed to start voice input. Please try again.');
+        setError('Failed to start voice input. Please try again.');
         }
       }
     }
@@ -603,7 +802,7 @@ export default function GOLineCalculator() {
     if (recognitionRef.current && isListening) {
       try {
         explicitStopRef.current = true; // Mark as explicit stop
-        recognitionRef.current.stop();
+      recognitionRef.current.stop();
         // Transcript will be finalized in onend handler
       } catch (err) {
         console.error('Failed to stop recognition:', err);
@@ -651,22 +850,40 @@ export default function GOLineCalculator() {
         throw new Error('Invalid conversation response');
       }
 
-      // Update conversation with assistant response
+      // Parse blend recommendation from assistant response
+      const menuNames = DEMO_MENU.map(s => s.name);
+      const parsed = parseBlendRecommendation(data.message, menuNames);
+      
+      if (parsed.isValid) {
+        // Blend detected - store it and filter out from chat
+        setParsedBlend(parsed);
+        // Keep conversation for context but don't show assistant message in chat
+        const conversationWithoutBlend = [
+          ...updatedConversation,
+          // Don't add assistant message if it contains a blend
+        ];
+        setConversationWithoutBlend(conversationWithoutBlend);
+        setConversation(conversationWithoutBlend);
+      } else {
+        // No blend detected - show normal chat
       const newConversation = [
         ...updatedConversation,
         { role: 'assistant' as const, content: data.message },
       ];
       setConversation(newConversation);
+        setConversationWithoutBlend(newConversation);
+        setParsedBlend(null); // Clear any previous blend
+      }
 
       // Build structured summary from conversation (not raw messages)
-      const summary = newConversation
+      const summary = updatedConversation
         .filter(msg => msg.role === 'user')
         .map(msg => msg.content)
         .join('\n\n');
       setIntentSummary(summary);
 
       // For now, axes closed after 2 user messages (can be refined)
-      if (newConversation.filter(msg => msg.role === 'user').length >= 2) {
+      if (updatedConversation.filter(msg => msg.role === 'user').length >= 2) {
         setAxesClosed(true);
       }
 
@@ -814,84 +1031,84 @@ export default function GOLineCalculator() {
           <div className="mb-16">
             <div className="text-xs uppercase tracking-wider text-white/40 mb-2">MODE</div>
             <div className="flex gap-6 text-sm text-white/70">
-              <button
-                onClick={() => {
-                  const preset: OutcomeIntent = {
-                    activationTarget: 0.75,
-                    anxietySensitivity: 0.3,
-                    cognitiveEndurance: 0.6,
-                    overshootTolerance: 0.5,
-                    temporalProfile: 'single-phase',
-                  };
-                  setIntent(preset);
-                  setUserInput('Social & upbeat');
-                  const resolvedOutcome = resolveOutcome(preset);
-                  setOutcome(resolvedOutcome);
-                  setLlmFailed(false);
-                  setError(null);
-                }}
+                <button
+                  onClick={() => {
+                    const preset: OutcomeIntent = {
+                      activationTarget: 0.75,
+                      anxietySensitivity: 0.3,
+                      cognitiveEndurance: 0.6,
+                      overshootTolerance: 0.5,
+                      temporalProfile: 'single-phase',
+                    };
+                    setIntent(preset);
+                    setUserInput('Social & upbeat');
+                    const resolvedOutcome = resolveOutcome(preset);
+                    setOutcome(resolvedOutcome);
+                    setLlmFailed(false);
+                    setError(null);
+                  }}
                 className="hover:text-white transition-colors"
-              >
+                >
                 Social
-              </button>
+                </button>
               <span className="text-white/20">/</span>
-              <button
-                onClick={() => {
-                  const preset: OutcomeIntent = {
-                    activationTarget: 0.45,
-                    anxietySensitivity: 0.5,
-                    cognitiveEndurance: 0.7,
-                    overshootTolerance: 0.4,
-                    temporalProfile: 'single-phase',
-                  };
-                  setIntent(preset);
-                  setUserInput('Relaxed but alert');
-                  const resolvedOutcome = resolveOutcome(preset);
-                  setOutcome(resolvedOutcome);
-                  setLlmFailed(false);
-                  setError(null);
-                }}
+                <button
+                  onClick={() => {
+                    const preset: OutcomeIntent = {
+                      activationTarget: 0.45,
+                      anxietySensitivity: 0.5,
+                      cognitiveEndurance: 0.7,
+                      overshootTolerance: 0.4,
+                      temporalProfile: 'single-phase',
+                    };
+                    setIntent(preset);
+                    setUserInput('Relaxed but alert');
+                    const resolvedOutcome = resolveOutcome(preset);
+                    setOutcome(resolvedOutcome);
+                    setLlmFailed(false);
+                    setError(null);
+                  }}
                 className="hover:text-white transition-colors"
-              >
+                >
                 Focus
-              </button>
+                </button>
               <span className="text-white/20">/</span>
-              <button
-                onClick={() => {
-                  const preset: OutcomeIntent = {
-                    activationTarget: 0.6,
-                    anxietySensitivity: 0.4,
-                    cognitiveEndurance: 0.5,
-                    overshootTolerance: 0.6,
-                    temporalProfile: 'multi-phase',
-                    phases: [
-                      {
-                        phase: 'Primary / Early',
-                        activationTarget: 0.7,
-                        anxietySensitivity: 0.4,
-                        cognitiveEndurance: 0.6,
-                        overshootTolerance: 0.5,
-                      },
-                      {
-                        phase: 'Later / Wind-Down',
-                        activationTarget: 0.3,
-                        anxietySensitivity: 0.5,
-                        cognitiveEndurance: 0.4,
-                        overshootTolerance: 0.6,
-                      },
-                    ],
-                  };
-                  setIntent(preset);
-                  setUserInput('Wind down later');
-                  const resolvedOutcome = resolveOutcome(preset);
-                  setOutcome(resolvedOutcome);
-                  setLlmFailed(false);
-                  setError(null);
-                }}
+                <button
+                  onClick={() => {
+                    const preset: OutcomeIntent = {
+                      activationTarget: 0.6,
+                      anxietySensitivity: 0.4,
+                      cognitiveEndurance: 0.5,
+                      overshootTolerance: 0.6,
+                      temporalProfile: 'multi-phase',
+                      phases: [
+                        {
+                          phase: 'Primary / Early',
+                          activationTarget: 0.7,
+                          anxietySensitivity: 0.4,
+                          cognitiveEndurance: 0.6,
+                          overshootTolerance: 0.5,
+                        },
+                        {
+                          phase: 'Later / Wind-Down',
+                          activationTarget: 0.3,
+                          anxietySensitivity: 0.5,
+                          cognitiveEndurance: 0.4,
+                          overshootTolerance: 0.6,
+                        },
+                      ],
+                    };
+                    setIntent(preset);
+                    setUserInput('Wind down later');
+                    const resolvedOutcome = resolveOutcome(preset);
+                    setOutcome(resolvedOutcome);
+                    setLlmFailed(false);
+                    setError(null);
+                  }}
                 className="hover:text-white transition-colors"
-              >
+                >
                 Wind-down
-              </button>
+                </button>
             </div>
           </div>
 
@@ -900,40 +1117,40 @@ export default function GOLineCalculator() {
             <div className="text-xs uppercase tracking-wider text-white/40 mb-3">
               OUTCOME INPUT
             </div>
-            <div className="relative">
-              <textarea
-                id="outcome-input"
-                value={userInput + (isListening && interimTranscriptRef.current ? interimTranscriptRef.current : '')}
-                onChange={(e) => setUserInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && phase === 'FREE') {
-                    handleAnalyze();
-                  }
-                }}
+              <div className="relative">
+                <textarea
+                  id="outcome-input"
+                  value={userInput + (isListening && interimTranscriptRef.current ? interimTranscriptRef.current : '')}
+                  onChange={(e) => setUserInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && phase === 'FREE') {
+                      handleAnalyze();
+                    }
+                  }}
                 placeholder="Describe desired outcome..."
                 className={`w-full h-32 px-4 py-3 pr-24 bg-transparent border-b border-white/10 text-white placeholder-white/20 text-sm focus:outline-none focus:border-white/30 resize-none transition-colors ${
-                  phase === 'LOCKED' 
-                    ? 'border-white/5 opacity-50 cursor-not-allowed' 
+                    phase === 'LOCKED' 
+                      ? 'border-white/5 opacity-50 cursor-not-allowed' 
                     : ''
-                }`}
-                disabled={isProcessing || phase === 'LOCKED'}
-              />
+                  }`}
+                  disabled={isProcessing || phase === 'LOCKED'}
+                />
               
               {speechSupported && phase === 'FREE' && !isProcessing && (
                 <div className="absolute right-2 top-2">
                   {!isListening ? (
-                    <button
-                      type="button"
+                  <button
+                    type="button"
                       onClick={startListening}
                       className="p-2 text-white/60 hover:text-white transition-colors"
                       title="Start listening"
-                    >
-                      <svg
+                  >
+                    <svg
                         className="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
                         <path
                           strokeLinecap="round"
                           strokeLinejoin="round"
@@ -967,14 +1184,14 @@ export default function GOLineCalculator() {
                           strokeWidth={2}
                           d="M9 10h6v4H9z"
                         />
-                      </svg>
-                    </button>
-                  )}
-                </div>
+                    </svg>
+                  </button>
+                )}
+              </div>
               )}
             </div>
             
-            {isListening && (
+              {isListening && (
               <div className="mt-2 space-y-1">
                 <div className="text-xs text-white/40 uppercase tracking-wider">
                   Listening...
@@ -986,44 +1203,74 @@ export default function GOLineCalculator() {
             )}
             
             <div className="flex items-center justify-between mt-6">
-              {phase === 'FREE' && (
-                <button
-                  onClick={() => axesClosed ? handleAnalyze() : handleConversation(userInput)}
-                  disabled={isProcessing || !userInput.trim()}
+                {phase === 'FREE' && (
+                  <button
+                    onClick={() => axesClosed ? handleAnalyze() : handleConversation(userInput)}
+                    disabled={isProcessing || !userInput.trim()}
                   className="px-4 py-2 text-white/80 text-sm hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors uppercase tracking-wider"
-                >
-                  {isProcessing ? (axesClosed ? 'Resolving...' : 'Processing...') : (axesClosed ? 'Resolve' : 'Send')}
-                </button>
-              )}
+                  >
+                    {isProcessing ? (axesClosed ? 'Resolving...' : 'Processing...') : (axesClosed ? 'Resolve' : 'Send')}
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
 
-          {/* Conversation Output - Only show if no final recommendation yet */}
-          {(conversation.length > 0 || isProcessing) && !outcome ? (
-            <div className="mb-20 space-y-6">
-              {conversation.map((msg, idx) => (
-                <div
-                  key={idx}
-                  className={
-                    msg.role === "assistant"
-                      ? "text-white text-sm leading-relaxed whitespace-pre-wrap max-w-[85%]"
-                      : "text-white/50 text-sm ml-auto text-right max-w-[80%]"
+          {/* Blend Resolution Panel - Show when blend is detected */}
+          {parsedBlend && parsedBlend.isValid ? (
+            <BlendResolutionPanel 
+              blend={parsedBlend}
+              onAdjustment={(type, value) => {
+                // Re-run engine with adjusted intent
+                if (intent) {
+                  const adjustedIntent: OutcomeIntent = { ...intent };
+                  
+                  if (type === 'energy') {
+                    adjustedIntent.activationTarget = value / 100;
+                  } else if (type === 'duration') {
+                    adjustedIntent.cognitiveEndurance = value / 100;
+                  } else if (type === 'pain') {
+                    // Map pain relief to activation (more pain relief = less activation)
+                    adjustedIntent.activationTarget = 1 - (value / 100);
                   }
-                >
-                  {msg.content}
-                </div>
-              ))}
+                  
+                  setIntent(adjustedIntent);
+                  try {
+                    const resolvedOutcome = resolveOutcome(adjustedIntent);
+                    setOutcome(resolvedOutcome);
+                  } catch (err) {
+                    console.error('Adjustment resolution error:', err);
+                  }
+                }
+              }}
+            />
+          ) : (
+            /* Conversation Output - Only show if no blend recommendation */
+            (conversation.length > 0 || isProcessing) && !outcome && !parsedBlend ? (
+              <div className="mb-20 space-y-6">
+                {conversation.map((msg, idx) => (
+                  <div
+                    key={idx}
+                    className={
+                      msg.role === "assistant"
+                        ? "text-white text-sm leading-relaxed whitespace-pre-wrap max-w-[85%]"
+                        : "text-white/50 text-sm ml-auto text-right max-w-[80%]"
+                    }
+                  >
+                    {msg.content}
+          </div>
+                ))}
 
-              {isProcessing && (
-                <div className="text-white/40 text-sm">
-                  Resolving outcome...
-                </div>
-              )}
-            </div>
-          ) : null}
+                {isProcessing && (
+                  <div className="text-white/40 text-sm">
+                    Resolving outcome...
+                  </div>
+                )}
+              </div>
+            ) : null
+          )}
 
-          {/* How GO Line Works - Show when recommendation is finalized */}
-          {outcome && (
+          {/* How GO Line Works - Show when recommendation is finalized or blend is displayed */}
+          {(outcome || (parsedBlend && parsedBlend.isValid)) && (
             <div className="mb-16 pt-8 border-t border-white/5">
               <div className="text-xs uppercase tracking-wider text-white/40 mb-3">
                 How GO Line works
@@ -1255,7 +1502,7 @@ export default function GOLineCalculator() {
                         <div key={phaseIndex} className="mb-12">
                           <div className="text-sm text-white/60 mb-4 uppercase tracking-wider">
                             {phaseTitle}
-                          </div>
+                      </div>
                           {phaseData.purpose && (
                             <div className="text-xs text-white/40 mb-4 uppercase tracking-wider">
                               {phaseData.purpose}
