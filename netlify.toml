@@ -3,6 +3,12 @@
 
 [build.environment]
   NODE_VERSION = "20"
+  NETLIFY_BUILD_DEBUG = "true"
+
+[functions]
+  # Next.js API routes are handled by @netlify/plugin-nextjs
+  # Legacy functions in netlify/functions/ are not used
+  directory = "netlify/functions"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
