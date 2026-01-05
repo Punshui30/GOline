@@ -5,7 +5,7 @@
  * Only extracts explicit data - no inferences, no substitutions.
  */
 
-import { CanonicalChemotype } from './data/canonicalChemotypes';
+import { type CanonicalChemotype } from '@/data/canonicalChemotypes';
 
 export interface ParsedLabel {
   cultivarName: string;

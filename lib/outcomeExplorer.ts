@@ -8,7 +8,7 @@
 import { resolveOutcome, OutcomeResult, OutcomeIntent } from './goOutcomeEngine';
 import { CANONICAL_OUTCOMES, CanonicalOutcome } from './canonicalOutcomes';
 import { ParsedLabel, mapLabelToChemotype } from './labelParser';
-import { canonicalChemotypes, CanonicalChemotype } from './data/canonicalChemotypes';
+import { canonicalChemotypes, type CanonicalChemotype } from '@/data/canonicalChemotypes';
 import { resolveToNamedStrains } from './namedResolution';
 import { convertToResolvedBlend } from './convertToResolvedBlend';
 import { ResolvedBlend } from '@/components/ResolutionPanel';
