@@ -22,8 +22,8 @@ importers:
         version: 18.3.1(react@18.3.1)
     devDependencies:
       '@netlify/plugin-nextjs':
-        specifier: ^5.15.3
-        version: 5.15.3
+        specifier: ^5.15.4
+        version: 5.15.4
       '@types/node':
         specifier: ^20.14.0
         version: 20.19.27
@@ -72,8 +72,8 @@ packages:
     resolution: {integrity: sha512-tpPiLSkQatuexH8AdAZ8RlALvT7ixOE9VhvpkzQGNvihcms8hzmvUDuSxQa7UneTj/sHsdirnXmnJ+nmf+Nx/w==}
     engines: {node: '>=18.0.0'}
 
-  '@netlify/plugin-nextjs@5.15.3':
-    resolution: {integrity: sha512-l3SicRpOy+27VTZbIhEgI89+uY+1Y3CsMZW3mfKBFC4A/sP7u33ftDZ45m6634dUcc6BnLNxPIxL6TiBdvqxOQ==}
+  '@netlify/plugin-nextjs@5.15.4':
+    resolution: {integrity: sha512-IYz01SFmJuj5YluTsFnP+8+Vu6SeK04LVUVaLcjK8x3SNiC+D4XjCfZKREUs3F8ZO+idd+TSHWZcIkUmBKoGjw==}
     engines: {node: '>=18.0.0'}
 
   '@netlify/types@2.3.0':
@@ -593,7 +593,7 @@ snapshots:
     dependencies:
       '@netlify/types': 2.3.0
 
-  '@netlify/plugin-nextjs@5.15.3': {}
+  '@netlify/plugin-nextjs@5.15.4': {}
 
   '@netlify/types@2.3.0': {}
 
