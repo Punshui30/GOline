@@ -1209,82 +1209,13 @@ export default function GOLineCalculator() {
           )}
 
           {/* Old resolution UI - REMOVED - keeping as reference but commented out */}
-          {/* {namedResolution && namedResolution.primaryBlend.length > 0 && (
-            <div className="border-t border-white/10 pt-12 pb-8 mb-16">
-              <div className="mb-10">
-                <div className="text-xs uppercase tracking-wider text-white/40 mb-1">
-                  GO Line — Named Resolution
-                </div>
-                <div className="text-xs text-white/30 mb-6">
-                  {namedResolution.primaryBlend.length === 1 
-                    ? 'Single cultivar recommendation'
-                    : 'Multi-cultivar blend recommendation'}
-                </div>
-              </div>
-
-              {/* Named Strain Visualization */}
-              <div className="mb-12 space-y-6">
-                {namedResolution.primaryBlend.map((strain, index) => (
-                  <div key={index} className="space-y-2">
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="text-sm font-medium text-white tracking-tight">
-                        {strain.strainName}
-                      </div>
-                      <div className="text-sm text-white/50 font-mono">
-                        {strain.percentage}%
-                      </div>
-                    </div>
-                    <div className="relative h-1.5 bg-white/5 overflow-hidden">
-                      <div
-                        className="h-full bg-white/25 transition-all"
-                        style={{ width: `${strain.percentage}%` }}
-                      />
-                    </div>
-                    {strain.rationale && (
-                      <div className="text-xs text-white/40 mt-1">
-                        {strain.rationale}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              {/* Stack Visualization (for blends) */}
-              {namedResolution.stackingOptions.length > 0 && namedResolution.primaryBlend.length > 1 && (
-                <div className="mb-12 pt-8 border-t border-white/5">
-                  <div className="text-xs uppercase tracking-wider text-white/40 mb-4">
-                    Optional Stacking Layout
-                  </div>
-                  {namedResolution.stackingOptions.map((plan, planIndex) => (
-                    <div key={planIndex} className="mb-6">
-                      <div className="text-sm text-white/70 mb-3">{plan.name}</div>
-                      <div className="space-y-3">
-                        {plan.segments.map((segment, segIndex) => (
-                          <div key={segIndex} className="flex items-center gap-4 text-xs">
-                            <div className="w-16 text-white/50 uppercase tracking-wider">
-                              {segment.position}
-                            </div>
-                            <div className="flex-1">
-                              <div className="flex items-center justify-between mb-1">
-                                <span className="text-white/80">{segment.strainName}</span>
-                                <span className="text-white/50 font-mono">{segment.percentage}%</span>
-                              </div>
-                              <div className="text-white/40">{segment.purpose}</div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                      <div className="text-xs text-white/40 mt-3 italic">
-                        {plan.rationale}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            */}
-            
-            {/* Adjustment Controls */}
-            {intent && (
+          {/* 
+          Old resolution UI code removed - see git history for reference
+          This was replaced with the new ResolutionPanel component
+          */}
+          
+          {/* Adjustment Controls */}
+          {intent && (
                 <div className="border-t border-white/5 pt-8 space-y-8">
                   <div className="text-xs uppercase tracking-wider text-white/40 mb-6">
                     Adjustment Controls
@@ -1360,22 +1291,20 @@ export default function GOLineCalculator() {
                       />
                     </div>
                   </div>
+                  
+                  {/* Rationale Summary */}
+                  {namedResolution?.rationaleSummary && (
+                    <div className="mt-8 pt-6 border-t border-white/5">
+                      <div className="text-xs uppercase tracking-wider text-white/40 mb-3">
+                        Resolution Rationale
+                      </div>
+                      <div className="text-sm text-white/60 leading-relaxed">
+                        {namedResolution.rationaleSummary}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
-
-              {/* Rationale Summary */}
-              {namedResolution.rationaleSummary && (
-                <div className="mt-8 pt-6 border-t border-white/5">
-                  <div className="text-xs uppercase tracking-wider text-white/40 mb-3">
-                    Resolution Rationale
-                  </div>
-                  <div className="text-sm text-white/60 leading-relaxed">
-                    {namedResolution.rationaleSummary}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
 
           {/* Conversation Output - Only show if no structured resolution */}
           {(conversation.length > 0 || isProcessing) && !outcome && (
