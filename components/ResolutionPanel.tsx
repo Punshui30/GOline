@@ -92,12 +92,21 @@ function BlendBars({ cultivars }: { cultivars: ResolvedCultivar[] }) {
  * Vertical pre-roll representation with color-coded layers
  */
 function PhysicalStackVisualization({ cultivars, stack }: { cultivars: ResolvedCultivar[]; stack?: ResolvedStack }) {
+  // Type for layer
+  type Layer = { name: string; role: CultivarRole; height: number };
+  
   // If we have a stack structure, use it; otherwise use blend order
-  const layers = stack ? [
-    stack.top && { name: stack.top, role: 'accent' as CultivarRole, height: 25 },
-    stack.middle && { name: stack.middle, role: 'foundation' as CultivarRole, height: 50 },
-    { name: stack.bottom, role: 'modulator' as CultivarRole, height: 25 },
-  ].filter(Boolean) : cultivars.map(c => ({
+  const layers: Layer[] = stack ? (() => {
+    const stackLayers: (Layer | undefined)[] = [];
+    if (stack.top) {
+      stackLayers.push({ name: stack.top, role: 'accent' as CultivarRole, height: 25 });
+    }
+    if (stack.middle) {
+      stackLayers.push({ name: stack.middle, role: 'foundation' as CultivarRole, height: 50 });
+    }
+    stackLayers.push({ name: stack.bottom, role: 'modulator' as CultivarRole, height: 25 });
+    return stackLayers.filter((l): l is Layer => l !== undefined);
+  })() : cultivars.map(c => ({
     name: c.name,
     role: c.role,
     height: c.percentage,
