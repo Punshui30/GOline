@@ -743,7 +743,7 @@ export default function GOLineCalculator() {
     if (recognitionRef.current && isListening) {
       try {
         explicitStopRef.current = true; // Mark as explicit stop
-      recognitionRef.current.stop();
+        recognitionRef.current.stop();
         // Transcript will be finalized in onend handler
       } catch (err) {
         console.error('Failed to stop recognition:', err);
@@ -1299,9 +1299,10 @@ export default function GOLineCalculator() {
                   ))}
                 </div>
               )}
-
-              {/* Adjustment Controls */}
-              {intent && (
+            */}
+            
+            {/* Adjustment Controls */}
+            {intent && (
                 <div className="border-t border-white/5 pt-8 space-y-8">
                   <div className="text-xs uppercase tracking-wider text-white/40 mb-6">
                     Adjustment Controls
@@ -1588,6 +1589,5 @@ export default function GOLineCalculator() {
       </div>
     </main>
   );
-}
 }
 
