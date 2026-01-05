@@ -577,12 +577,16 @@ function ComputingState() {
  */
 export default function ResolutionPanel({ blend, intent, onAdjust, isComputing }: ResolutionPanelProps) {
   // Computing / Evaluation State - Show when resolver is actively working
-  // Only show when: isProcessing true, intent parsing complete, no clarification pending
+  // Timing rules:
+  // - Display immediately when resolve action is initiated
+  // - Remove instantly when resolver returns resolved or rejected
+  // - Do not persist after resolution completes
   if (isComputing) {
     return <ComputingState />;
   }
   
   // PART 4: Hard Guards - Must have both blend and intent to render
+  // If we have no blend/intent and not computing, don't render anything
   if (!blend || !intent) {
     return null; // No resolution data yet
   }

@@ -1286,6 +1286,7 @@ export default function GOLineCalculator() {
           {/* Deterministic Resolution Panel - NO CHAT-STYLE OUTPUT */}
           {/* STEP 1: Chat-style rendering is DISABLED - removed all conversation.map JSX */}
           {/* Show ResolutionPanel when computing OR when we have resolution data */}
+          {/* Computing state: Only show when actively resolving (not during clarification) */}
           {(isProcessing || resolvedBlend || intent) && (
             <ResolutionPanel
               blend={resolvedBlend}
@@ -1294,7 +1295,12 @@ export default function GOLineCalculator() {
                 cognitiveEndurance: intent.cognitiveEndurance,
                 anxietySensitivity: intent.anxietySensitivity || 0.5,
               } : null}
-              isComputing={isProcessing && (!resolvedBlend || !intent)}
+              isComputing={
+                isProcessing && 
+                phase !== 'GUIDED' && // Not during clarification
+                !guidance?.clarificationNeeded?.length && // No pending questions
+                (!resolvedBlend || !intent) // Resolution not yet complete
+              }
               onAdjust={(adjustments) => {
                 if (!intent) return;
                 const adjustedIntent: OutcomeIntent = {
