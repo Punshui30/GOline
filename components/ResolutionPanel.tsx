@@ -332,48 +332,177 @@ function AdjustmentControls({
  * Invalid Resolution State Component
  * Renders when resolution fails validation
  */
-function InvalidResolutionState({ failure }: { failure: ResolvedBlend['failure'] }) {
+function InvalidResolutionState({ 
+  failure, 
+  intent, 
+  onAdjust 
+}: { 
+  failure: ResolvedBlend['failure'];
+  intent?: {
+    activationTarget: number;
+    cognitiveEndurance: number;
+    anxietySensitivity: number;
+  };
+  onAdjust?: (adjustments: {
+    activationTarget: number;
+    cognitiveEndurance: number;
+    anxietySensitivity: number;
+  }) => void;
+}) {
+  const getFailureTitle = () => {
+    if (!failure) return 'Unable to Resolve Blend';
+    
+    switch (failure.reason) {
+      case 'INSUFFICIENT_DISTINCT_CULTIVARS':
+        return 'Insufficient Distinct Cultivars';
+      case 'INVENTORY_TOO_NARROW':
+        return 'Inventory Too Narrow';
+      case 'CONSTRAINT_CONFLICT':
+        return 'Constraint Conflict';
+      case 'PERCENTAGE_INVALID':
+        return 'Invalid Composition';
+      default:
+        return 'Unable to Resolve Blend';
+    }
+  };
+
   const getFailureMessage = () => {
     if (!failure) return 'Unable to resolve a valid blend from the current inventory.';
     
     switch (failure.reason) {
       case 'INSUFFICIENT_DISTINCT_CULTIVARS':
-        return 'Not enough distinct cultivars available for a balanced blend.';
+        return 'The current constraints require multiple distinct cultivars.\nOnly one qualifying cultivar is available.';
       case 'INVENTORY_TOO_NARROW':
-        return 'Current inventory is too narrow to satisfy the constraints.';
+        return 'Current inventory is too narrow to satisfy the constraints.\nNot enough distinct cultivars available for a balanced blend.';
       case 'CONSTRAINT_CONFLICT':
-        return 'Current anxiety and intensity constraints conflict with available strains.';
+        return 'Current anxiety and intensity constraints conflict with available strains.\nNo valid composition satisfies all invariants.';
       case 'PERCENTAGE_INVALID':
-        return 'Blend composition percentages are invalid.';
+        return 'Blend composition percentages are invalid.\nCannot create a valid blend with the current constraints.';
       default:
         return 'Unable to resolve a valid blend from the current inventory.';
     }
   };
 
+  const getRationalePoints = () => {
+    if (!failure) return [];
+    
+    switch (failure.reason) {
+      case 'INSUFFICIENT_DISTINCT_CULTIVARS':
+        return [
+          'Constraint requires diversity ≥ 2 distinct cultivars',
+          'Only one qualifying cultivar available in inventory',
+          'No valid composition satisfies all invariants',
+        ];
+      case 'INVENTORY_TOO_NARROW':
+        return [
+          'Inventory contains insufficient cultivar diversity',
+          'Constraints exclude remaining inventory options',
+          'No valid composition satisfies all invariants',
+        ];
+      case 'CONSTRAINT_CONFLICT':
+        return [
+          'Anxiety sensitivity constraints conflict with activation targets',
+          'Available strains cannot satisfy all constraint requirements',
+          'No valid composition satisfies all invariants',
+        ];
+      case 'PERCENTAGE_INVALID':
+        return [
+          'Blend percentages must sum to exactly 100%',
+          'Each cultivar must be ≥ 5% and ≤ 85%',
+          'No valid composition satisfies all invariants',
+        ];
+      default:
+        return ['No valid composition satisfies all invariants'];
+    }
+  };
+
   return (
     <div className="border-t border-white/10 pt-12 pb-8 mb-16">
+      {/* Error Header */}
       <div className="mb-8">
-        <h2 className="text-lg font-medium text-white mb-2">
-          Unable to Resolve Valid Blend
+        <h2 className="text-lg font-medium text-white mb-3">
+          [ {getFailureTitle()} ]
         </h2>
-        <p className="text-sm text-white/70 leading-relaxed">
+        <div className="text-sm text-white/70 leading-relaxed whitespace-pre-line">
           {getFailureMessage()}
-        </p>
-        {failure?.details && (
-          <p className="text-xs text-white/50 mt-2">
-            {failure.details}
-          </p>
-        )}
+        </div>
       </div>
       
-      <div className="space-y-3">
-        <div className="text-xs uppercase tracking-wider text-white/40 mb-2">
-          Action Options
+      {/* Action Buttons */}
+      <div className="mb-12 flex flex-wrap gap-3">
+        <button
+          onClick={() => {
+            // Adjust constraints - could trigger a modal or adjustment UI
+            if (onAdjust && intent) {
+              // Slightly relax constraints as a starting point
+              onAdjust({
+                activationTarget: Math.max(0.3, Math.min(0.7, intent.activationTarget)),
+                cognitiveEndurance: Math.max(0.4, Math.min(0.8, intent.cognitiveEndurance)),
+                anxietySensitivity: Math.max(0.2, Math.min(0.6, intent.anxietySensitivity)),
+              });
+            }
+          }}
+          className="px-4 py-2 bg-white/10 hover:bg-white/15 border border-white/20 rounded-sm text-sm text-white/80 transition-colors"
+        >
+          [ Adjust constraints ]
+        </button>
+        <button
+          onClick={() => {
+            // Change inventory - placeholder for future inventory selection
+            console.log('Change inventory action');
+          }}
+          className="px-4 py-2 bg-white/10 hover:bg-white/15 border border-white/20 rounded-sm text-sm text-white/80 transition-colors"
+        >
+          [ Change inventory ]
+        </button>
+        <button
+          onClick={() => {
+            // Allow single-cultivar blend - relax diversity requirement
+            if (onAdjust && intent) {
+              // Adjust to allow single cultivar
+              onAdjust({
+                activationTarget: intent.activationTarget,
+                cognitiveEndurance: intent.cognitiveEndurance,
+                anxietySensitivity: intent.anxietySensitivity,
+              });
+            }
+          }}
+          className="px-4 py-2 bg-white/10 hover:bg-white/15 border border-white/20 rounded-sm text-sm text-white/80 transition-colors"
+        >
+          [ Allow single-cultivar blend ]
+        </button>
+      </div>
+
+      {/* Adjustment Controls - Visually Muted */}
+      {intent && onAdjust && (
+        <div className="mb-12 opacity-40">
+          <div className="text-xs uppercase tracking-wider text-white/40 mb-2">
+            ────────────────────────
+          </div>
+          <div className="text-xs uppercase tracking-wider text-white/30 mb-6">
+            Adjustment Controls
+          </div>
+          <div className="text-xs text-white/20 italic mb-4">
+            (sliders active, visually muted)
+          </div>
+          <AdjustmentControls intent={intent} onAdjust={onAdjust} />
         </div>
-        <div className="space-y-2 text-sm text-white/60">
-          <div>• Adjust constraints</div>
-          <div>• Change inventory</div>
-          <div>• Switch to non-stacked blend</div>
+      )}
+
+      {/* Resolution Rationale */}
+      <div className="mb-8">
+        <div className="text-xs uppercase tracking-wider text-white/40 mb-4">
+          ────────────────────────
+        </div>
+        <div className="text-xs uppercase tracking-wider text-white/40 mb-4">
+          Resolution Rationale
+        </div>
+        <div className="space-y-2">
+          {getRationalePoints().map((point, idx) => (
+            <div key={idx} className="text-xs text-white/50 leading-relaxed">
+              • {point}
+            </div>
+          ))}
         </div>
       </div>
     </div>
@@ -387,46 +516,62 @@ function InvalidResolutionState({ failure }: { failure: ResolvedBlend['failure']
 export default function ResolutionPanel({ blend, intent, onAdjust }: ResolutionPanelProps) {
   // PART 4: Hard Guards - Check for failure state first
   if (blend.failure) {
-    return <InvalidResolutionState failure={blend.failure} />;
+    return <InvalidResolutionState failure={blend.failure} intent={intent} onAdjust={onAdjust} />;
   }
   
   // PART 4: Hard Guards - Enforce naming rule
   if (!blend.cultivars || blend.cultivars.length === 0) {
-    return <InvalidResolutionState failure={{
-      status: 'invalid',
-      reason: 'INSUFFICIENT_DISTINCT_CULTIVARS',
-      details: 'Resolution without cultivar names is invalid',
-    }} />;
+    return <InvalidResolutionState 
+      failure={{
+        status: 'invalid',
+        reason: 'INSUFFICIENT_DISTINCT_CULTIVARS',
+        details: 'Resolution without cultivar names is invalid',
+      }}
+      intent={intent}
+      onAdjust={onAdjust}
+    />;
   }
   
   // PART 4: Hard Guards - Validate all cultivars have names
   const hasUnnamedCultivars = blend.cultivars.some(c => !c.name || c.name.trim() === '');
   if (hasUnnamedCultivars) {
-    return <InvalidResolutionState failure={{
-      status: 'invalid',
-      reason: 'INSUFFICIENT_DISTINCT_CULTIVARS',
-      details: 'Resolution contains unnamed cultivars - invalid resolution',
-    }} />;
+    return <InvalidResolutionState 
+      failure={{
+        status: 'invalid',
+        reason: 'INSUFFICIENT_DISTINCT_CULTIVARS',
+        details: 'Resolution contains unnamed cultivars - invalid resolution',
+      }}
+      intent={intent}
+      onAdjust={onAdjust}
+    />;
   }
   
   // PART 4: Hard Guards - Check for duplicate cultivars
   const uniqueNames = new Set(blend.cultivars.map(c => c.name));
   if (uniqueNames.size < 2 && blend.cultivars.length > 1) {
-    return <InvalidResolutionState failure={{
-      status: 'invalid',
-      reason: 'INSUFFICIENT_DISTINCT_CULTIVARS',
-      details: 'Blend contains duplicate cultivars - invalid composition',
-    }} />;
+    return <InvalidResolutionState 
+      failure={{
+        status: 'invalid',
+        reason: 'INSUFFICIENT_DISTINCT_CULTIVARS',
+        details: 'Blend contains duplicate cultivars - invalid composition',
+      }}
+      intent={intent}
+      onAdjust={onAdjust}
+    />;
   }
   
   // PART 4: Hard Guards - Check percentage integrity
   const totalPercentage = blend.cultivars.reduce((sum, c) => sum + c.percentage, 0);
   if (Math.abs(totalPercentage - 100) > 0.01) {
-    return <InvalidResolutionState failure={{
-      status: 'invalid',
-      reason: 'PERCENTAGE_INVALID',
-      details: `Percentages sum to ${totalPercentage}%, must be exactly 100%`,
-    }} />;
+    return <InvalidResolutionState 
+      failure={{
+        status: 'invalid',
+        reason: 'PERCENTAGE_INVALID',
+        details: `Percentages sum to ${totalPercentage}%, must be exactly 100%`,
+      }}
+      intent={intent}
+      onAdjust={onAdjust}
+    />;
   }
   
   // PART 3: Visual-First Rendering Priority
