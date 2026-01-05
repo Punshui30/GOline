@@ -1517,9 +1517,14 @@ export function resolveOutcome(intent: OutcomeIntent): OutcomeResult {
   }
 
   // Filter eligible cultivars
+  const totalCultivars = canonicalChemotypes.length;
   const eligibleCultivars = canonicalChemotypes.filter(
     cv => !isNonPsychoactive(cv) || cv.id.includes('cbd') || cv.id.includes('cbg')
   );
+  
+  // STEP 2: NON-NEGOTIABLE LOGGING
+  console.debug('INVENTORY_TOTAL', totalCultivars);
+  console.debug('INVENTORY_ELIGIBLE', eligibleCultivars.length);
   
   // PART 3: Log eligible cultivars count (dev-only)
   if (process.env.NODE_ENV === 'development') {
