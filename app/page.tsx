@@ -18,6 +18,7 @@ import { StrategicGuidance, ClarificationQuestion } from '@/lib/strategicGuidanc
 import { DEMO_MENU } from '@/data/demoMenu';
 import { translateGuidanceToIntent } from '@/lib/guidanceToIntent';
 import { convertToResolvedBlend } from '@/lib/convertToResolvedBlend';
+import { computeIntentConfidence, filterRedundantQuestions, shouldClarify } from '@/lib/intentConfidence';
 
 type InteractionPhase = 'FREE' | 'GUIDED' | 'LOCKED';
 
@@ -886,11 +887,31 @@ export default function GOLineCalculator() {
       setGuidance(guidanceData.guidance);
       setLlmFailed(false);
 
-      // Transition to GUIDED phase if clarifications needed, otherwise go straight to LOCKED
-      if (guidanceData.guidance.clarificationNeeded && guidanceData.guidance.clarificationNeeded.length > 0) {
+      // HARD CLARIFICATION GATE: Compute confidence and enforce threshold
+      const confidence = computeIntentConfidence(guidanceData.guidance);
+      
+      // Filter out redundant questions that restate already-expressed preferences
+      const filteredQuestions = guidanceData.guidance.clarificationNeeded 
+        ? filterRedundantQuestions(guidanceData.guidance.clarificationNeeded, confidence)
+        : [];
+      
+      // Only ask if confidence is below threshold AND questions remain after filtering
+      const needsClarification = shouldClarify(confidence) && filteredQuestions.length > 0;
+      
+      if (needsClarification) {
+        // Update guidance with filtered questions
+        setGuidance({
+          ...guidanceData.guidance,
+          clarificationNeeded: filteredQuestions,
+        });
         setPhase('GUIDED');
       } else {
-        // No clarifications needed, proceed directly to locked
+        // Confidence is high enough - proceed directly to resolution
+        // Clear any questions that were filtered out
+        setGuidance({
+          ...guidanceData.guidance,
+          clarificationNeeded: [],
+        });
         handleLock(guidanceData.guidance, {});
       }
     } catch (err) {

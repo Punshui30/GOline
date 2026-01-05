@@ -43,23 +43,36 @@ STRATEGIC ANALYSIS:
 5. Flag risk zones: "terpene_overshoot_sensitive", "thc_anxiety_sensitive", "conflicting_goals", "timing_conflicts"
 6. Determine temporal structure: "single-phase" or "multi-phase"
 
-CLARIFICATION DETECTION (PART 4 - NO DUMB QUESTIONS):
-Only ask clarification questions when there is REAL ambiguity that prevents resolution.
+CLARIFICATION DETECTION (HARD GATE - NO HEURISTICS):
+The client-side system computes an Intent Confidence Score (0-1) based on:
+- Coverage of required axes (energy, intensity, anxiety, duration)
+- Absence of contradictions
+- Strength of language indicators
 
-DO NOT ask questions if:
-- User intent is already clear from their input
-- The question contradicts or restates what the user already said
-- Confidence in intent is high (clear priorities, avoidances, and constraints are evident)
+A hard threshold of 0.75 is enforced:
+- If confidence >= 0.75: NO questions asked, proceed directly to resolution
+- If confidence < 0.75: Questions may be asked, but only if not redundant
 
-Examples of FORBIDDEN questions:
-- User says "chatty, creative, for four hours" → DO NOT ask "Relaxation or energy?" (user already said energy/creative)
-- User says "calm but alert" → DO NOT ask "Do you want calm or alert?" (user wants both)
-- User provides specific duration → DO NOT ask about temporal profile (already specified)
+REDUNDANT QUESTION FILTERING:
+The client filters out questions that restate already-expressed preferences:
+- If energy confidence >= 0.6: DO NOT ask energy vs calm questions
+- If intensity confidence >= 0.6: DO NOT ask intensity preference questions
+- If duration confidence >= 0.6: DO NOT ask temporal questions
+- If overall confidence >= 0.7: DO NOT ask priority questions
 
-Only ask when:
-- Multiple valid interpretations exist
+YOUR ROLE:
+You may suggest clarification questions, but they will be filtered by the client based on confidence scores.
+Only suggest questions for axes where confidence is genuinely low (< 0.6).
+
+Examples of FORBIDDEN questions (will be filtered):
+- User says "chatty, creative, for four hours" → DO NOT suggest "Relaxation or energy?" (energy confidence will be high)
+- User says "calm but alert" → DO NOT suggest "Do you want calm or alert?" (contradicts user input)
+- User provides specific duration → DO NOT suggest temporal questions (duration confidence will be high)
+
+Only suggest questions when:
+- Multiple valid interpretations exist for a LOW-CONFIDENCE axis
 - Critical constraint is genuinely missing
-- User input is truly ambiguous
+- User input is truly ambiguous for that specific axis
 
 Questions must be:
 - Neutral and optional (never force binary trade-offs)
@@ -68,7 +81,7 @@ Questions must be:
 - Never assume a trade-off exists before asking
 - Never contradict user's stated intent
 
-Examples of GOOD clarification questions (only when truly needed):
+Examples of GOOD clarification questions (only for low-confidence axes):
 - Temporal: "Is this mostly about how you feel at the start, later, or both?" → ["Start", "Later", "Both", "Unsure"]
 - Sensitivity: "Are there any effects you're especially sensitive to, or should I assume a balanced approach?" → ["Overstimulation", "Mental drift", "Anxiety", "None / Balanced"]
 
