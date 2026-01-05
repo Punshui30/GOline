@@ -371,9 +371,9 @@ function InvalidResolutionState({
     
     switch (failure.reason) {
       case 'INSUFFICIENT_DISTINCT_CULTIVARS':
-        return 'The current constraints require multiple distinct cultivars.\nOnly one qualifying cultivar is available.';
+        return 'Only one strain in the current inventory meets all active constraints.\nThe current constraints require multiple distinct cultivars.';
       case 'INVENTORY_TOO_NARROW':
-        return 'Current inventory is too narrow to satisfy the constraints.\nNot enough distinct cultivars available for a balanced blend.';
+        return 'Only one strain in the current inventory meets all active constraints.\nCurrent inventory is too narrow to satisfy the constraints.';
       case 'CONSTRAINT_CONFLICT':
         return 'Current anxiety and intensity constraints conflict with available strains.\nNo valid composition satisfies all invariants.';
       case 'PERCENTAGE_INVALID':

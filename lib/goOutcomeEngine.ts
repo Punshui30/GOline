@@ -1378,12 +1378,20 @@ export function resolveOutcome(intent: OutcomeIntent): OutcomeResult {
       overshootTolerance: Math.max(0, Math.min(1, phase2.overshootTolerance)),
     };
 
-    const scoredCultivars = canonicalChemotypes
-      .filter(cv => !isNonPsychoactive(cv) || cv.id.includes('cbd') || cv.id.includes('cbg'))
-      .map(cultivar => {
-        const scored = scoreCultivar(cultivar, clampedIntent1);
-        return { cultivar, ...scored };
-      });
+    // Filter eligible cultivars
+    const eligibleCultivars = canonicalChemotypes.filter(
+      cv => !isNonPsychoactive(cv) || cv.id.includes('cbd') || cv.id.includes('cbg')
+    );
+    
+    // Log eligible cultivars count (dev-only)
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[RESOLVER] Eligible cultivars after constraints: ${eligibleCultivars.length}`);
+    }
+
+    const scoredCultivars = eligibleCultivars.map(cultivar => {
+      const scored = scoreCultivar(cultivar, clampedIntent1);
+      return { cultivar, ...scored };
+    });
 
     scoredCultivars.sort((a, b) => b.score - a.score);
 
@@ -1487,12 +1495,20 @@ export function resolveOutcome(intent: OutcomeIntent): OutcomeResult {
     temporalProfile: intent.temporalProfile || 'single-phase',
   };
 
-  const scoredCultivars = canonicalChemotypes
-    .filter(cv => !isNonPsychoactive(cv) || cv.id.includes('cbd') || cv.id.includes('cbg'))
-    .map(chemotype => {
-      const scored = scoreCultivar(chemotype, clampedIntent);
-      return { cultivar: chemotype, ...scored };
-    });
+  // Filter eligible cultivars
+  const eligibleCultivars = canonicalChemotypes.filter(
+    cv => !isNonPsychoactive(cv) || cv.id.includes('cbd') || cv.id.includes('cbg')
+  );
+  
+  // Log eligible cultivars count (dev-only)
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`[RESOLVER] Eligible cultivars after constraints: ${eligibleCultivars.length}`);
+  }
+
+  const scoredCultivars = eligibleCultivars.map(chemotype => {
+    const scored = scoreCultivar(chemotype, clampedIntent);
+    return { cultivar: chemotype, ...scored };
+  });
 
   scoredCultivars.sort((a, b) => b.score - a.score);
 
