@@ -826,11 +826,10 @@ export default function GOLineCalculator() {
   };
 
   // Phase 1: Free expression - get strategic guidance from LLM
+  // NEW: Direct input handler - takes userInput and calls /api/intent
   const handleAnalyze = async () => {
-    if (!axesClosed) return; // Gate: only run when axes are closed
-
-    if (!intentSummary.trim()) {
-      setError('No intent summary available');
+    if (!userInput.trim()) {
+      setError('Please enter your desired outcome');
       return;
     }
 
@@ -844,10 +843,11 @@ export default function GOLineCalculator() {
     setPhase('FREE');
 
     try {
-      const guidanceResponse = await fetch('/api/resolution', {
+      // Call /api/intent with userInput directly
+      const guidanceResponse = await fetch('/api/intent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contextSummary: intentSummary }),
+        body: JSON.stringify({ text: userInput.trim() }),
       });
 
       console.log('[CLIENT] Guidance response status:', guidanceResponse.status);
