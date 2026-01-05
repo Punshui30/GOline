@@ -551,6 +551,27 @@ function InvalidResolutionState({
 }
 
 /**
+ * Computing / Evaluation State Component
+ * Shows while deterministic engine is actively evaluating candidates
+ */
+function ComputingState() {
+  return (
+    <div className="border-t border-white/10 pt-12 pb-8 mb-16">
+      <div className="flex justify-center items-center min-h-[400px]">
+        <Image
+          src="/computing-evaluation.png"
+          alt="Computing resolution"
+          width={800}
+          height={200}
+          className="w-full h-auto max-w-2xl"
+          priority
+        />
+      </div>
+    </div>
+  );
+}
+
+/**
  * ResolutionPanel Component
  * Main panel for structured resolution output
  */
