@@ -611,9 +611,6 @@ export default function GOLineCalculator() {
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const interimTranscriptRef = useRef<string>('');
   const explicitStopRef = useRef<boolean>(false); // Track explicit user stop vs auto-end
-  
-  // Navigation to explore mode
-  const [showExploreLink, setShowExploreLink] = useState(true);
 
   // Phase management
   const [phase, setPhase] = useState<InteractionPhase>('FREE');
@@ -1118,7 +1115,7 @@ export default function GOLineCalculator() {
           </div>
 
           {/* Explore Mode Link */}
-          {showExploreLink && phase === 'FREE' && (
+          {phase === 'FREE' && (
             <div className="mb-8">
               <a
                 href="/explore"
