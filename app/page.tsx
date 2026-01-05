@@ -1589,5 +1589,3 @@ export default function GOLineCalculator() {
     </main>
   );
 }
-}
-
