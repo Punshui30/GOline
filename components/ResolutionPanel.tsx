@@ -8,7 +8,6 @@
  */
 
 import { useState, useRef } from 'react';
-import Image from 'next/image';
 
 /**
  * Single source of truth for resolution output
@@ -524,18 +523,15 @@ function InvalidResolutionState({
   // PART 6: Invalid resolutions show no stack, no cultivar list
   return (
     <div className="border-t border-white/10 pt-12 pb-8 mb-16">
-      {/* Inventory / Label Input State - At the very top when inventory is required */}
+      {/* Inventory / Label Input State - Lightweight UI panel */}
       {isInventoryRequired && (
-        <div className="mb-8">
-          <Image
-            src="/inventory-label-input.png"
-            alt="Add what you have"
-            width={800}
-            height={200}
-            className="w-full h-auto mb-6"
-            priority
-          />
+        <div className="mb-8 p-6 bg-white/5 border border-white/10 rounded-sm">
           <div className="text-center">
+            <div className="mb-4">
+              <svg className="w-12 h-12 mx-auto text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" />
+              </svg>
+            </div>
             <h2 className="text-lg font-medium text-white mb-2">
               Add What You Have
             </h2>
@@ -604,17 +600,20 @@ function InvalidResolutionState({
         </div>
       )}
 
-      {/* Rejection / Invalid Candidate Asset - Above Resolution Rationale */}
+      {/* Rejection / Invalid Candidate State - Lightweight UI panel */}
       {failure && (
-        <div className="mb-8">
-          <Image
-            src="/rejection-invalid-candidate.png"
-            alt="Resolution rejected - invalid candidate"
-            width={800}
-            height={200}
-            className="w-full h-auto"
-            priority
-          />
+        <div className="mb-8 p-6 bg-white/5 border border-white/10 rounded-sm">
+          <div className="flex items-center gap-3 mb-2">
+            <svg className="w-6 h-6 text-white/50 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+            <div className="text-sm font-medium text-white/70 uppercase tracking-wider">
+              Resolution Rejected
+            </div>
+          </div>
+          <div className="text-xs text-white/50 ml-9">
+            Invalid candidate — constraint violations detected
+          </div>
         </div>
       )}
 
@@ -647,20 +646,25 @@ function InvalidResolutionState({
 
 /**
  * Computing / Evaluation State Component
+ * Lightweight UI panel with SVG spinner
  * Shows while deterministic engine is actively evaluating candidates
  */
 function ComputingState() {
   return (
     <div className="border-t border-white/10 pt-12 pb-8 mb-16">
-      <div className="flex justify-center items-center min-h-[400px]">
-        <Image
-          src="/computing-evaluation.png"
-          alt="Computing resolution"
-          width={800}
-          height={200}
-          className="w-full h-auto max-w-2xl"
-          priority
-        />
+      <div className="flex flex-col justify-center items-center min-h-[400px]">
+        <div className="mb-6">
+          <svg className="w-16 h-16 text-white/40 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+          </svg>
+        </div>
+        <div className="text-sm font-medium text-white/60 uppercase tracking-wider mb-2">
+          Evaluating Candidates
+        </div>
+        <div className="text-xs text-white/40">
+          Deterministic resolver active
+        </div>
       </div>
     </div>
   );
@@ -756,17 +760,17 @@ export default function ResolutionPanel({ blend, intent, onAdjust, isComputing }
   
   return (
     <div className="border-t border-white/10 pt-12 pb-8 mb-16">
-      {/* Success Confirmation Asset - Non-modal, non-blocking header */}
+      {/* Success Confirmation State - Lightweight UI panel */}
       {isValidResolution && (
-        <div className="mb-8">
-          <Image
-            src="/success-confirmation.png"
-            alt="Resolution successful"
-            width={800}
-            height={200}
-            className="w-full h-auto"
-            priority
-          />
+        <div className="mb-8 p-6 bg-white/5 border border-white/10 rounded-sm">
+          <div className="flex items-center gap-3">
+            <svg className="w-6 h-6 text-white/60 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            <div className="text-sm font-medium text-white/70 uppercase tracking-wider">
+              Resolution Successful
+            </div>
+          </div>
         </div>
       )}
       
