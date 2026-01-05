@@ -8,6 +8,7 @@
  */
 
 import { useState, useRef } from 'react';
+import Image from 'next/image';
 
 /**
  * Single source of truth for resolution output
@@ -600,8 +601,29 @@ export default function ResolutionPanel({ blend, intent, onAdjust }: ResolutionP
   }
   
   // PART 3: Visual-First Rendering Priority
+  // Success confirmation: Only render when all validations pass
+  const isValidResolution = 
+    !blend.failure &&
+    blend.cultivars.length > 0 &&
+    blend.cultivars.every(c => c.name && c.name.trim() !== '') &&
+    Math.abs(blend.cultivars.reduce((sum, c) => sum + c.percentage, 0) - 100) < 0.01;
+  
   return (
     <div className="border-t border-white/10 pt-12 pb-8 mb-16">
+      {/* Success Confirmation Asset - Non-modal, non-blocking header */}
+      {isValidResolution && (
+        <div className="mb-8">
+          <Image
+            src="/success-confirmation.png"
+            alt="Resolution successful"
+            width={800}
+            height={200}
+            className="w-full h-auto"
+            priority
+          />
+        </div>
+      )}
+      
       <div className="mb-10">
         <h2 className="text-lg font-medium text-white mb-1">
           GO Line — Resolved Composition
