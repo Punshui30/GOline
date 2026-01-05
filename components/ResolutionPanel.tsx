@@ -44,17 +44,18 @@ export interface ResolvedBlend {
 }
 
 interface ResolutionPanelProps {
-  blend: ResolvedBlend;
+  blend: ResolvedBlend | null;
   intent: {
     activationTarget: number;
     cognitiveEndurance: number;
     anxietySensitivity: number;
-  };
-  onAdjust: (adjustments: {
+  } | null;
+  onAdjust?: (adjustments: {
     activationTarget: number;
     cognitiveEndurance: number;
     anxietySensitivity: number;
   }) => void;
+  isComputing?: boolean; // True when resolver is actively evaluating candidates
 }
 
 /**
