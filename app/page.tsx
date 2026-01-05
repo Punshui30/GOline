@@ -1277,7 +1277,7 @@ export default function GOLineCalculator() {
                     disabled={isProcessing || !userInput.trim()}
                   className="px-4 py-2 text-white/80 text-sm hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors uppercase tracking-wider"
                   >
-                    {isProcessing ? (axesClosed ? 'Resolving...' : 'Processing...') : (axesClosed ? 'Resolve' : 'Send')}
+                    {isProcessing ? 'Resolving...' : 'Resolve'}
                   </button>
                 )}
               </div>
