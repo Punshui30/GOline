@@ -828,6 +828,17 @@ export default function GOLineCalculator() {
   // Phase 1: Free expression - get strategic guidance from LLM
   // NEW: Direct input handler - takes userInput and calls /api/intent
   const handleAnalyze = async () => {
+    // VOICE STATE FIX #6: stopListening() must be called automatically on Analyze
+    if (isListening && recognitionRef.current) {
+      try {
+        explicitStopRef.current = true;
+        recognitionRef.current.stop();
+        setIsListening(false);
+      } catch (err) {
+        console.error('Failed to stop recognition during analyze:', err);
+      }
+    }
+    
     if (!userInput.trim()) {
       setError('Please enter your desired outcome');
       return;
