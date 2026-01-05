@@ -12,6 +12,7 @@ import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { OutcomeIntent, ResolutionType } from '@/lib/goOutcomeEngine';
 import { resolveOutcome } from '@/lib/goOutcomeEngine';
+import { resolveToNamedStrains, type NamedResolutionResult } from '@/lib/namedResolution';
 import { StrategicGuidance, ClarificationQuestion } from '@/lib/strategicGuidance';
 import { DEMO_MENU } from '@/data/demoMenu';
 import { translateGuidanceToIntent } from '@/lib/guidanceToIntent';
@@ -617,6 +618,7 @@ export default function GOLineCalculator() {
   // Phase 3 (LOCKED): Engine inputs and outputs
   const [intent, setIntent] = useState<OutcomeIntent | null>(null);
   const [outcome, setOutcome] = useState<OutcomeResult | null>(null);
+  const [namedResolution, setNamedResolution] = useState<NamedResolutionResult | null>(null);
 
   // Conversational state (seam for LLM separation)
   const [conversation, setConversation] = useState<{ role: 'user' | 'assistant'; content: string }[]>([]);
@@ -908,9 +910,28 @@ export default function GOLineCalculator() {
     try {
       const resolvedOutcome = resolveOutcome(translatedIntent);
       setOutcome(resolvedOutcome);
+      
+      // MANDATORY: Convert to named resolution (maps abstract chemotypes to actual strain names)
+      const named = resolveToNamedStrains(resolvedOutcome);
+      setNamedResolution(named);
     } catch (err) {
       console.error('Resolution error:', err);
       setError('Failed to resolve outcome. Please try again.');
+    }
+  };
+  
+  // Re-resolution handler for sliders (triggers full pipeline with named outputs)
+  const handleReResolution = (adjustedIntent: OutcomeIntent) => {
+    try {
+      const resolvedOutcome = resolveOutcome(adjustedIntent);
+      setOutcome(resolvedOutcome);
+      
+      // MANDATORY: Re-resolve to named strains
+      const named = resolveToNamedStrains(resolvedOutcome);
+      setNamedResolution(named);
+    } catch (err) {
+      console.error('Re-resolution error:', err);
+      setError('Failed to re-resolve with adjustments.');
     }
   };
 
@@ -964,6 +985,9 @@ export default function GOLineCalculator() {
                     setUserInput('Social & upbeat');
                     const resolvedOutcome = resolveOutcome(preset);
                     setOutcome(resolvedOutcome);
+                    // MANDATORY: Convert to named resolution
+                    const named = resolveToNamedStrains(resolvedOutcome);
+                    setNamedResolution(named);
                     setLlmFailed(false);
                     setError(null);
                   }}
@@ -985,6 +1009,9 @@ export default function GOLineCalculator() {
                     setUserInput('Relaxed but alert');
                     const resolvedOutcome = resolveOutcome(preset);
                     setOutcome(resolvedOutcome);
+                    // MANDATORY: Convert to named resolution
+                    const named = resolveToNamedStrains(resolvedOutcome);
+                    setNamedResolution(named);
                     setLlmFailed(false);
                     setError(null);
                   }}
@@ -1022,6 +1049,9 @@ export default function GOLineCalculator() {
                     setUserInput('Wind down later');
                     const resolvedOutcome = resolveOutcome(preset);
                     setOutcome(resolvedOutcome);
+                    // MANDATORY: Convert to named resolution
+                    const named = resolveToNamedStrains(resolvedOutcome);
+                    setNamedResolution(named);
                     setLlmFailed(false);
                     setError(null);
                   }}
@@ -1135,41 +1165,172 @@ export default function GOLineCalculator() {
               </div>
             </div>
 
-          {/* Blend Resolution Panel - ONLY from structured OutcomeResult */}
-          {/* Hard constraint: UI renders recommendations ONLY from resolveOutcome() output */}
-          {outcome && outcome.tiers && outcome.tiers.length > 0 && outcome.tiers[0].composition && (
-            <BlendResolutionPanel 
-              blend={{
-                components: outcome.tiers[0].composition.map(c => ({
-                  name: c.displayName,
-                  percentage: c.ratio,
-                })),
-                isValid: true,
-              }}
-              onAdjustment={(type, value) => {
-                // Re-run engine with adjusted intent
-                if (intent) {
-                  const adjustedIntent: OutcomeIntent = { ...intent };
+          {/* Named Resolution Panel - MANDATORY: All recommendations must have named strains */}
+          {namedResolution && namedResolution.primaryBlend.length > 0 && (
+            <div className="border-t border-white/10 pt-12 pb-8 mb-16">
+              <div className="mb-10">
+                <div className="text-xs uppercase tracking-wider text-white/40 mb-1">
+                  GO Line — Named Resolution
+                </div>
+                <div className="text-xs text-white/30 mb-6">
+                  {namedResolution.primaryBlend.length === 1 
+                    ? 'Single cultivar recommendation'
+                    : 'Multi-cultivar blend recommendation'}
+                </div>
+              </div>
+
+              {/* Named Strain Visualization */}
+              <div className="mb-12 space-y-6">
+                {namedResolution.primaryBlend.map((strain, index) => (
+                  <div key={index} className="space-y-2">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="text-sm font-medium text-white tracking-tight">
+                        {strain.strainName}
+                      </div>
+                      <div className="text-sm text-white/50 font-mono">
+                        {strain.percentage}%
+                      </div>
+                    </div>
+                    <div className="relative h-1.5 bg-white/5 overflow-hidden">
+                      <div
+                        className="h-full bg-white/25 transition-all"
+                        style={{ width: `${strain.percentage}%` }}
+                      />
+                    </div>
+                    {strain.rationale && (
+                      <div className="text-xs text-white/40 mt-1">
+                        {strain.rationale}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Stack Visualization (for blends) */}
+              {namedResolution.stackingOptions.length > 0 && namedResolution.primaryBlend.length > 1 && (
+                <div className="mb-12 pt-8 border-t border-white/5">
+                  <div className="text-xs uppercase tracking-wider text-white/40 mb-4">
+                    Optional Stacking Layout
+                  </div>
+                  {namedResolution.stackingOptions.map((plan, planIndex) => (
+                    <div key={planIndex} className="mb-6">
+                      <div className="text-sm text-white/70 mb-3">{plan.name}</div>
+                      <div className="space-y-3">
+                        {plan.segments.map((segment, segIndex) => (
+                          <div key={segIndex} className="flex items-center gap-4 text-xs">
+                            <div className="w-16 text-white/50 uppercase tracking-wider">
+                              {segment.position}
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="text-white/80">{segment.strainName}</span>
+                                <span className="text-white/50 font-mono">{segment.percentage}%</span>
+                              </div>
+                              <div className="text-white/40">{segment.purpose}</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="text-xs text-white/40 mt-3 italic">
+                        {plan.rationale}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Adjustment Controls */}
+              {intent && (
+                <div className="border-t border-white/5 pt-8 space-y-8">
+                  <div className="text-xs uppercase tracking-wider text-white/40 mb-6">
+                    Adjustment Controls
+                  </div>
                   
-                  if (type === 'energy') {
-                    adjustedIntent.activationTarget = value / 100;
-                  } else if (type === 'duration') {
-                    adjustedIntent.cognitiveEndurance = value / 100;
-                  } else if (type === 'pain') {
-                    // Map pain relief to activation (more pain relief = less activation)
-                    adjustedIntent.activationTarget = 1 - (value / 100);
-                  }
-                  
-                  setIntent(adjustedIntent);
-                  try {
-                    const resolvedOutcome = resolveOutcome(adjustedIntent);
-                    setOutcome(resolvedOutcome);
-                  } catch (err) {
-                    console.error('Adjustment resolution error:', err);
-                  }
-                }
-              }}
-            />
+                  <div className="space-y-6">
+                    {/* Energy ↔ Calm */}
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="text-xs text-white/60 uppercase tracking-wider">Energy ↔ Calm</div>
+                        <div className="text-xs text-white/40 font-mono">
+                          {Math.round(intent.activationTarget * 100)}
+                        </div>
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={Math.round(intent.activationTarget * 100)}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value);
+                          const adjustedIntent: OutcomeIntent = { ...intent, activationTarget: val / 100 };
+                          setIntent(adjustedIntent);
+                          handleReResolution(adjustedIntent);
+                        }}
+                        className="w-full h-1 bg-white/5 appearance-none cursor-pointer accent-white/20"
+                      />
+                    </div>
+
+                    {/* Duration ↔ Intensity */}
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="text-xs text-white/60 uppercase tracking-wider">Duration ↔ Intensity</div>
+                        <div className="text-xs text-white/40 font-mono">
+                          {Math.round(intent.cognitiveEndurance * 100)}
+                        </div>
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={Math.round(intent.cognitiveEndurance * 100)}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value);
+                          const adjustedIntent: OutcomeIntent = { ...intent, cognitiveEndurance: val / 100 };
+                          setIntent(adjustedIntent);
+                          handleReResolution(adjustedIntent);
+                        }}
+                        className="w-full h-1 bg-white/5 appearance-none cursor-pointer accent-white/20"
+                      />
+                    </div>
+
+                    {/* Pain Relief ↔ Cognitive Lift */}
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="text-xs text-white/60 uppercase tracking-wider">Pain Relief ↔ Cognitive Lift</div>
+                        <div className="text-xs text-white/40 font-mono">
+                          {Math.round((1 - intent.activationTarget) * 100)}
+                        </div>
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={Math.round((1 - intent.activationTarget) * 100)}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value);
+                          const adjustedIntent: OutcomeIntent = { ...intent, activationTarget: 1 - (val / 100) };
+                          setIntent(adjustedIntent);
+                          handleReResolution(adjustedIntent);
+                        }}
+                        className="w-full h-1 bg-white/5 appearance-none cursor-pointer accent-white/20"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Rationale Summary */}
+              {namedResolution.rationaleSummary && (
+                <div className="mt-8 pt-6 border-t border-white/5">
+                  <div className="text-xs uppercase tracking-wider text-white/40 mb-3">
+                    Resolution Rationale
+                  </div>
+                  <div className="text-sm text-white/60 leading-relaxed">
+                    {namedResolution.rationaleSummary}
+                  </div>
+                </div>
+              )}
+            </div>
           )}
 
           {/* Conversation Output - Only show if no structured resolution */}
