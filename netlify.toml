@@ -7,5 +7,3 @@
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
-  [plugins.inputs]
-    publish = ".netlify/output/public"
