@@ -330,6 +330,20 @@ interface StackedPhase {
 }
 
 /**
+ * Resolution failure contract
+ * Returned when resolver cannot produce a valid blend
+ */
+export type ResolutionFailure = {
+  status: 'invalid';
+  reason:
+    | 'INSUFFICIENT_DISTINCT_CULTIVARS'
+    | 'INVENTORY_TOO_NARROW'
+    | 'CONSTRAINT_CONFLICT'
+    | 'PERCENTAGE_INVALID';
+  details?: string;
+};
+
+/**
  * Formal output contract for GO Line deterministic engine
  * 
  * This is the SINGLE SOURCE OF TRUTH for all recommendations.
@@ -345,6 +359,87 @@ export interface OutcomeResult {
   confidenceScore?: number; // 0-1: How well the resolution matches intent
   tradeoffs?: string[]; // Explicit tradeoffs made in this resolution
   rationaleSummary?: string; // Human-readable explanation (non-secret methodology)
+  
+  // Failure state (mutually exclusive with tiers/phases)
+  failure?: ResolutionFailure;
+}
+
+/**
+ * Validate blend composition according to PART 1 rules
+ * Returns null if valid, ResolutionFailure if invalid
+ */
+function validateBlendComposition(
+  composition: BlendComponent[],
+  isStacked: boolean = false
+): ResolutionFailure | null {
+  // Rule 1: Cultivar Uniqueness
+  const uniqueIds = new Set(composition.map(c => c.cultivarId));
+  const minRequired = isStacked ? 3 : 2;
+  
+  if (uniqueIds.size < minRequired) {
+    return {
+      status: 'invalid',
+      reason: 'INSUFFICIENT_DISTINCT_CULTIVARS',
+      details: `Blend requires at least ${minRequired} distinct cultivars, found ${uniqueIds.size}`,
+    };
+  }
+  
+  // Check for duplicate cultivars in different roles
+  const cultivarIdsByRole = new Map<string, Set<string>>();
+  for (const comp of composition) {
+    if (!cultivarIdsByRole.has(comp.role)) {
+      cultivarIdsByRole.set(comp.role, new Set());
+    }
+    cultivarIdsByRole.get(comp.role)!.add(comp.cultivarId);
+  }
+  
+  // Ensure no cultivar appears in multiple roles
+  const allCultivarIds = Array.from(uniqueIds);
+  for (const id of allCultivarIds) {
+    let roleCount = 0;
+    for (const roleSet of cultivarIdsByRole.values()) {
+      if (roleSet.has(id)) roleCount++;
+    }
+    if (roleCount > 1) {
+      return {
+        status: 'invalid',
+        reason: 'INSUFFICIENT_DISTINCT_CULTIVARS',
+        details: `Cultivar ${id} appears in multiple roles - invalid composition`,
+      };
+    }
+  }
+  
+  // Rule 2: Percentage Integrity
+  const totalPercentage = composition.reduce((sum, c) => sum + c.ratio, 0);
+  if (Math.abs(totalPercentage - 100) > 0.01) {
+    return {
+      status: 'invalid',
+      reason: 'PERCENTAGE_INVALID',
+      details: `Percentages sum to ${totalPercentage}%, must be exactly 100%`,
+    };
+  }
+  
+  // Each cultivar must be >= 5%
+  for (const comp of composition) {
+    if (comp.ratio < 5) {
+      return {
+        status: 'invalid',
+        reason: 'PERCENTAGE_INVALID',
+        details: `Cultivar ${comp.cultivarId} has ${comp.ratio}%, minimum is 5%`,
+      };
+    }
+    
+    // No single cultivar may exceed 85% unless explicitly configured
+    if (comp.ratio > 85 && composition.length > 1) {
+      return {
+        status: 'invalid',
+        reason: 'PERCENTAGE_INVALID',
+        details: `Cultivar ${comp.cultivarId} exceeds 85% in multi-cultivar blend`,
+      };
+    }
+  }
+  
+  return null; // Valid
 }
 
 function computeBlendMetrics(
@@ -748,33 +843,39 @@ function generateTiers(
 
   // Add Optimal tier if blend improves over single cultivar or is acceptable
   if (optimalFit > 0.4 && optimalBlend.length > 1) {
-    const isCorrective = optimalBlend.some(c => c.role === 'corrective');
-    tiers.push({
-      tierLabel: 'Optimal',
-      compositionStrategy: strategy,
-      resolutionType: optimalResolutionType,
-      composition: optimalBlend,
-      compositionFit: optimalFit,
-      systemNotes: [
-        optimalBlend.length > 2 ? 
-          'Multi-component blend for precise chemical control' :
-          'Corrective blend to reduce overshoot risk',
-        'Highest precision with additional components',
-      ],
-      whyChosen: [
-        isCorrective 
-          ? 'Corrective component reduces THC overshoot and anxiety risk while preserving terpene intent.'
-          : 'Multiple components allow precise terpene ratio control for optimal outcome alignment.',
-        'Highest chemical precision achievable within safety constraints.',
-      ],
-      tradeoffs: [
-        'Increased component count adds complexity.',
-        optimalBlend.length > 2 
-          ? 'More components may introduce subtle interaction effects.'
-          : 'Sedation constrained to avoid early-phase penalties.',
-      ],
-      instructions: generateInstructions(strategy, optimalBlend, optimalResolutionType),
-    });
+    // Validate blend before adding
+    const validationError = validateBlendComposition(optimalBlend, false);
+    if (validationError) {
+      // Skip invalid blend - don't add to tiers
+    } else {
+      const isCorrective = optimalBlend.some(c => c.role === 'corrective');
+      tiers.push({
+        tierLabel: 'Optimal',
+        compositionStrategy: strategy,
+        resolutionType: optimalResolutionType,
+        composition: optimalBlend,
+        compositionFit: optimalFit,
+        systemNotes: [
+          optimalBlend.length > 2 ? 
+            'Multi-component blend for precise chemical control' :
+            'Corrective blend to reduce overshoot risk',
+          'Highest precision with additional components',
+        ],
+        whyChosen: [
+          isCorrective 
+            ? 'Corrective component reduces THC overshoot and anxiety risk while preserving terpene intent.'
+            : 'Multiple components allow precise terpene ratio control for optimal outcome alignment.',
+          'Highest chemical precision achievable within safety constraints.',
+        ],
+        tradeoffs: [
+          'Increased component count adds complexity.',
+          optimalBlend.length > 2 
+            ? 'More components may introduce subtle interaction effects.'
+            : 'Sedation constrained to avoid early-phase penalties.',
+        ],
+        instructions: generateInstructions(strategy, optimalBlend, optimalResolutionType),
+      });
+    }
   }
 
   // Tier B: Balanced (2-component blend)
@@ -796,26 +897,32 @@ function generateTiers(
     
     // Add Balanced tier if it's reasonable (fit > 0.35) and not worse than single by more than 0.1
     if (fit2 > 0.35 && fit2 >= singleResult.compositionFit - 0.1) {
-      tiers.push({
-        tierLabel: 'Balanced',
-        compositionStrategy: strategy,
-        resolutionType: resolutionType2,
-        composition: compositional2,
-        compositionFit: fit2,
-        systemNotes: [
-          'Two-component blend for improved balance',
-          'Moderate precision with fewer components',
-        ],
-        whyChosen: [
-          'Two-component blend provides better terpene balance than a single profile.',
-          'Moderate complexity while improving chemical precision.',
-        ],
-        tradeoffs: [
-          'Lower precision than optimal tier with more components.',
-          'Fewer components means less fine-grained control.',
-        ],
-        instructions: generateInstructions(strategy, compositional2, resolutionType2),
-      });
+      // Validate blend before adding
+      const validationError = validateBlendComposition(compositional2, false);
+      if (validationError) {
+        // Skip invalid blend - don't add to tiers
+      } else {
+        tiers.push({
+          tierLabel: 'Balanced',
+          compositionStrategy: strategy,
+          resolutionType: resolutionType2,
+          composition: compositional2,
+          compositionFit: fit2,
+          systemNotes: [
+            'Two-component blend for improved balance',
+            'Moderate precision with fewer components',
+          ],
+          whyChosen: [
+            'Two-component blend provides better terpene balance than a single profile.',
+            'Moderate complexity while improving chemical precision.',
+          ],
+          tradeoffs: [
+            'Lower precision than optimal tier with more components.',
+            'Fewer components means less fine-grained control.',
+          ],
+          instructions: generateInstructions(strategy, compositional2, resolutionType2),
+        });
+      }
     }
   }
 
@@ -1326,10 +1433,16 @@ export function resolveOutcome(intent: OutcomeIntent): OutcomeResult {
       
       const phases = generateStackedResolution(clampedIntent1, clampedIntent2, clampedIntent3);
       
+      // Validate all phases
+      const validPhases = phases.filter(phase => {
+        const validationError = validateBlendComposition(phase.composition, true);
+        return validationError === null;
+      });
+      
       // Add explanation to first phase about why stacking was chosen
-      if (phases.length > 0) {
-        const is3Phase = phases.length === 3;
-        phases[0].systemNotes.unshift(
+      if (validPhases.length > 0) {
+        const is3Phase = validPhases.length === 3;
+        validPhases[0].systemNotes.unshift(
           is3Phase 
             ? 'Your goal includes multiple phases: opening, core, and landing.'
             : 'Your goal included both an active phase and a later wind-down phase.',
@@ -1342,10 +1455,24 @@ export function resolveOutcome(intent: OutcomeIntent): OutcomeResult {
       // Never silently collapse stacked into blended
       const minRequiredPhases = phase3 ? 3 : 2;
       
+      if (validPhases.length < minRequiredPhases) {
+        return {
+          resolutionMode: 'STACKED',
+          phases: [],
+          refused: true,
+          tiers: undefined,
+          failure: {
+            status: 'invalid',
+            reason: 'INSUFFICIENT_DISTINCT_CULTIVARS',
+            details: `Stacked resolution requires ${minRequiredPhases} valid phases, but only ${validPhases.length} passed validation.`,
+          },
+        };
+      }
+      
       return {
         resolutionMode: 'STACKED',
-        phases,
-        refused: phases.length < minRequiredPhases,
+        phases: validPhases,
+        refused: false,
         tiers: undefined, // Explicitly undefined to ensure UI shows stacked mode
       };
     }
@@ -1376,12 +1503,36 @@ export function resolveOutcome(intent: OutcomeIntent): OutcomeResult {
       resolutionMode: 'BLENDED',
       tiers: [],
       refused: true,
+      failure: {
+        status: 'invalid',
+        reason: 'INVENTORY_TOO_NARROW',
+        details: 'Unable to generate valid blend from available cultivars. Inventory may be too narrow or constraints too restrictive.',
+      },
+    };
+  }
+
+  // Validate all tiers before returning
+  const validTiers = tiers.filter(tier => {
+    const validationError = validateBlendComposition(tier.composition, false);
+    return validationError === null;
+  });
+
+  if (validTiers.length === 0) {
+    return {
+      resolutionMode: 'BLENDED',
+      tiers: [],
+      refused: true,
+      failure: {
+        status: 'invalid',
+        reason: 'INSUFFICIENT_DISTINCT_CULTIVARS',
+        details: 'All generated blends failed validation - insufficient distinct cultivars or invalid composition.',
+      },
     };
   }
 
   return {
     resolutionMode: 'BLENDED',
-    tiers,
+    tiers: validTiers,
     refused: false,
   };
 }

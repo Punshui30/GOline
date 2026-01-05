@@ -30,6 +30,11 @@ export interface ResolvedStack {
 export interface ResolvedBlend {
   cultivars: ResolvedCultivar[];
   stack?: ResolvedStack;
+  failure?: {
+    status: 'invalid';
+    reason: 'INSUFFICIENT_DISTINCT_CULTIVARS' | 'INVENTORY_TOO_NARROW' | 'CONSTRAINT_CONFLICT' | 'PERCENTAGE_INVALID';
+    details?: string;
+  };
 }
 
 interface ResolutionPanelProps {
@@ -83,9 +88,73 @@ function BlendBars({ cultivars }: { cultivars: ResolvedCultivar[] }) {
 }
 
 /**
- * StackedConsumptionView Component
+ * Physical Stack Visualization Component (PRIMARY)
+ * Vertical pre-roll representation with color-coded layers
+ */
+function PhysicalStackVisualization({ cultivars, stack }: { cultivars: ResolvedCultivar[]; stack?: ResolvedStack }) {
+  // If we have a stack structure, use it; otherwise use blend order
+  const layers = stack ? [
+    stack.top && { name: stack.top, role: 'accent' as CultivarRole, height: 25 },
+    stack.middle && { name: stack.middle, role: 'foundation' as CultivarRole, height: 50 },
+    { name: stack.bottom, role: 'modulator' as CultivarRole, height: 25 },
+  ].filter(Boolean) : cultivars.map(c => ({
+    name: c.name,
+    role: c.role,
+    height: c.percentage,
+  }));
+
+  const getRoleColor = (role: CultivarRole) => {
+    if (role === 'foundation') return 'bg-white/30';
+    if (role === 'modulator') return 'bg-white/20';
+    return 'bg-white/15';
+  };
+
+  const getRoleBorder = (role: CultivarRole) => {
+    if (role === 'foundation') return 'border-white/20';
+    if (role === 'modulator') return 'border-white/15';
+    return 'border-white/10';
+  };
+
+  return (
+    <div className="mb-12">
+      <div className="text-xs uppercase tracking-wider text-white/40 mb-6">
+        Physical Stack Layout
+      </div>
+      
+      {/* Vertical pre-roll representation */}
+      <div className="flex items-end justify-center gap-2 mb-6" style={{ height: '300px' }}>
+        <div className="flex flex-col-reverse items-center w-32">
+          {layers.map((layer, idx) => (
+            <div
+              key={idx}
+              className={`w-full ${getRoleColor(layer.role)} ${getRoleBorder(layer.role)} border-2 rounded-t-sm transition-all`}
+              style={{ 
+                height: `${layer.height}%`,
+                minHeight: '40px',
+              }}
+            >
+              <div className="h-full flex items-center justify-center p-2">
+                <div className="text-center">
+                  <div className="text-xs font-medium text-white mb-1">
+                    {layer.name}
+                  </div>
+                  <div className="text-[10px] uppercase tracking-wider text-white/50">
+                    {layer.role === 'foundation' ? 'Foundation' : 
+                     layer.role === 'modulator' ? 'Modulator' : 'Accent'}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * StackedConsumptionView Component (LEGACY - kept for backward compatibility)
  * Visual blocks for temporal consumption layout
- * Must be visual blocks, not text
  */
 function StackedConsumptionView({ stack }: { stack?: ResolvedStack }) {
   if (!stack) return null;
@@ -251,21 +320,107 @@ function AdjustmentControls({
 }
 
 /**
+ * Invalid Resolution State Component
+ * Renders when resolution fails validation
+ */
+function InvalidResolutionState({ failure }: { failure: ResolvedBlend['failure'] }) {
+  const getFailureMessage = () => {
+    if (!failure) return 'Unable to resolve a valid blend from the current inventory.';
+    
+    switch (failure.reason) {
+      case 'INSUFFICIENT_DISTINCT_CULTIVARS':
+        return 'Not enough distinct cultivars available for a balanced blend.';
+      case 'INVENTORY_TOO_NARROW':
+        return 'Current inventory is too narrow to satisfy the constraints.';
+      case 'CONSTRAINT_CONFLICT':
+        return 'Current anxiety and intensity constraints conflict with available strains.';
+      case 'PERCENTAGE_INVALID':
+        return 'Blend composition percentages are invalid.';
+      default:
+        return 'Unable to resolve a valid blend from the current inventory.';
+    }
+  };
+
+  return (
+    <div className="border-t border-white/10 pt-12 pb-8 mb-16">
+      <div className="mb-8">
+        <h2 className="text-lg font-medium text-white mb-2">
+          Unable to Resolve Valid Blend
+        </h2>
+        <p className="text-sm text-white/70 leading-relaxed">
+          {getFailureMessage()}
+        </p>
+        {failure?.details && (
+          <p className="text-xs text-white/50 mt-2">
+            {failure.details}
+          </p>
+        )}
+      </div>
+      
+      <div className="space-y-3">
+        <div className="text-xs uppercase tracking-wider text-white/40 mb-2">
+          Action Options
+        </div>
+        <div className="space-y-2 text-sm text-white/60">
+          <div>• Adjust constraints</div>
+          <div>• Change inventory</div>
+          <div>• Switch to non-stacked blend</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
  * ResolutionPanel Component
  * Main panel for structured resolution output
  */
 export default function ResolutionPanel({ blend, intent, onAdjust }: ResolutionPanelProps) {
-  // Enforce naming rule: Every resolution MUST have cultivar names
-  if (!blend.cultivars || blend.cultivars.length === 0) {
-    throw new Error('Resolution without cultivar names is invalid');
+  // PART 4: Hard Guards - Check for failure state first
+  if (blend.failure) {
+    return <InvalidResolutionState failure={blend.failure} />;
   }
   
-  // Validate all cultivars have names
+  // PART 4: Hard Guards - Enforce naming rule
+  if (!blend.cultivars || blend.cultivars.length === 0) {
+    return <InvalidResolutionState failure={{
+      status: 'invalid',
+      reason: 'INSUFFICIENT_DISTINCT_CULTIVARS',
+      details: 'Resolution without cultivar names is invalid',
+    }} />;
+  }
+  
+  // PART 4: Hard Guards - Validate all cultivars have names
   const hasUnnamedCultivars = blend.cultivars.some(c => !c.name || c.name.trim() === '');
   if (hasUnnamedCultivars) {
-    throw new Error('Resolution contains unnamed cultivars - invalid resolution');
+    return <InvalidResolutionState failure={{
+      status: 'invalid',
+      reason: 'INSUFFICIENT_DISTINCT_CULTIVARS',
+      details: 'Resolution contains unnamed cultivars - invalid resolution',
+    }} />;
   }
   
+  // PART 4: Hard Guards - Check for duplicate cultivars
+  const uniqueNames = new Set(blend.cultivars.map(c => c.name));
+  if (uniqueNames.size < 2 && blend.cultivars.length > 1) {
+    return <InvalidResolutionState failure={{
+      status: 'invalid',
+      reason: 'INSUFFICIENT_DISTINCT_CULTIVARS',
+      details: 'Blend contains duplicate cultivars - invalid composition',
+    }} />;
+  }
+  
+  // PART 4: Hard Guards - Check percentage integrity
+  const totalPercentage = blend.cultivars.reduce((sum, c) => sum + c.percentage, 0);
+  if (Math.abs(totalPercentage - 100) > 0.01) {
+    return <InvalidResolutionState failure={{
+      status: 'invalid',
+      reason: 'PERCENTAGE_INVALID',
+      details: `Percentages sum to ${totalPercentage}%, must be exactly 100%`,
+    }} />;
+  }
+  
+  // PART 3: Visual-First Rendering Priority
   return (
     <div className="border-t border-white/10 pt-12 pb-8 mb-16">
       <div className="mb-10">
@@ -279,10 +434,20 @@ export default function ResolutionPanel({ blend, intent, onAdjust }: ResolutionP
         </div>
       </div>
       
+      {/* 1. PRIMARY: Physical Stack Visualization */}
+      <PhysicalStackVisualization cultivars={blend.cultivars} stack={blend.stack} />
+      
+      {/* 2. SECONDARY: Cultivar Breakdown */}
       <BlendBars cultivars={blend.cultivars} />
       
-      {blend.cultivars.length > 1 && <StackedConsumptionView stack={blend.stack} />}
+      {/* 3. TERTIARY: Metadata (optional) */}
+      {blend.stack && (
+        <div className="mb-8 text-xs text-white/40">
+          {blend.stack.top && blend.stack.middle ? '3-phase stacked consumption plan' : '2-phase stacked consumption plan'}
+        </div>
+      )}
       
+      {/* Adjustment Controls - render exactly once */}
       <AdjustmentControls intent={intent} onAdjust={onAdjust} />
     </div>
   );

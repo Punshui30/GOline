@@ -915,12 +915,19 @@ export default function GOLineCalculator() {
       const resolvedOutcome = resolveOutcome(translatedIntent);
       setOutcome(resolvedOutcome);
       
+      // Check for failure state
+      if (resolvedOutcome.failure) {
+        const blend = convertToResolvedBlend({ primaryBlend: [], stackingOptions: [], confidenceScore: 0, tradeoffs: [], rationaleSummary: '', resolutionMode: 'BLENDED' }, resolvedOutcome);
+        setResolvedBlend(blend);
+        return;
+      }
+      
       // MANDATORY: Convert to named resolution (maps abstract chemotypes to actual strain names)
       const named = resolveToNamedStrains(resolvedOutcome);
       setNamedResolution(named);
       
       // Convert to ResolvedBlend format for ResolutionPanel
-      const blend = convertToResolvedBlend(named);
+      const blend = convertToResolvedBlend(named, resolvedOutcome);
       setResolvedBlend(blend);
     } catch (err) {
       console.error('Resolution error:', err);
@@ -934,12 +941,19 @@ export default function GOLineCalculator() {
       const resolvedOutcome = resolveOutcome(adjustedIntent);
       setOutcome(resolvedOutcome);
       
+      // Check for failure state
+      if (resolvedOutcome.failure) {
+        const blend = convertToResolvedBlend({ primaryBlend: [], stackingOptions: [], confidenceScore: 0, tradeoffs: [], rationaleSummary: '', resolutionMode: 'BLENDED' }, resolvedOutcome);
+        setResolvedBlend(blend);
+        return;
+      }
+      
       // MANDATORY: Re-resolve to named strains
       const named = resolveToNamedStrains(resolvedOutcome);
       setNamedResolution(named);
       
       // Update ResolvedBlend
-      const blend = convertToResolvedBlend(named);
+      const blend = convertToResolvedBlend(named, resolvedOutcome);
       setResolvedBlend(blend);
     } catch (err) {
       console.error('Re-resolution error:', err);
@@ -999,11 +1013,17 @@ export default function GOLineCalculator() {
                     setUserInput('Social & upbeat');
                     const resolvedOutcome = resolveOutcome(preset);
                     setOutcome(resolvedOutcome);
-                    // MANDATORY: Convert to named resolution
-                    const named = resolveToNamedStrains(resolvedOutcome);
-                    setNamedResolution(named);
-                    const blend = convertToResolvedBlend(named);
-                    setResolvedBlend(blend);
+                    // Check for failure state
+                    if (resolvedOutcome.failure) {
+                      const blend = convertToResolvedBlend({ primaryBlend: [], stackingOptions: [], confidenceScore: 0, tradeoffs: [], rationaleSummary: '', resolutionMode: 'BLENDED' }, resolvedOutcome);
+                      setResolvedBlend(blend);
+                    } else {
+                      // MANDATORY: Convert to named resolution
+                      const named = resolveToNamedStrains(resolvedOutcome);
+                      setNamedResolution(named);
+                      const blend = convertToResolvedBlend(named, resolvedOutcome);
+                      setResolvedBlend(blend);
+                    }
                     setLlmFailed(false);
                     setError(null);
                   }}
@@ -1025,11 +1045,17 @@ export default function GOLineCalculator() {
                     setUserInput('Relaxed but alert');
                     const resolvedOutcome = resolveOutcome(preset);
                     setOutcome(resolvedOutcome);
-                    // MANDATORY: Convert to named resolution
-                    const named = resolveToNamedStrains(resolvedOutcome);
-                    setNamedResolution(named);
-                    const blend = convertToResolvedBlend(named);
-                    setResolvedBlend(blend);
+                    // Check for failure state
+                    if (resolvedOutcome.failure) {
+                      const blend = convertToResolvedBlend({ primaryBlend: [], stackingOptions: [], confidenceScore: 0, tradeoffs: [], rationaleSummary: '', resolutionMode: 'BLENDED' }, resolvedOutcome);
+                      setResolvedBlend(blend);
+                    } else {
+                      // MANDATORY: Convert to named resolution
+                      const named = resolveToNamedStrains(resolvedOutcome);
+                      setNamedResolution(named);
+                      const blend = convertToResolvedBlend(named, resolvedOutcome);
+                      setResolvedBlend(blend);
+                    }
                     setLlmFailed(false);
                     setError(null);
                   }}
@@ -1067,11 +1093,17 @@ export default function GOLineCalculator() {
                     setUserInput('Wind down later');
                     const resolvedOutcome = resolveOutcome(preset);
                     setOutcome(resolvedOutcome);
-                    // MANDATORY: Convert to named resolution
-                    const named = resolveToNamedStrains(resolvedOutcome);
-                    setNamedResolution(named);
-                    const blend = convertToResolvedBlend(named);
-                    setResolvedBlend(blend);
+                    // Check for failure state
+                    if (resolvedOutcome.failure) {
+                      const blend = convertToResolvedBlend({ primaryBlend: [], stackingOptions: [], confidenceScore: 0, tradeoffs: [], rationaleSummary: '', resolutionMode: 'BLENDED' }, resolvedOutcome);
+                      setResolvedBlend(blend);
+                    } else {
+                      // MANDATORY: Convert to named resolution
+                      const named = resolveToNamedStrains(resolvedOutcome);
+                      setNamedResolution(named);
+                      const blend = convertToResolvedBlend(named, resolvedOutcome);
+                      setResolvedBlend(blend);
+                    }
                     setLlmFailed(false);
                     setError(null);
                   }}
