@@ -760,7 +760,10 @@ export default function GOLineCalculator() {
     }
   };
 
-  // Conversational LLM handler (seam for separation)
+  // LEGACY: Conversational LLM handler (seam for separation)
+  // QUARANTINED: This function is no longer called from main flow
+  // Only kept for potential future "Conversational Mode" feature
+  // Main flow always uses handleAnalyze() which has proper clarification gate
   const handleConversation = async (input: string) => {
     if (!input.trim() || isProcessing) return;
 
@@ -1265,14 +1268,11 @@ export default function GOLineCalculator() {
                 {phase === 'FREE' && (
                   <button
                     onClick={() => {
-                      console.debug('INPUT_SUBMITTED', { text: userInput, axesClosed });
-                      if (axesClosed) {
-                        console.debug('CALLING_HANDLE_ANALYZE', true);
-                        handleAnalyze();
-                      } else {
-                        console.debug('CALLING_HANDLE_CONVERSATION', true);
-                        handleConversation(userInput);
-                      }
+                      console.debug('INPUT_SUBMITTED', { text: userInput });
+                      console.debug('CALLING_HANDLE_ANALYZE', true);
+                      // FIXED: Always call handleAnalyze() - never use legacy handleConversation()
+                      // handleAnalyze() already handles confidence checking and clarification logic
+                      handleAnalyze();
                     }}
                     disabled={isProcessing || !userInput.trim()}
                   className="px-4 py-2 text-white/80 text-sm hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors uppercase tracking-wider"
