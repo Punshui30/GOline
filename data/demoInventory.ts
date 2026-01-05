@@ -104,7 +104,7 @@ console.debug(`[DEMO_INVENTORY] Loaded ${demoInventory.length} cultivars with nu
  * Convert Cultivar format to CanonicalChemotype format for resolver compatibility
  * This adapter allows the resolver to use the simpler Cultivar schema
  */
-import { type CanonicalChemotype } from './canonicalChemotypes';
+import { type CanonicalChemotype } from '@/data/canonicalChemotypes';
 
 export function convertCultivarToChemotype(cultivar: Cultivar): CanonicalChemotype {
   // Calculate total terpene load
