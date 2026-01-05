@@ -508,6 +508,20 @@ function InvalidResolutionState({
         </div>
       )}
 
+      {/* Rejection / Invalid Candidate Asset - Above Resolution Rationale */}
+      {failure && (
+        <div className="mb-8">
+          <Image
+            src="/rejection-invalid-candidate.png"
+            alt="Resolution rejected - invalid candidate"
+            width={800}
+            height={200}
+            className="w-full h-auto"
+            priority
+          />
+        </div>
+      )}
+
       {/* Resolution Rationale - PART 7: Bullet-only, factual */}
       <div className="mb-8">
         <div className="text-xs uppercase tracking-wider text-white/40 mb-4">
