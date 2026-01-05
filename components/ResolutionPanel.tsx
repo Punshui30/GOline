@@ -96,28 +96,79 @@ function BlendBars({ cultivars }: { cultivars: ResolvedCultivar[] }) {
 
 /**
  * Physical Stack Visualization Component (PRIMARY)
- * Vertical pre-roll representation with color-coded layers
+ * Deterministic stacked pre-roll visualization using divs
+ * Each layer's height is proportional to its resolved percentage
+ * Ordered by stack position (bottom → middle → top)
  */
 function PhysicalStackVisualization({ cultivars, stack }: { cultivars: ResolvedCultivar[]; stack?: ResolvedStack }) {
-  // Type for layer
-  type Layer = { name: string; role: CultivarRole; height: number };
+  // Type for layer with deterministic percentage
+  type Layer = { 
+    name: string; 
+    role: CultivarRole; 
+    percentage: number; // Actual resolved percentage (0-100)
+    stackPosition: 'bottom' | 'middle' | 'top' | 'blend'; // Stack ordering
+  };
   
-  // If we have a stack structure, use it; otherwise use blend order
-  const layers: Layer[] = stack ? (() => {
-    const stackLayers: (Layer | undefined)[] = [];
-    if (stack.top) {
-      stackLayers.push({ name: stack.top, role: 'accent' as CultivarRole, height: 25 });
+  // Build layers deterministically from resolved blend data
+  const layers: Layer[] = (() => {
+    if (stack) {
+      // Stacked resolution: order by stack position (bottom → middle → top)
+      const stackLayers: Layer[] = [];
+      
+      // Bottom layer (always present in stack)
+      const bottomCultivar = cultivars.find(c => c.name === stack.bottom);
+      if (bottomCultivar) {
+        stackLayers.push({
+          name: bottomCultivar.name,
+          role: bottomCultivar.role,
+          percentage: bottomCultivar.percentage,
+          stackPosition: 'bottom',
+        });
+      }
+      
+      // Middle layer (optional, 3-phase stack)
+      if (stack.middle) {
+        const middleCultivar = cultivars.find(c => c.name === stack.middle);
+        if (middleCultivar) {
+          stackLayers.push({
+            name: middleCultivar.name,
+            role: middleCultivar.role,
+            percentage: middleCultivar.percentage,
+            stackPosition: 'middle',
+          });
+        }
+      }
+      
+      // Top layer (optional, 2-phase or 3-phase stack)
+      if (stack.top) {
+        const topCultivar = cultivars.find(c => c.name === stack.top);
+        if (topCultivar) {
+          stackLayers.push({
+            name: topCultivar.name,
+            role: topCultivar.role,
+            percentage: topCultivar.percentage,
+            stackPosition: 'top',
+          });
+        }
+      }
+      
+      return stackLayers;
+    } else {
+      // Blended resolution: use cultivar order with actual percentages
+      return cultivars.map(c => ({
+        name: c.name,
+        role: c.role,
+        percentage: c.percentage,
+        stackPosition: 'blend' as const,
+      }));
     }
-    if (stack.middle) {
-      stackLayers.push({ name: stack.middle, role: 'foundation' as CultivarRole, height: 50 });
-    }
-    stackLayers.push({ name: stack.bottom, role: 'modulator' as CultivarRole, height: 25 });
-    return stackLayers.filter((l): l is Layer => l !== undefined);
-  })() : cultivars.map(c => ({
-    name: c.name,
-    role: c.role,
-    height: c.percentage,
-  }));
+  })();
+
+  // Verify percentages sum to 100 (deterministic validation)
+  const totalPercentage = layers.reduce((sum, l) => sum + l.percentage, 0);
+  if (Math.abs(totalPercentage - 100) > 0.01) {
+    console.warn(`[STACK_VISUALIZATION] Percentages sum to ${totalPercentage}%, expected 100%`);
+  }
 
   const getRoleColor = (role: CultivarRole) => {
     if (role === 'foundation') return 'bg-white/30';
@@ -131,37 +182,52 @@ function PhysicalStackVisualization({ cultivars, stack }: { cultivars: ResolvedC
     return 'border-white/10';
   };
 
+  // Fixed container height for deterministic rendering
+  const CONTAINER_HEIGHT = 400; // pixels
+
   return (
     <div className="mb-12">
       <div className="text-xs uppercase tracking-wider text-white/40 mb-6">
         Physical Stack Layout
       </div>
       
-      {/* Vertical pre-roll representation */}
-      <div className="flex items-end justify-center gap-2 mb-6" style={{ height: '300px' }}>
-        <div className="flex flex-col-reverse items-center w-32">
-          {layers.map((layer, idx) => (
-            <div
-              key={idx}
-              className={`w-full ${getRoleColor(layer.role)} ${getRoleBorder(layer.role)} border-2 rounded-t-sm transition-all`}
-              style={{ 
-                height: `${layer.height}%`,
-                minHeight: '40px',
-              }}
-            >
-              <div className="h-full flex items-center justify-center p-2">
-                <div className="text-center">
-                  <div className="text-xs font-medium text-white mb-1">
-                    {layer.name}
-                  </div>
-                  <div className="text-[10px] uppercase tracking-wider text-white/50">
-                    {layer.role === 'foundation' ? 'Foundation' : 
-                     layer.role === 'modulator' ? 'Modulator' : 'Accent'}
+      {/* Deterministic vertical pre-roll representation */}
+      {/* Uses flex-col-reverse to stack bottom-to-top visually */}
+      <div className="flex items-end justify-center mb-6">
+        <div 
+          className="flex flex-col-reverse items-center w-40 relative"
+          style={{ height: `${CONTAINER_HEIGHT}px` }}
+        >
+          {layers.map((layer, idx) => {
+            // Calculate height in pixels from percentage
+            const heightPx = (layer.percentage / 100) * CONTAINER_HEIGHT;
+            const minHeightPx = 32; // Minimum readable height
+            
+            return (
+              <div
+                key={`${layer.name}-${idx}`}
+                className={`w-full ${getRoleColor(layer.role)} ${getRoleBorder(layer.role)} border-2 rounded-t-sm flex-shrink-0`}
+                style={{ 
+                  height: `${Math.max(heightPx, minHeightPx)}px`,
+                }}
+              >
+                <div className="h-full flex items-center justify-center p-2">
+                  <div className="text-center">
+                    <div className="text-xs font-medium text-white mb-1 leading-tight">
+                      {layer.name}
+                    </div>
+                    <div className="text-[10px] uppercase tracking-wider text-white/50 mb-1">
+                      {layer.role === 'foundation' ? 'Foundation' : 
+                       layer.role === 'modulator' ? 'Modulator' : 'Accent'}
+                    </div>
+                    <div className="text-[10px] text-white/40 font-mono">
+                      {layer.percentage.toFixed(0)}%
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>
