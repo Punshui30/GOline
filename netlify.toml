@@ -1,9 +1,5 @@
 [build]
   command = "pnpm install && pnpm build"
 
-[build.environment]
-  NODE_VERSION = "20"
-  NETLIFY_BUILD_DEBUG = "true"
-
 [[plugins]]
   package = "@netlify/plugin-nextjs"
