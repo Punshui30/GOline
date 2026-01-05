@@ -890,13 +890,29 @@ export default function GOLineCalculator() {
       // HARD CLARIFICATION GATE: Compute confidence and enforce threshold
       const confidence = computeIntentConfidence(guidanceData.guidance);
       
+      // STEP 2: NON-NEGOTIABLE LOGGING
+      console.debug('INTENT_PARSED', guidanceData.guidance);
+      console.debug('INTENT_CONFIDENCE', confidence);
+      console.debug('INTENT_COMPLETE', confidence.overall >= 0.70 || (confidence.energy >= 0.8 && confidence.anxiety >= 0.8));
+      
       // Filter out redundant questions that restate already-expressed preferences
+      const originalQuestionCount = guidanceData.guidance.clarificationNeeded?.length || 0;
       const filteredQuestions = guidanceData.guidance.clarificationNeeded 
         ? filterRedundantQuestions(guidanceData.guidance.clarificationNeeded, confidence)
         : [];
       
+      console.debug('QUESTIONS_ORIGINAL', originalQuestionCount);
+      console.debug('QUESTIONS_FILTERED', filteredQuestions.length);
+      
       // Only ask if confidence is below threshold AND questions remain after filtering
       const needsClarification = shouldClarify(confidence) && filteredQuestions.length > 0;
+      
+      console.debug('FOLLOW_UP_TRIGGERED', needsClarification);
+      console.debug('FOLLOW_UP_REASON', needsClarification ? {
+        confidenceBelowThreshold: confidence.overall < 0.70,
+        criticalAxesUnknown: !(confidence.energy >= 0.8 && confidence.anxiety >= 0.8),
+        questionsRemain: filteredQuestions.length > 0
+      } : 'NONE - proceeding to resolution');
       
       if (needsClarification) {
         // Update guidance with filtered questions
@@ -912,6 +928,7 @@ export default function GOLineCalculator() {
           ...guidanceData.guidance,
           clarificationNeeded: [],
         });
+        console.debug('RESOLUTION_ATTEMPTED', true);
         handleLock(guidanceData.guidance, {});
       }
     } catch (err) {
@@ -931,6 +948,9 @@ export default function GOLineCalculator() {
     const translatedIntent = translateGuidanceToIntent(finalGuidance, answers);
     setIntent(translatedIntent);
 
+    console.debug('RESOLUTION_ATTEMPTED', true);
+    console.debug('RESOLUTION_INTENT', translatedIntent);
+
     // Resolve outcome using deterministic engine
     try {
       const resolvedOutcome = resolveOutcome(translatedIntent);
@@ -938,10 +958,14 @@ export default function GOLineCalculator() {
       
       // Check for failure state
       if (resolvedOutcome.failure) {
+        console.debug('RESOLUTION_FAILED_REASON', resolvedOutcome.failure.reason);
+        console.debug('RESOLUTION_FAILED_DETAILS', resolvedOutcome.failure.details);
         const blend = convertToResolvedBlend({ primaryBlend: [], stackingOptions: [], confidenceScore: 0, tradeoffs: [], rationaleSummary: '', resolutionMode: 'BLENDED' }, resolvedOutcome);
         setResolvedBlend(blend);
         return;
       }
+      
+      console.debug('RESOLUTION_SUCCESS', true);
       
       // MANDATORY: Convert to named resolution (maps abstract chemotypes to actual strain names)
       const named = resolveToNamedStrains(resolvedOutcome);
@@ -1240,7 +1264,16 @@ export default function GOLineCalculator() {
             <div className="flex items-center justify-between mt-6">
                 {phase === 'FREE' && (
                   <button
-                    onClick={() => axesClosed ? handleAnalyze() : handleConversation(userInput)}
+                    onClick={() => {
+                      console.debug('INPUT_SUBMITTED', { text: userInput, axesClosed });
+                      if (axesClosed) {
+                        console.debug('CALLING_HANDLE_ANALYZE', true);
+                        handleAnalyze();
+                      } else {
+                        console.debug('CALLING_HANDLE_CONVERSATION', true);
+                        handleConversation(userInput);
+                      }
+                    }}
                     disabled={isProcessing || !userInput.trim()}
                   className="px-4 py-2 text-white/80 text-sm hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors uppercase tracking-wider"
                   >
