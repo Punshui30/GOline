@@ -1296,9 +1296,12 @@ export default function GOLineCalculator() {
                 anxietySensitivity: intent.anxietySensitivity || 0.5,
               } : null}
               isComputing={
+                // Timing rules:
+                // - Display immediately when resolve action is initiated
+                // - Remove instantly when resolver returns resolved or rejected
+                // - Do not persist after resolution completes
                 isProcessing && 
-                phase !== 'GUIDED' && // Not during clarification
-                !guidance?.clarificationNeeded?.length && // No pending questions
+                phase === 'LOCKED' && // Only during active resolution (not clarification)
                 (!resolvedBlend || !intent) // Resolution not yet complete
               }
               onAdjust={(adjustments) => {
