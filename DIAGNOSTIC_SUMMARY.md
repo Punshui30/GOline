@@ -88,3 +88,4 @@ Please help identify:
 3. Why the parser thinks the component function ends at line 984 when the return statement is at line 986
 
 
+
