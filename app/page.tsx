@@ -944,7 +944,19 @@ export default function GOLineCalculator() {
   };
 
   // Phase 3: Lock and resolve - translate guidance to intent, call engine
+  // VOICE STATE FIX #6: stopListening() must be called automatically on Resolve
   const handleLock = (finalGuidance: StrategicGuidance, answers: Record<string, string>) => {
+    // Stop voice listening before resolving
+    if (isListening && recognitionRef.current) {
+      try {
+        explicitStopRef.current = true;
+        recognitionRef.current.stop();
+        setIsListening(false);
+      } catch (err) {
+        console.error('Failed to stop recognition during resolve:', err);
+      }
+    }
+    
     setPhase('LOCKED');
     
     // Translate strategic guidance to numeric intent constraints
@@ -965,10 +977,30 @@ export default function GOLineCalculator() {
         console.debug('RESOLUTION_FAILED_DETAILS', resolvedOutcome.failure.details);
         const blend = convertToResolvedBlend({ primaryBlend: [], stackingOptions: [], confidenceScore: 0, tradeoffs: [], rationaleSummary: '', resolutionMode: 'BLENDED' }, resolvedOutcome);
         setResolvedBlend(blend);
+        // VOICE STATE FIX #6: stopListening() must be called automatically on Failure
+        if (isListening && recognitionRef.current) {
+          try {
+            explicitStopRef.current = true;
+            recognitionRef.current.stop();
+            setIsListening(false);
+          } catch (err) {
+            console.error('Failed to stop recognition on failure:', err);
+          }
+        }
         return;
       }
       
       console.debug('RESOLUTION_SUCCESS', true);
+      // VOICE STATE FIX #6: stopListening() must be called automatically on Success
+      if (isListening && recognitionRef.current) {
+        try {
+          explicitStopRef.current = true;
+          recognitionRef.current.stop();
+          setIsListening(false);
+        } catch (err) {
+          console.error('Failed to stop recognition on success:', err);
+        }
+      }
       
       // MANDATORY: Convert to named resolution (maps abstract chemotypes to actual strain names)
       const named = resolveToNamedStrains(resolvedOutcome);
@@ -984,7 +1016,19 @@ export default function GOLineCalculator() {
   };
   
   // Re-resolution handler for sliders (triggers full pipeline with named outputs)
+  // VOICE STATE FIX #6: stopListening() must be called automatically on Re-resolution
   const handleReResolution = (adjustedIntent: OutcomeIntent) => {
+    // Stop voice listening before re-resolving
+    if (isListening && recognitionRef.current) {
+      try {
+        explicitStopRef.current = true;
+        recognitionRef.current.stop();
+        setIsListening(false);
+      } catch (err) {
+        console.error('Failed to stop recognition during re-resolution:', err);
+      }
+    }
+    
     try {
       const resolvedOutcome = resolveOutcome(adjustedIntent);
       setOutcome(resolvedOutcome);

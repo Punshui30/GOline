@@ -163,10 +163,21 @@ function PhysicalStackVisualization({ cultivars, stack }: { cultivars: ResolvedC
     }
   })();
 
-  // Verify percentages sum to 100 (deterministic validation)
+  // SYSTEM AUTHORITY RULE #2 & #3: PhysicalStackVisualization must NOT render if percentages invalid or duplicates exist
+  // Remove all "warn but render" logic - replace with hard failure
+  // If ResolutionPanel allows rendering, this component must still validate (defense in depth)
   const totalPercentage = layers.reduce((sum, l) => sum + l.percentage, 0);
   if (Math.abs(totalPercentage - 100) > 0.01) {
-    console.warn(`[STACK_VISUALIZATION] Percentages sum to ${totalPercentage}%, expected 100%`);
+    // Hard fail - do not render anything
+    return null;
+  }
+  
+  // Check for duplicate names in layers
+  const layerNames = layers.map(l => l.name);
+  const uniqueLayerNames = new Set(layerNames);
+  if (uniqueLayerNames.size !== layerNames.length) {
+    // Hard fail - do not render anything
+    return null;
   }
 
   const getRoleColor = (role: CultivarRole) => {
@@ -672,9 +683,10 @@ export default function ResolutionPanel({ blend, intent, onAdjust, isComputing }
     />;
   }
   
-  // PART 4: Hard Guards - Check for duplicate cultivars
+  // PART 4: Hard Guards - Check for duplicate cultivars (SYSTEM AUTHORITY RULE #3)
+  // Duplicate cultivars are illegal at render time - even if logic screws up upstream
   const uniqueNames = new Set(blend.cultivars.map(c => c.name));
-  if (uniqueNames.size < 2 && blend.cultivars.length > 1) {
+  if (uniqueNames.size !== blend.cultivars.length) {
     return <InvalidResolutionState 
       failure={{
         status: 'invalid',
@@ -686,7 +698,8 @@ export default function ResolutionPanel({ blend, intent, onAdjust, isComputing }
     />;
   }
   
-  // PART 4: Hard Guards - Check percentage integrity
+  // PART 4: Hard Guards - Check percentage integrity (SYSTEM AUTHORITY RULE #2)
+  // Percentages must hard-fail visually - if totalPercentage !== 100, nothing renders except failure state
   const totalPercentage = blend.cultivars.reduce((sum, c) => sum + c.percentage, 0);
   if (Math.abs(totalPercentage - 100) > 0.01) {
     return <InvalidResolutionState 
@@ -700,6 +713,8 @@ export default function ResolutionPanel({ blend, intent, onAdjust, isComputing }
     />;
   }
   
+  // SYSTEM AUTHORITY RULE #1: ResolutionPanel is the sole authority for whether any blend, stack, or cultivar data may render
+  // All invariants have passed - safe to render
   // VISUAL CONTRACT: Render ONLY from resolvedOutput.cultivars[]
   // No success banners, checkmarks, or decorative UI
   // If blend.cultivars has N entries, render exactly N cultivars
@@ -717,7 +732,7 @@ export default function ResolutionPanel({ blend, intent, onAdjust, isComputing }
         </div>
       </div>
       
-      {/* 1. PRIMARY: Physical Stack Visualization */}
+      {/* 1. PRIMARY: Physical Stack Visualization - Only renders if ResolutionPanel explicitly allows it */}
       <PhysicalStackVisualization cultivars={blend.cultivars} stack={blend.stack} />
       
       {/* 2. SECONDARY: Cultivar Breakdown */}
