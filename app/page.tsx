@@ -13,6 +13,7 @@ import Image from 'next/image';
 import { OutcomeIntent, ResolutionType } from '@/lib/goOutcomeEngine';
 import { resolveOutcome } from '@/lib/goOutcomeEngine';
 import { resolveToNamedStrains, type NamedResolutionResult } from '@/lib/namedResolution';
+import ResolutionPanel, { type ResolvedBlend, type ResolvedCultivar, type CultivarRole } from '@/components/ResolutionPanel';
 import { StrategicGuidance, ClarificationQuestion } from '@/lib/strategicGuidance';
 import { DEMO_MENU } from '@/data/demoMenu';
 import { translateGuidanceToIntent } from '@/lib/guidanceToIntent';
@@ -619,6 +620,7 @@ export default function GOLineCalculator() {
   const [intent, setIntent] = useState<OutcomeIntent | null>(null);
   const [outcome, setOutcome] = useState<OutcomeResult | null>(null);
   const [namedResolution, setNamedResolution] = useState<NamedResolutionResult | null>(null);
+  const [resolvedBlend, setResolvedBlend] = useState<ResolvedBlend | null>(null);
 
   // Conversational state (seam for LLM separation)
   const [conversation, setConversation] = useState<{ role: 'user' | 'assistant'; content: string }[]>([]);
@@ -914,6 +916,10 @@ export default function GOLineCalculator() {
       // MANDATORY: Convert to named resolution (maps abstract chemotypes to actual strain names)
       const named = resolveToNamedStrains(resolvedOutcome);
       setNamedResolution(named);
+      
+      // Convert to ResolvedBlend format for ResolutionPanel
+      const blend = convertToResolvedBlend(named);
+      setResolvedBlend(blend);
     } catch (err) {
       console.error('Resolution error:', err);
       setError('Failed to resolve outcome. Please try again.');
@@ -929,6 +935,10 @@ export default function GOLineCalculator() {
       // MANDATORY: Re-resolve to named strains
       const named = resolveToNamedStrains(resolvedOutcome);
       setNamedResolution(named);
+      
+      // Update ResolvedBlend
+      const blend = convertToResolvedBlend(named);
+      setResolvedBlend(blend);
     } catch (err) {
       console.error('Re-resolution error:', err);
       setError('Failed to re-resolve with adjustments.');
@@ -949,6 +959,27 @@ export default function GOLineCalculator() {
       return true;
     }
     return guidance.clarificationNeeded.every(q => clarificationAnswers[q.type] !== undefined);
+  };
+  
+  // Convert NamedResolutionResult to ResolvedBlend format
+  const convertToResolvedBlend = (named: NamedResolutionResult): ResolvedBlend => {
+    // Map role from "primary" | "corrective" | "supporting" to "foundation" | "modulator" | "accent"
+    const mapRole = (role: string): CultivarRole => {
+      if (role === 'primary') return 'foundation';
+      if (role === 'corrective') return 'modulator';
+      return 'accent';
+    };
+    
+    const cultivars: ResolvedCultivar[] = named.primaryBlend.map(strain => ({
+      name: strain.strainName,
+      percentage: strain.percentage,
+      role: mapRole(strain.role),
+    }));
+    
+    return {
+      cultivars,
+      stack: named.stack,
+    };
   };
 
   return (
@@ -988,6 +1019,8 @@ export default function GOLineCalculator() {
                     // MANDATORY: Convert to named resolution
                     const named = resolveToNamedStrains(resolvedOutcome);
                     setNamedResolution(named);
+                    const blend = convertToResolvedBlend(named);
+                    setResolvedBlend(blend);
                     setLlmFailed(false);
                     setError(null);
                   }}
@@ -1012,6 +1045,8 @@ export default function GOLineCalculator() {
                     // MANDATORY: Convert to named resolution
                     const named = resolveToNamedStrains(resolvedOutcome);
                     setNamedResolution(named);
+                    const blend = convertToResolvedBlend(named);
+                    setResolvedBlend(blend);
                     setLlmFailed(false);
                     setError(null);
                   }}
@@ -1052,6 +1087,8 @@ export default function GOLineCalculator() {
                     // MANDATORY: Convert to named resolution
                     const named = resolveToNamedStrains(resolvedOutcome);
                     setNamedResolution(named);
+                    const blend = convertToResolvedBlend(named);
+                    setResolvedBlend(blend);
                     setLlmFailed(false);
                     setError(null);
                   }}
@@ -1165,8 +1202,31 @@ export default function GOLineCalculator() {
               </div>
             </div>
 
-          {/* Named Resolution Panel - MANDATORY: All recommendations must have named strains */}
-          {namedResolution && namedResolution.primaryBlend.length > 0 && (
+          {/* Deterministic Resolution Panel - NO CHAT-STYLE OUTPUT */}
+          {/* STEP 1: Chat-style rendering is DISABLED - removed all conversation.map JSX */}
+          {resolvedBlend && intent && (
+            <ResolutionPanel
+              blend={resolvedBlend}
+              intent={{
+                activationTarget: intent.activationTarget,
+                cognitiveEndurance: intent.cognitiveEndurance,
+                anxietySensitivity: intent.anxietySensitivity || 0.5,
+              }}
+              onAdjust={(adjustments) => {
+                const adjustedIntent: OutcomeIntent = {
+                  ...intent,
+                  activationTarget: adjustments.activationTarget,
+                  cognitiveEndurance: adjustments.cognitiveEndurance,
+                  anxietySensitivity: adjustments.anxietySensitivity,
+                };
+                setIntent(adjustedIntent);
+                handleReResolution(adjustedIntent);
+              }}
+            />
+          )}
+
+          {/* Old resolution UI - REMOVED - keeping as reference but commented out */}
+          {/* {namedResolution && namedResolution.primaryBlend.length > 0 && (
             <div className="border-t border-white/10 pt-12 pb-8 mb-16">
               <div className="mb-10">
                 <div className="text-xs uppercase tracking-wider text-white/40 mb-1">
@@ -1357,8 +1417,8 @@ export default function GOLineCalculator() {
             </div>
           )}
 
-          {/* How GO Line Works - Show when structured resolution exists */}
-          {outcome && outcome.tiers && outcome.tiers.length > 0 && (
+          {/* How GO Line Works - Show when resolution exists */}
+          {resolvedBlend && (
             <div className="mb-16 pt-8 border-t border-white/5">
               <div className="text-xs uppercase tracking-wider text-white/40 mb-3">
                 How GO Line works

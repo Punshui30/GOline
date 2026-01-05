@@ -65,6 +65,13 @@ export interface NamedResolutionResult {
     purpose?: string;
     whatYoullFeel?: string;
   }>;
+  
+  // Stack structure for UI display (derived from stackingOptions)
+  stack?: {
+    bottom: string;
+    middle?: string;
+    top?: string;
+  };
 }
 
 /**
@@ -302,14 +309,22 @@ export function resolveToNamedStrains(outcome: OutcomeResult): NamedResolutionRe
       ? [generateStackingPlan(primaryBlend)]
       : [];
     
+    // Build stack structure from stacked phases
+    const stack: { bottom: string; middle?: string; top?: string } = {
+      bottom: stackedPhases.find(p => p.phase.includes('End') || p.phase.includes('Landing'))?.strains[0]?.strainName || stackedPhases[stackedPhases.length - 1]?.strains[0]?.strainName || '',
+      middle: stackedPhases.find(p => p.phase.includes('Middle') || p.phase.includes('Core'))?.strains[0]?.strainName,
+      top: stackedPhases.find(p => p.phase.includes('Top') || p.phase.includes('Opening'))?.strains[0]?.strainName,
+    };
+    
     return {
       primaryBlend,
       stackingOptions,
-      confidenceScore: outcome.tiers?.[0]?.compositionFit || 0.7,
-      tradeoffs: outcome.tiers?.[0]?.tradeoffs || [],
-      rationaleSummary: outcome.tiers?.[0]?.whyChosen?.[0] || 'Stacked resolution for multi-phase outcome.',
+      confidenceScore: outcome.phases?.[0]?.compositionFit || 0.7,
+      tradeoffs: outcome.phases?.[0]?.systemNotes || [],
+      rationaleSummary: outcome.phases?.[0]?.systemNotes?.[0] || 'Stacked resolution for multi-phase outcome.',
       resolutionMode: 'STACKED',
       stackedPhases,
+      stack,
     };
   }
   
@@ -344,6 +359,14 @@ export function resolveToNamedStrains(outcome: OutcomeResult): NamedResolutionRe
   // Generate stacking options for the blend
   const stackingOptions = [generateStackingPlan(namedStrains)];
   
+  // Build stack structure for UI display
+  const stackPlan = stackingOptions[0];
+  const stack = stackPlan ? {
+    bottom: stackPlan.segments.find(s => s.position === 'end')?.strainName || namedStrains[0]?.strainName || '',
+    middle: stackPlan.segments.find(s => s.position === 'middle')?.strainName,
+    top: stackPlan.segments.find(s => s.position === 'tip')?.strainName,
+  } : undefined;
+  
   return {
     primaryBlend: namedStrains,
     stackingOptions,
@@ -351,6 +374,7 @@ export function resolveToNamedStrains(outcome: OutcomeResult): NamedResolutionRe
     tradeoffs: bestTier.tradeoffs,
     rationaleSummary: bestTier.whyChosen?.[0] || 'Blend optimized for stated outcome.',
     resolutionMode: 'BLENDED',
+    stack,
   };
 }
 
