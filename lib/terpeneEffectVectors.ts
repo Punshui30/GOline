@@ -32,19 +32,11 @@ function normalizeTerpene(terpeneName: string, value: number): number {
 
 /**
  * Get normalized terpene value from chemotype
- * Handles both percentage values (>1.0) and normalized values (0-1)
+ * Terpenes are stored as percentages by weight (e.g., 0.62 = 0.62%)
  */
 function getNormalizedTerpene(chemotype: CanonicalChemotype, terpeneName: string): number {
-  const rawValue = chemotype.terpenes[terpeneName] || 0;
-  // If value is > 1.0, assume it's already a percentage
-  // If value is <= 1.0, assume it's normalized and convert using totalTerpeneLoad
-  let percentage: number;
-  if (rawValue > 1.0) {
-    percentage = rawValue;
-  } else {
-    // Convert normalized value to percentage using totalTerpeneLoad
-    percentage = rawValue * chemotype.totalTerpeneLoad;
-  }
+  const percentage = chemotype.terpenes[terpeneName] || 0;
+  // Terpenes are already stored as percentages, normalize by max cap
   return normalizeTerpene(terpeneName, percentage);
 }
 
