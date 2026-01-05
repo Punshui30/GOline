@@ -1388,6 +1388,16 @@ export function resolveOutcome(intent: OutcomeIntent): OutcomeResult {
     console.debug('INVENTORY_TOTAL', totalCultivars);
     console.debug('INVENTORY_ELIGIBLE', eligibleCultivars.length);
     
+    // Verify inventory meets requirements
+    if (process.env.NODE_ENV === 'development') {
+      if (totalCultivars !== 40) {
+        console.warn(`[INVENTORY] Expected 40 cultivars, found ${totalCultivars}`);
+      }
+      if (eligibleCultivars.length < 3) {
+        console.warn(`[INVENTORY] Only ${eligibleCultivars.length} eligible cultivars - may cause resolution failures`);
+      }
+    }
+    
     // PART 3: Log active constraints and eligible cultivars (dev-only)
     if (process.env.NODE_ENV === 'development') {
       console.log('[RESOLVER] Active constraints →', {
@@ -1525,6 +1535,16 @@ export function resolveOutcome(intent: OutcomeIntent): OutcomeResult {
   // STEP 2: NON-NEGOTIABLE LOGGING
   console.debug('INVENTORY_TOTAL', totalCultivars);
   console.debug('INVENTORY_ELIGIBLE', eligibleCultivars.length);
+  
+  // Verify inventory meets requirements
+  if (process.env.NODE_ENV === 'development') {
+    if (totalCultivars !== 40) {
+      console.warn(`[INVENTORY] Expected 40 cultivars, found ${totalCultivars}`);
+    }
+    if (eligibleCultivars.length < 3) {
+      console.warn(`[INVENTORY] Only ${eligibleCultivars.length} eligible cultivars - may cause resolution failures`);
+    }
+  }
   
   // PART 3: Log eligible cultivars count (dev-only)
   if (process.env.NODE_ENV === 'development') {
