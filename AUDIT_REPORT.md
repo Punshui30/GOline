@@ -400,3 +400,5 @@ if (conversation.filter(m => m.role === 'assistant').length > 5) {
 
 **AUDIT CONCLUSION**: The deterministic engine is well-implemented, but the conversation API creates a parallel non-deterministic path that can completely bypass it. The system is hybrid, not deterministic.
 
+
+
