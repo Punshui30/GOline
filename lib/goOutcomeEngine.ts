@@ -15,7 +15,13 @@
  */
 
 import { canonicalChemotypes, type CanonicalChemotype } from '@/data/canonicalChemotypes';
+import { getDemoInventoryAsChemotypes } from '@/data/demoInventory';
 import { computeEffectVectors, type EffectVectors } from './terpeneEffectVectors';
+
+// Use the new deterministic demo inventory (30 strains with numeric terpene data)
+// Fallback to canonicalChemotypes for backward compatibility
+const ACTIVE_INVENTORY = getDemoInventoryAsChemotypes();
+console.debug(`[GO_OUTCOME_ENGINE] Using ${ACTIVE_INVENTORY.length} cultivars from deterministic demo inventory`);
 
 /**
  * Outcome input constraints (directional, not goals)
@@ -754,7 +760,7 @@ function classifyResolutionType(
   
   const hasCorrective = blend.some(c => 
     c.role === 'corrective' || 
-    isNonPsychoactive(canonicalChemotypes.find(cv => cv.id === c.cultivarId)!)
+    isNonPsychoactive(ACTIVE_INVENTORY.find(cv => cv.id === c.cultivarId) || canonicalChemotypes.find(cv => cv.id === c.cultivarId)!)
   );
   
   if (hasCorrective) return 'CORRECTIVE_BLEND';
@@ -794,7 +800,7 @@ function generateTiers(
   if (compositional3.length === 3) {
     const metrics3 = computeBlendMetrics(
       compositional3.map(c => ({
-        cultivar: canonicalChemotypes.find(cv => cv.id === c.cultivarId)!,
+        cultivar: ACTIVE_INVENTORY.find(cv => cv.id === c.cultivarId) || canonicalChemotypes.find(cv => cv.id === c.cultivarId)!,
         ratio: c.ratio,
       }))
     );
@@ -813,7 +819,7 @@ function generateTiers(
   if (correctiveBlend && correctiveBlend.length === 2) {
     const metricsCorr = computeBlendMetrics(
       correctiveBlend.map(c => ({
-        cultivar: canonicalChemotypes.find(cv => cv.id === c.cultivarId)!,
+        cultivar: ACTIVE_INVENTORY.find(cv => cv.id === c.cultivarId) || canonicalChemotypes.find(cv => cv.id === c.cultivarId)!,
         ratio: c.ratio,
       }))
     );
@@ -873,7 +879,7 @@ function generateTiers(
   if (compositional2.length === 2) {
     const metrics2 = computeBlendMetrics(
       compositional2.map(c => ({
-        cultivar: canonicalChemotypes.find(cv => cv.id === c.cultivarId)!,
+        cultivar: ACTIVE_INVENTORY.find(cv => cv.id === c.cultivarId) || canonicalChemotypes.find(cv => cv.id === c.cultivarId)!,
         ratio: c.ratio,
       }))
     );
@@ -1035,7 +1041,7 @@ function attemptUnifiedBlended(
     if (blend.length === 2) {
       const metrics = computeBlendMetrics(
         blend.map(c => ({
-          cultivar: canonicalChemotypes.find(cv => cv.id === c.cultivarId)!,
+          cultivar: ACTIVE_INVENTORY.find(cv => cv.id === c.cultivarId) || canonicalChemotypes.find(cv => cv.id === c.cultivarId)!,
           ratio: c.ratio,
         }))
       );
@@ -1101,7 +1107,7 @@ function generateStackedResolution(
     // CBD allowed in opening phase ONLY if calm onset is desired (activation < 0.4)
     if (intent.activationTarget >= 0.4) {
       return composition.filter(comp => {
-        const chemotype = canonicalChemotypes.find(cv => cv.id === comp.cultivarId);
+        const chemotype = ACTIVE_INVENTORY.find(cv => cv.id === comp.cultivarId) || canonicalChemotypes.find(cv => cv.id === comp.cultivarId);
         return !chemotype || !isNonPsychoactive(chemotype);
       });
     }
@@ -1113,14 +1119,14 @@ function generateStackedResolution(
     // If end phase needs calming and doesn't already have CBD, consider adding it
     if (intent.activationTarget < 0.5) {
       const hasCBD = composition.some(comp => {
-        const chemotype = canonicalChemotypes.find(cv => cv.id === comp.cultivarId);
+        const chemotype = ACTIVE_INVENTORY.find(cv => cv.id === comp.cultivarId) || canonicalChemotypes.find(cv => cv.id === comp.cultivarId);
         return chemotype && isNonPsychoactive(chemotype);
       });
       
       // If no CBD and calming is desired, try to add it (but don't force if composition is already good)
       if (!hasCBD) {
         // Find CBD cultivar
-        const cbdCultivar = canonicalChemotypes.find(cv => isNonPsychoactive(cv));
+        const cbdCultivar = ACTIVE_INVENTORY.find(cv => isNonPsychoactive(cv)) || canonicalChemotypes.find(cv => isNonPsychoactive(cv));
         if (cbdCultivar) {
           // Add CBD as 15-25% of end phase
           const newComposition = [...composition];
@@ -1369,8 +1375,8 @@ export function resolveOutcome(intent: OutcomeIntent): OutcomeResult {
     };
 
     // Filter eligible cultivars
-    const totalCultivars = canonicalChemotypes.length;
-    const eligibleCultivars = canonicalChemotypes.filter(
+    const totalCultivars = ACTIVE_INVENTORY.length;
+    const eligibleCultivars = ACTIVE_INVENTORY.filter(
       cv => !isNonPsychoactive(cv) || cv.id.includes('cbd') || cv.id.includes('cbg')
     );
     
@@ -1411,7 +1417,7 @@ export function resolveOutcome(intent: OutcomeIntent): OutcomeResult {
     if (unified && unified.earlyPenalty < 0.2 && unified.latePenalty < 0.2) {
       // Unified blended solution acceptable (homogeneous blend strategy)
       const unifiedResolutionType = unified.blend.length === 1 ? 'SINGLE_CULTIVAR' : 
-                         unified.blend.some(c => isNonPsychoactive(canonicalChemotypes.find(cv => cv.id === c.cultivarId)!)) ? 
+                         unified.blend.some(c => isNonPsychoactive(ACTIVE_INVENTORY.find(cv => cv.id === c.cultivarId) || canonicalChemotypes.find(cv => cv.id === c.cultivarId)!)) ? 
                          'CORRECTIVE_BLEND' : 'COMPOSITIONAL_BLEND';
       return {
         resolutionMode: 'BLENDED',
