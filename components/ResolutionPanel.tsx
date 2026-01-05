@@ -554,7 +554,18 @@ function InvalidResolutionState({
  * ResolutionPanel Component
  * Main panel for structured resolution output
  */
-export default function ResolutionPanel({ blend, intent, onAdjust }: ResolutionPanelProps) {
+export default function ResolutionPanel({ blend, intent, onAdjust, isComputing }: ResolutionPanelProps) {
+  // Computing / Evaluation State - Show when resolver is actively working
+  // Only show when: isProcessing true, intent parsing complete, no clarification pending
+  if (isComputing) {
+    return <ComputingState />;
+  }
+  
+  // PART 4: Hard Guards - Must have both blend and intent to render
+  if (!blend || !intent) {
+    return null; // No resolution data yet
+  }
+  
   // PART 4: Hard Guards - Check for failure state first
   if (blend.failure) {
     return <InvalidResolutionState failure={blend.failure} intent={intent} onAdjust={onAdjust} />;
@@ -664,7 +675,7 @@ export default function ResolutionPanel({ blend, intent, onAdjust }: ResolutionP
       )}
       
       {/* Adjustment Controls - render exactly once */}
-      <AdjustmentControls intent={intent} onAdjust={onAdjust} />
+      {onAdjust && <AdjustmentControls intent={intent} onAdjust={onAdjust} />}
     </div>
   );
 }
