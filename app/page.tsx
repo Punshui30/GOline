@@ -611,6 +611,9 @@ export default function GOLineCalculator() {
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const interimTranscriptRef = useRef<string>('');
   const explicitStopRef = useRef<boolean>(false); // Track explicit user stop vs auto-end
+  
+  // Navigation to explore mode
+  const [showExploreLink, setShowExploreLink] = useState(true);
 
   // Phase management
   const [phase, setPhase] = useState<InteractionPhase>('FREE');
@@ -1113,6 +1116,18 @@ export default function GOLineCalculator() {
                 </button>
             </div>
           </div>
+
+          {/* Explore Mode Link */}
+          {showExploreLink && phase === 'FREE' && (
+            <div className="mb-8">
+              <a
+                href="/explore"
+                className="inline-block px-4 py-2 bg-white/5 border border-white/10 rounded-sm text-sm text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+              >
+                Add what you have →
+              </a>
+            </div>
+          )}
 
           {/* Input Section */}
           <div className="mb-16">
