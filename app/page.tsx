@@ -1285,15 +1285,18 @@ export default function GOLineCalculator() {
 
           {/* Deterministic Resolution Panel - NO CHAT-STYLE OUTPUT */}
           {/* STEP 1: Chat-style rendering is DISABLED - removed all conversation.map JSX */}
-          {resolvedBlend && intent && (
+          {/* Show ResolutionPanel when computing OR when we have resolution data */}
+          {(isProcessing || resolvedBlend || intent) && (
             <ResolutionPanel
               blend={resolvedBlend}
-              intent={{
+              intent={intent ? {
                 activationTarget: intent.activationTarget,
                 cognitiveEndurance: intent.cognitiveEndurance,
                 anxietySensitivity: intent.anxietySensitivity || 0.5,
-              }}
+              } : null}
+              isComputing={isProcessing && (!resolvedBlend || !intent)}
               onAdjust={(adjustments) => {
+                if (!intent) return;
                 const adjustedIntent: OutcomeIntent = {
                   ...intent,
                   activationTarget: adjustments.activationTarget,
