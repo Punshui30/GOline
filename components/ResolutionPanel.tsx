@@ -32,8 +32,13 @@ export interface ResolvedBlend {
   stack?: ResolvedStack;
   failure?: {
     status: 'invalid';
-    reason: 'INSUFFICIENT_DISTINCT_CULTIVARS' | 'INVENTORY_TOO_NARROW' | 'CONSTRAINT_CONFLICT' | 'PERCENTAGE_INVALID';
+    reason: 'INSUFFICIENT_DISTINCT_CULTIVARS' | 'INVENTORY_TOO_NARROW' | 'CONSTRAINT_CONFLICT' | 'PERCENTAGE_INVALID' | 'SYSTEM_ERROR';
     details?: string;
+    excludedBy?: Array<{
+      cultivarId: string;
+      constraint: string;
+      numericValue: number;
+    }>;
   };
 }
 

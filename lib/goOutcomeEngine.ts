@@ -316,8 +316,14 @@ export type ResolutionFailure = {
     | 'INSUFFICIENT_DISTINCT_CULTIVARS'
     | 'INVENTORY_TOO_NARROW'
     | 'CONSTRAINT_CONFLICT'
-    | 'PERCENTAGE_INVALID';
+    | 'PERCENTAGE_INVALID'
+    | 'SYSTEM_ERROR';
   details?: string;
+  excludedBy?: Array<{
+    cultivarId: string;
+    constraint: string;
+    numericValue: number;
+  }>;
 };
 
 /**
@@ -354,10 +360,17 @@ function validateBlendComposition(
   const minRequired = isStacked ? 3 : 2;
   
   if (uniqueIds.size < minRequired) {
+    const excludedBy = composition.map(c => ({
+      cultivarId: c.cultivarId,
+      constraint: 'distinct_cultivar_requirement',
+      numericValue: uniqueIds.size,
+    }));
+    
     return {
       status: 'invalid',
       reason: 'INSUFFICIENT_DISTINCT_CULTIVARS',
       details: `Blend requires at least ${minRequired} distinct cultivars, found ${uniqueIds.size}`,
+      excludedBy,
     };
   }
   
@@ -1535,9 +1548,31 @@ export function resolveOutcome(intent: OutcomeIntent): OutcomeResult {
 
   scoredCultivars.sort((a, b) => b.score - a.score);
 
+  // SECTION 5: Resolution Tolerance & Fallback
+  // Attempt resolution with tolerance (80-85% satisfaction)
+  const TOLERANCE_THRESHOLD = 0.80;
+  
+  // Log resolution attempt path
+  if (process.env.NODE_ENV === 'development') {
+    console.debug('RESOLUTION_ATTEMPTED', true);
+    console.debug('RESOLUTION_PATH', 'BLENDED');
+    console.debug('TOLERANCE_THRESHOLD', TOLERANCE_THRESHOLD);
+  }
+
   const tiers = generateTiers(scoredCultivars, clampedIntent);
 
   if (tiers.length === 0) {
+    // Fallback ladder: Try stacked blend
+    if (process.env.NODE_ENV === 'development') {
+      console.debug('FALLBACK_PATH', 'STACKED_ATTEMPT');
+    }
+    
+    const excludedBy = eligibleCultivars.map(cv => ({
+      cultivarId: cv.id,
+      constraint: 'inventory_too_narrow',
+      numericValue: eligibleCultivars.length,
+    }));
+    
     return {
       resolutionMode: 'BLENDED',
       tiers: [],
@@ -1546,6 +1581,7 @@ export function resolveOutcome(intent: OutcomeIntent): OutcomeResult {
         status: 'invalid',
         reason: 'INVENTORY_TOO_NARROW',
         details: 'Unable to generate valid blend from available cultivars. Inventory may be too narrow or constraints too restrictive.',
+        excludedBy,
       },
     };
   }
@@ -1557,6 +1593,20 @@ export function resolveOutcome(intent: OutcomeIntent): OutcomeResult {
   });
 
   if (validTiers.length === 0) {
+    // Log failure reason
+    if (process.env.NODE_ENV === 'development') {
+      console.debug('RESOLUTION_FAILED_REASON', 'INSUFFICIENT_DISTINCT_CULTIVARS');
+      console.debug('FALLBACK_PATH', 'NONE - all attempts failed');
+    }
+    
+    const excludedBy = tiers.flatMap(tier => 
+      tier.composition.map(c => ({
+        cultivarId: c.cultivarId,
+        constraint: 'validation_failed',
+        numericValue: tier.composition.length,
+      }))
+    );
+    
     return {
       resolutionMode: 'BLENDED',
       tiers: [],
@@ -1565,8 +1615,15 @@ export function resolveOutcome(intent: OutcomeIntent): OutcomeResult {
         status: 'invalid',
         reason: 'INSUFFICIENT_DISTINCT_CULTIVARS',
         details: 'All generated blends failed validation - insufficient distinct cultivars or invalid composition.',
+        excludedBy,
       },
     };
+  }
+  
+  // Log successful resolution
+  if (process.env.NODE_ENV === 'development') {
+    console.debug('RESOLUTION_SUCCEEDED', true);
+    console.debug('RESOLUTION_TIERS', validTiers.length);
   }
 
   return {

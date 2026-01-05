@@ -1,6 +1,6 @@
 import { NamedResolutionResult } from '@/lib/namedResolution';
 import { ResolvedBlend, ResolvedCultivar, CultivarRole } from '@/components/ResolutionPanel';
-import { OutcomeResult } from '@/lib/goOutcomeEngine';
+import { OutcomeResult, ResolutionFailure } from '@/lib/goOutcomeEngine';
 
 /**
  * Convert NamedResolutionResult to ResolvedBlend format
