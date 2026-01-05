@@ -451,9 +451,38 @@ function InvalidResolutionState({
     }
   };
 
+  // Check if this is an inventory-related failure
+  const isInventoryRequired = failure?.reason === 'INVENTORY_TOO_NARROW' || 
+                             failure?.reason === 'INSUFFICIENT_DISTINCT_CULTIVARS';
+  
   // PART 6: Invalid resolutions show no stack, no cultivar list
   return (
     <div className="border-t border-white/10 pt-12 pb-8 mb-16">
+      {/* Inventory / Label Input State - At the very top when inventory is required */}
+      {isInventoryRequired && (
+        <div className="mb-8">
+          <Image
+            src="/inventory-label-input.png"
+            alt="Add what you have"
+            width={800}
+            height={200}
+            className="w-full h-auto mb-6"
+            priority
+          />
+          <div className="text-center">
+            <h2 className="text-lg font-medium text-white mb-2">
+              Add What You Have
+            </h2>
+            <p className="text-sm text-white/70 leading-relaxed mb-1">
+              Scan a product label or barcode to add cultivars to your inventory.
+            </p>
+            <p className="text-xs text-white/50 italic">
+              Manual entry is also available.
+            </p>
+          </div>
+        </div>
+      )}
+      
       {/* Error Header - PART 7: Clean Failure Copy */}
       <div className="mb-8">
         <h2 className="text-lg font-medium text-white mb-3">
