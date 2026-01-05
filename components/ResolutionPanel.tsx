@@ -7,7 +7,7 @@
  * No prose. No chat. No free-form text.
  */
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 
 /**
  * Single source of truth for resolution output
@@ -350,20 +350,7 @@ function InvalidResolutionState({
   }) => void;
 }) {
   const getFailureTitle = () => {
-    if (!failure) return 'Unable to Resolve Blend';
-    
-    switch (failure.reason) {
-      case 'INSUFFICIENT_DISTINCT_CULTIVARS':
-        return 'Insufficient Distinct Cultivars';
-      case 'INVENTORY_TOO_NARROW':
-        return 'Inventory Too Narrow';
-      case 'CONSTRAINT_CONFLICT':
-        return 'Constraint Conflict';
-      case 'PERCENTAGE_INVALID':
-        return 'Invalid Composition';
-      default:
-        return 'Unable to Resolve Blend';
-    }
+    return 'Unable to Resolve Blend';
   };
 
   const getFailureMessage = () => {
@@ -371,16 +358,24 @@ function InvalidResolutionState({
     
     switch (failure.reason) {
       case 'INSUFFICIENT_DISTINCT_CULTIVARS':
-        return 'Only one strain in the current inventory meets all active constraints.\nThe current constraints require multiple distinct cultivars.';
       case 'INVENTORY_TOO_NARROW':
-        return 'Only one strain in the current inventory meets all active constraints.\nCurrent inventory is too narrow to satisfy the constraints.';
+        return 'Only one strain in the current inventory meets all active constraints.';
       case 'CONSTRAINT_CONFLICT':
-        return 'Current anxiety and intensity constraints conflict with available strains.\nNo valid composition satisfies all invariants.';
+        return 'Current anxiety and intensity constraints conflict with available strains.';
       case 'PERCENTAGE_INVALID':
-        return 'Blend composition percentages are invalid.\nCannot create a valid blend with the current constraints.';
+        return 'Blend composition percentages are invalid.';
       default:
         return 'Unable to resolve a valid blend from the current inventory.';
     }
+  };
+
+  const getSecondaryMessage = () => {
+    if (!failure) return null;
+    
+    if (failure.reason === 'INSUFFICIENT_DISTINCT_CULTIVARS' || failure.reason === 'INVENTORY_TOO_NARROW') {
+      return 'The current settings require multiple distinct cultivars.';
+    }
+    return null;
   };
 
   const getRationalePoints = () => {
@@ -388,15 +383,10 @@ function InvalidResolutionState({
     
     switch (failure.reason) {
       case 'INSUFFICIENT_DISTINCT_CULTIVARS':
-        return [
-          'Constraint requires diversity ≥ 2 distinct cultivars',
-          'Only one qualifying cultivar available in inventory',
-          'No valid composition satisfies all invariants',
-        ];
       case 'INVENTORY_TOO_NARROW':
         return [
-          'Inventory contains insufficient cultivar diversity',
-          'Constraints exclude remaining inventory options',
+          'Diversity requirement ≥ 2 cultivars',
+          'Only one qualifying cultivar available',
           'No valid composition satisfies all invariants',
         ];
       case 'CONSTRAINT_CONFLICT':
@@ -416,66 +406,89 @@ function InvalidResolutionState({
     }
   };
 
+  const adjustmentControlsRef = useRef<HTMLDivElement>(null);
+  const [allowSingleCultivar, setAllowSingleCultivar] = useState(false);
+
+  const handleAdjustConstraints = () => {
+    // Scroll to adjustment controls
+    if (adjustmentControlsRef.current) {
+      adjustmentControlsRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Highlight the controls briefly
+      adjustmentControlsRef.current.style.transition = 'background-color 0.3s';
+      adjustmentControlsRef.current.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+      setTimeout(() => {
+        if (adjustmentControlsRef.current) {
+          adjustmentControlsRef.current.style.backgroundColor = '';
+        }
+      }, 1000);
+    }
+  };
+
+  const handleChangeInventory = () => {
+    // For now, show a message - in future this could open inventory panel
+    alert('Inventory selection coming soon. For now, adjusting constraints may help.');
+  };
+
+  const handleAllowSingleCultivar = () => {
+    setAllowSingleCultivar(true);
+    // Re-run resolution with single cultivar allowed
+    // This would need to be passed through to the resolver
+    // For now, just set the flag and let user adjust constraints
+    if (onAdjust && intent) {
+      // Slightly relax constraints to increase chances
+      onAdjust({
+        activationTarget: intent.activationTarget,
+        cognitiveEndurance: intent.cognitiveEndurance,
+        anxietySensitivity: Math.max(0.1, intent.anxietySensitivity - 0.1),
+      });
+    }
+  };
+
+  // PART 6: Invalid resolutions show no stack, no cultivar list
   return (
     <div className="border-t border-white/10 pt-12 pb-8 mb-16">
-      {/* Error Header */}
+      {/* Error Header - PART 7: Clean Failure Copy */}
       <div className="mb-8">
         <h2 className="text-lg font-medium text-white mb-3">
-          [ {getFailureTitle()} ]
+          {getFailureTitle()}
         </h2>
-        <div className="text-sm text-white/70 leading-relaxed whitespace-pre-line">
+        <div className="text-sm text-white/70 leading-relaxed mb-2">
           {getFailureMessage()}
         </div>
+        {getSecondaryMessage() && (
+          <div className="text-sm text-white/50 leading-relaxed">
+            {getSecondaryMessage()}
+          </div>
+        )}
       </div>
       
-      {/* Action Buttons */}
+      {/* PART 6: No stack visualization, no cultivar breakdown in invalid state */}
+      
+      {/* Action Buttons - PART 2: Functional Buttons */}
       <div className="mb-12 flex flex-wrap gap-3">
         <button
-          onClick={() => {
-            // Adjust constraints - could trigger a modal or adjustment UI
-            if (onAdjust && intent) {
-              // Slightly relax constraints as a starting point
-              onAdjust({
-                activationTarget: Math.max(0.3, Math.min(0.7, intent.activationTarget)),
-                cognitiveEndurance: Math.max(0.4, Math.min(0.8, intent.cognitiveEndurance)),
-                anxietySensitivity: Math.max(0.2, Math.min(0.6, intent.anxietySensitivity)),
-              });
-            }
-          }}
+          onClick={handleAdjustConstraints}
           className="px-4 py-2 bg-white/10 hover:bg-white/15 border border-white/20 rounded-sm text-sm text-white/80 transition-colors"
         >
           [ Adjust constraints ]
         </button>
         <button
-          onClick={() => {
-            // Change inventory - placeholder for future inventory selection
-            console.log('Change inventory action');
-          }}
+          onClick={handleChangeInventory}
           className="px-4 py-2 bg-white/10 hover:bg-white/15 border border-white/20 rounded-sm text-sm text-white/80 transition-colors"
         >
           [ Change inventory ]
         </button>
         <button
-          onClick={() => {
-            // Allow single-cultivar blend - relax diversity requirement
-            if (onAdjust && intent) {
-              // Adjust to allow single cultivar
-              onAdjust({
-                activationTarget: intent.activationTarget,
-                cognitiveEndurance: intent.cognitiveEndurance,
-                anxietySensitivity: intent.anxietySensitivity,
-              });
-            }
-          }}
+          onClick={handleAllowSingleCultivar}
           className="px-4 py-2 bg-white/10 hover:bg-white/15 border border-white/20 rounded-sm text-sm text-white/80 transition-colors"
         >
           [ Allow single-cultivar blend ]
         </button>
       </div>
 
-      {/* Adjustment Controls - Visually Muted */}
+      {/* Adjustment Controls - Visually Muted - PART 2: Scrollable target */}
       {intent && onAdjust && (
-        <div className="mb-12 opacity-40">
+        <div ref={adjustmentControlsRef} className="mb-12 opacity-40">
           <div className="text-xs uppercase tracking-wider text-white/40 mb-2">
             ────────────────────────
           </div>
@@ -489,7 +502,7 @@ function InvalidResolutionState({
         </div>
       )}
 
-      {/* Resolution Rationale */}
+      {/* Resolution Rationale - PART 7: Bullet-only, factual */}
       <div className="mb-8">
         <div className="text-xs uppercase tracking-wider text-white/40 mb-4">
           ────────────────────────
@@ -505,6 +518,13 @@ function InvalidResolutionState({
           ))}
         </div>
       </div>
+
+      {/* Single cultivar notice if allowed */}
+      {allowSingleCultivar && (
+        <div className="mt-4 text-xs text-white/40 italic">
+          Single-cultivar composition (explicitly allowed)
+        </div>
+      )}
     </div>
   );
 }

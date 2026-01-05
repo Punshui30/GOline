@@ -43,11 +43,34 @@ STRATEGIC ANALYSIS:
 5. Flag risk zones: "terpene_overshoot_sensitive", "thc_anxiety_sensitive", "conflicting_goals", "timing_conflicts"
 6. Determine temporal structure: "single-phase" or "multi-phase"
 
-CLARIFICATION DETECTION:
-If you detect ambiguity, add clarification questions:
-- Temporal: "Is this mostly about how you feel at the start, later, or both?" → ["Start", "Later", "Both"]
-- Tradeoff: "If there's a tradeoff, which matters more?" → ["Feeling energized", "Avoiding anxiety"]
-- Tolerance: "Do you prefer a gentle, steady effect or a stronger peak?" → ["Gentle & steady", "Stronger peak"]
+CLARIFICATION DETECTION (PART 4 - NO DUMB QUESTIONS):
+Only ask clarification questions when there is REAL ambiguity that prevents resolution.
+
+DO NOT ask questions if:
+- User intent is already clear from their input
+- The question contradicts or restates what the user already said
+- Confidence in intent is high (clear priorities, avoidances, and constraints are evident)
+
+Examples of FORBIDDEN questions:
+- User says "chatty, creative, for four hours" → DO NOT ask "Relaxation or energy?" (user already said energy/creative)
+- User says "calm but alert" → DO NOT ask "Do you want calm or alert?" (user wants both)
+- User provides specific duration → DO NOT ask about temporal profile (already specified)
+
+Only ask when:
+- Multiple valid interpretations exist
+- Critical constraint is genuinely missing
+- User input is truly ambiguous
+
+Questions must be:
+- Neutral and optional (never force binary trade-offs)
+- Include "none", "balanced", "unsure", or "neither" as valid options
+- Prefer sensitivity checks, avoidance checks, or confirmation checks
+- Never assume a trade-off exists before asking
+- Never contradict user's stated intent
+
+Examples of GOOD clarification questions (only when truly needed):
+- Temporal: "Is this mostly about how you feel at the start, later, or both?" → ["Start", "Later", "Both", "Unsure"]
+- Sensitivity: "Are there any effects you're especially sensitive to, or should I assume a balanced approach?" → ["Overstimulation", "Mental drift", "Anxiety", "None / Balanced"]
 
 Output schema (JSON only):
 

@@ -1266,22 +1266,7 @@ export default function GOLineCalculator() {
             </div>
           )}
 
-          {/* How GO Line Works - Show when resolution exists */}
-          {resolvedBlend && (
-            <div className="mb-16 pt-8 border-t border-white/5">
-              <div className="text-xs uppercase tracking-wider text-white/40 mb-3">
-                How GO Line works
-              </div>
-              <div className="text-sm text-white/50 leading-relaxed space-y-3 max-w-2xl">
-                <p>
-                  GO Line recommendations are not generated randomly or purely conversationally. Each suggestion is produced by a deterministic decision engine that evaluates multiple variables simultaneously—drawing from established cannabinoid and terpene research, chemotype patterning, reported effect correlations, and constraint-based outcome modeling.
-                </p>
-                <p>
-                  The system continuously balances desired effects, avoidance thresholds, and known interaction patterns to resolve toward the most appropriate recommendation for the stated outcome. While the underlying methodology is proprietary, every output is the result of structured analysis rather than guesswork.
-                </p>
-              </div>
-            </div>
-          )}
+          {/* Explanatory copy removed per PART 5 - no marketing copy in active states */}
 
           {/* Error Display */}
           {error && (

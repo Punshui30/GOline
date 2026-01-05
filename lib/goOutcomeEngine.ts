@@ -1383,9 +1383,15 @@ export function resolveOutcome(intent: OutcomeIntent): OutcomeResult {
       cv => !isNonPsychoactive(cv) || cv.id.includes('cbd') || cv.id.includes('cbg')
     );
     
-    // Log eligible cultivars count (dev-only)
+    // PART 3: Log active constraints and eligible cultivars (dev-only)
     if (process.env.NODE_ENV === 'development') {
-      console.log(`[RESOLVER] Eligible cultivars after constraints: ${eligibleCultivars.length}`);
+      console.log('[RESOLVER] Active constraints →', {
+        activationTarget: clampedIntent1.activationTarget,
+        anxietySensitivity: clampedIntent1.anxietySensitivity,
+        cognitiveEndurance: clampedIntent1.cognitiveEndurance,
+        overshootTolerance: clampedIntent1.overshootTolerance,
+      });
+      console.log(`[RESOLVER] Eligible cultivars after filtering → ${eligibleCultivars.length}`);
     }
 
     const scoredCultivars = eligibleCultivars.map(cultivar => {
@@ -1495,14 +1501,24 @@ export function resolveOutcome(intent: OutcomeIntent): OutcomeResult {
     temporalProfile: intent.temporalProfile || 'single-phase',
   };
 
+  // PART 3: Log active constraints (dev-only)
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[RESOLVER] Active constraints →', {
+      activationTarget: clampedIntent.activationTarget,
+      anxietySensitivity: clampedIntent.anxietySensitivity,
+      cognitiveEndurance: clampedIntent.cognitiveEndurance,
+      overshootTolerance: clampedIntent.overshootTolerance,
+    });
+  }
+
   // Filter eligible cultivars
   const eligibleCultivars = canonicalChemotypes.filter(
     cv => !isNonPsychoactive(cv) || cv.id.includes('cbd') || cv.id.includes('cbg')
   );
   
-  // Log eligible cultivars count (dev-only)
+  // PART 3: Log eligible cultivars count (dev-only)
   if (process.env.NODE_ENV === 'development') {
-    console.log(`[RESOLVER] Eligible cultivars after constraints: ${eligibleCultivars.length}`);
+    console.log(`[RESOLVER] Eligible cultivars after filtering → ${eligibleCultivars.length}`);
   }
 
   const scoredCultivars = eligibleCultivars.map(chemotype => {
