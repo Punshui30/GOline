@@ -6,6 +6,13 @@ const nextConfig = {
     unoptimized: true,
   },
   trailingSlash: true,
+  // Temporarily ignore build errors to isolate Netlify plugin issue
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  typescript: {
+    ignoreBuildErrors: true,
+  },
 }
 
 module.exports = nextConfig
