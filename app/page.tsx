@@ -856,6 +856,7 @@ export default function GOLineCalculator() {
           guidanceData = JSON.parse(errorBody);
         } catch (parseErr) {
           console.error('[CLIENT] Failed to parse error response:', parseErr);
+          guidanceData = { ok: false, error: 'Parse error' };
         }
         setLlmFailed(true);
         setError(null);
@@ -1587,5 +1588,6 @@ export default function GOLineCalculator() {
       </div>
     </main>
   );
+}
 }
 
