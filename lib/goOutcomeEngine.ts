@@ -15,6 +15,7 @@
  */
 
 import { canonicalChemotypes, type CanonicalChemotype } from '@/data/canonicalChemotypes';
+import { computeEffectVectors, type EffectVectors } from './terpeneEffectVectors';
 
 /**
  * Outcome input constraints (directional, not goals)
@@ -217,62 +218,38 @@ function scoreCultivar(
   interactionPenalty: number;
   cannabinoidScore: number;
 } {
-  let activationScore = 0;
-  let sedationScore = 0;
-  let anxietyRiskScore = 0;
-  let terpeneScore = 1.0;
-  let interactionPenalty = 0;
-
-  const terpeneValues: { [key: string]: number } = {};
-  for (const profile of TERPENE_PROFILES) {
-    terpeneValues[profile.name] = chemotype.terpenes[profile.name] || 0;
-  }
-
-  const terpeneNames = Object.keys(terpeneValues);
-  for (let i = 0; i < terpeneNames.length; i++) {
-    const terpeneName = terpeneNames[i];
-    const profile = TERPENE_PROFILES.find(p => p.name === terpeneName);
-    if (!profile) continue;
-
-    const concentration = terpeneValues[terpeneName];
-    const { optimalMin, optimalMax, penaltySlope } = getAdjustedRanges(profile, intent);
-    
-    const biphasic = biphasicScore(concentration, optimalMin, optimalMax, penaltySlope);
-    terpeneScore *= (0.3 + 0.7 * biphasic);
-
-    activationScore += concentration * profile.activationWeight;
-    sedationScore += concentration * profile.sedationWeight;
-    anxietyRiskScore += concentration * profile.anxietyRiskWeight;
-
-    for (let j = i + 1; j < terpeneNames.length; j++) {
-      const otherName = terpeneNames[j];
-      const otherConcentration = terpeneValues[otherName];
-      const penalty = computeInteractionPenalty(
-        terpeneName,
-        otherName,
-        concentration,
-        otherConcentration,
-        chemotype.totalTerpeneLoad / 100
-      );
-      interactionPenalty += penalty;
-    }
-  }
-
-  activationScore = Math.max(0, Math.min(1, (activationScore + 1) / 2));
-  sedationScore = Math.max(0, Math.min(1, (sedationScore + 1) / 2));
-  anxietyRiskScore = Math.max(0, Math.min(1, (anxietyRiskScore + 1) / 2));
-
-  const activationAlignment = 1.0 - Math.abs(activationScore - intent.activationTarget);
-  const anxietyAlignment = 1.0 - (anxietyRiskScore * intent.anxietySensitivity);
-  const enduranceAlignment = 1.0 - Math.abs(sedationScore - (1 - intent.cognitiveEndurance));
-
+  // Use deterministic effect vectors
+  const vectors = computeEffectVectors(chemotype);
+  
+  // Map effect vectors to intent alignment
+  // Energy maps to activationTarget
+  const activationAlignment = 1.0 - Math.abs(vectors.energy - intent.activationTarget);
+  
+  // Anxiety risk maps to anxietySensitivity (inverse - lower risk is better)
+  const anxietyAlignment = 1.0 - (vectors.anxietyRisk * intent.anxietySensitivity);
+  
+  // Body relaxation maps to cognitiveEndurance (inverse - more body = less cognitive)
+  const enduranceAlignment = 1.0 - Math.abs(vectors.bodyRelaxation - (1 - intent.cognitiveEndurance));
+  
+  // Clarity contributes to cognitive endurance alignment
+  const clarityAlignment = vectors.clarity * intent.cognitiveEndurance;
+  
   const intentAlignment = (
-    activationAlignment * 0.4 +
-    anxietyAlignment * 0.4 +
-    enduranceAlignment * 0.2
+    activationAlignment * 0.35 +
+    anxietyAlignment * 0.35 +
+    enduranceAlignment * 0.20 +
+    clarityAlignment * 0.10
   );
 
-  const finalTerpeneScore = terpeneScore * (1 - Math.min(interactionPenalty, 0.3));
+  // Terpene score based on overall vector health (all vectors in reasonable ranges)
+  const vectorHealth = (
+    (vectors.energy > 0 && vectors.energy < 1 ? 1.0 : 0.8) *
+    (vectors.clarity > 0 && vectors.clarity < 1 ? 1.0 : 0.8) *
+    (vectors.bodyRelaxation > 0 && vectors.bodyRelaxation < 1 ? 1.0 : 0.8) *
+    (vectors.anxietyRisk >= 0 && vectors.anxietyRisk < 1 ? 1.0 : 0.7)
+  );
+  
+  const terpeneScore = vectorHealth;
 
   // Cannabinoid scoring: penalize THC overshoot relative to anxiety sensitivity
   const thc = chemotype.cannabinoids.THC || 0;
@@ -287,10 +264,10 @@ function scoreCultivar(
   const cannabinoidScore = 1.0 - thcRisk * (1 - Math.min((cbd + cbg) / 30, 0.5));
 
   return {
-    score: finalTerpeneScore * intentAlignment * cannabinoidScore,
-    terpeneScore: finalTerpeneScore,
+    score: terpeneScore * intentAlignment * cannabinoidScore,
+    terpeneScore,
     intentAlignment,
-    interactionPenalty,
+    interactionPenalty: 0, // No longer using interaction penalties with deterministic vectors
     cannabinoidScore,
   };
 }
