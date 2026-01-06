@@ -278,10 +278,29 @@ if (STRAIN_LIBRARY.length === 0) {
 }
 
 /**
- * Get strain by ID (deterministic lookup)
+ * Create a lookup map for O(1) access by ID
+ * This ensures deterministic, fast mapping
+ */
+const STRAIN_BY_ID_MAP = new Map<string, Strain>();
+const STRAIN_BY_NAME_MAP = new Map<string, Strain>();
+
+STRAIN_LIBRARY.forEach(strain => {
+  // Map by ID
+  STRAIN_BY_ID_MAP.set(strain.id, strain);
+  
+  // Map by normalized name (for fallback matching)
+  const normalizedName = strain.name.toLowerCase().replace(/\s+/g, '-');
+  if (!STRAIN_BY_NAME_MAP.has(normalizedName)) {
+    STRAIN_BY_NAME_MAP.set(normalizedName, strain);
+  }
+});
+
+/**
+ * Get strain by ID (deterministic lookup, O(1) via map)
  */
 export function getStrainById(id: string): Strain | null {
-  return STRAIN_LIBRARY.find(s => s.id === id) || null;
+  if (!id || typeof id !== 'string') return null;
+  return STRAIN_BY_ID_MAP.get(id) || null;
 }
 
 /**
@@ -331,11 +350,19 @@ export function mapCultivarIdToStrain(cultivarId: string): Strain | null {
   
   // Normalize and try deterministic pattern matching (not heuristic)
   const normalizedId = cultivarId.toLowerCase().replace(/\s+/g, '-').replace(/^strain-/, '');
-  const byNormalized = STRAIN_LIBRARY.find(s => 
-    s.id === normalizedId || 
-    s.id === idWithoutPrefix ||
-    s.name.toLowerCase().replace(/\s+/g, '-') === normalizedId
-  );
+  
+  // Try normalized ID lookup
+  let byNormalized = STRAIN_BY_ID_MAP.get(normalizedId);
+  
+  // Try without prefix if different
+  if (!byNormalized && idWithoutPrefix !== normalizedId) {
+    byNormalized = STRAIN_BY_ID_MAP.get(idWithoutPrefix);
+  }
+  
+  // Try by normalized name as last resort
+  if (!byNormalized) {
+    byNormalized = STRAIN_BY_NAME_MAP.get(normalizedId);
+  }
   
   if (byNormalized && process.env.NODE_ENV === 'development') {
     console.debug(`[STRAIN_LIBRARY] Matched via normalization: "${cultivarId}" -> "${byNormalized.name}"`);
@@ -344,7 +371,7 @@ export function mapCultivarIdToStrain(cultivarId: string): Strain | null {
   if (!byNormalized) {
     console.error(`[STRAIN_LIBRARY] No match found for cultivarId: "${cultivarId}"`);
     console.error(`[STRAIN_LIBRARY] Tried: direct="${cultivarId}", withoutPrefix="${idWithoutPrefix}", normalized="${normalizedId}"`);
-    console.error(`[STRAIN_LIBRARY] Available IDs (first 10): ${STRAIN_LIBRARY.slice(0, 10).map(s => s.id).join(', ')}`);
+    console.error(`[STRAIN_LIBRARY] Available IDs (first 10): ${Array.from(STRAIN_BY_ID_MAP.keys()).slice(0, 10).join(', ')}`);
   }
   
   return byNormalized || null;
