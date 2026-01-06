@@ -17,7 +17,7 @@ import { OutcomeIntent } from './goOutcomeEngine';
  */
 export function translateGuidanceToIntent(
   guidance: StrategicGuidance,
-  clarifications?: Record<string, string>
+  clarifications?: Record<string, string | string[]>
 ): OutcomeIntent {
   // Helper: Map priority strings to numeric ranges
   const getActivationFromPriorities = (priorities: string[]): number => {
@@ -78,13 +78,27 @@ export function translateGuidanceToIntent(
       }
     }
 
-    // Handle tradeoff clarification
+    // Handle tradeoff clarification (sensitivities - multi-select array)
     if (clarifications.tradeoff) {
-      if (clarifications.tradeoff.includes('energized')) {
-        resolvedPriorities.push('energy');
-      } else if (clarifications.tradeoff.includes('anxiety')) {
-        resolvedAvoidances.push('anxiety');
-      }
+      const sensitivities = Array.isArray(clarifications.tradeoff) 
+        ? clarifications.tradeoff 
+        : [clarifications.tradeoff];
+      
+      // Apply cumulative penalties/weights for all selected sensitivities
+      // Do NOT collapse, rank, or override - pass all through to resolver
+      sensitivities.forEach(sensitivity => {
+        if (sensitivity === 'Anxiety') {
+          resolvedAvoidances.push('anxiety');
+        } else if (sensitivity === 'Overstimulation') {
+          resolvedAvoidances.push('overstimulation');
+        } else if (sensitivity === 'Mental drift') {
+          resolvedAvoidances.push('mental drift');
+        } else if (sensitivity === 'energized') {
+          resolvedPriorities.push('energy');
+        }
+        // "None / Balanced" is mutually exclusive - if present, don't add other avoidances
+        // But we still process other sensitivities if they exist
+      });
     }
 
     // Handle tolerance clarification

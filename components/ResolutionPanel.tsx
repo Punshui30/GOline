@@ -55,30 +55,32 @@ interface ResolutionPanelProps {
 /**
  * BlendBars Component
  * Horizontal bars for each cultivar
+ * Strain names = primary typography, percentages visually bound to names
  * No icons. No emojis. No chat bubbles.
  */
 function BlendBars({ cultivars }: { cultivars: ResolvedCultivar[] }) {
   return (
-    <div className="space-y-8 mb-12">
+    <div className="space-y-6 mb-8">
       {cultivars.map((cultivar, index) => (
-        <div key={index} className="blend-row">
-          <div className="flex items-center justify-between mb-2">
-            <div className="label">
-              <div className="text-lg font-medium text-white tracking-tight mb-1">
-                {cultivar.name}
-              </div>
-              <div className="text-xs uppercase tracking-wider text-white/40">
-                {cultivar.role === 'foundation' ? 'Foundation' : 
-                 cultivar.role === 'modulator' ? 'Modulator' : 'Accent'}
-              </div>
+        <div key={index} className="flex items-center gap-4">
+          {/* Strain name - primary typography */}
+          <div className="flex-1">
+            <div className="text-xl font-semibold text-white tracking-tight">
+              {cultivar.name}
             </div>
-            <div className="text-base text-white/50 font-mono">
-              {cultivar.percentage}%
+            <div className="text-xs uppercase tracking-wider text-white/40 mt-0.5">
+              {cultivar.role === 'foundation' ? 'Foundation' : 
+               cultivar.role === 'modulator' ? 'Modulator' : 'Accent'}
             </div>
           </div>
-          <div className="relative h-3 bg-white/5 overflow-hidden rounded-sm">
+          {/* Percentage - bound to name, same row, same visual weight */}
+          <div className="text-xl font-semibold text-white tabular-nums">
+            {cultivar.percentage}%
+          </div>
+          {/* Visual bar - subtle */}
+          <div className="w-32 h-2 bg-white/5 overflow-hidden rounded-sm">
             <div
-              className="bar h-full bg-white/25 transition-all duration-300"
+              className="h-full bg-white/30"
               style={{ width: `${cultivar.percentage}%` }}
             />
           </div>
@@ -300,7 +302,8 @@ function StackedConsumptionView({ stack }: { stack?: ResolvedStack }) {
 /**
  * Resolution Rationale Component
  * Read-only explanation of why this composition was chosen
- * Replaces adjustment sliders with trust-building clarity
+ * Collapsed by default, expandable on click
+ * Lower contrast than resolved composition
  */
 function ResolutionRationale({ 
   intent 
@@ -311,6 +314,7 @@ function ResolutionRationale({
     anxietySensitivity: number;
   };
 }) {
+  const [isExpanded, setIsExpanded] = useState(false);
   // Derive outcome alignment statements from intent
   const getOutcomeAlignment = () => {
     const alignments: string[] = [];
@@ -671,12 +675,13 @@ export default function ResolutionPanel({ blend, intent, isComputing }: Resoluti
   // If blend.cultivars has N entries, render exactly N cultivars
   
   return (
-    <div className="border-t border-white/10 pt-12 pb-8 mb-16">
-      <div className="mb-10">
-        <h2 className="text-lg font-medium text-white mb-1">
-          GO Line — Resolved Composition
+    <div className="pt-8 pb-8 mb-16">
+      {/* Resolved Composition - Visual anchor, no dividers above */}
+      <div className="mb-8">
+        <h2 className="text-xl font-semibold text-white mb-2">
+          Resolved Composition
         </h2>
-        <div className="text-xs text-white/30">
+        <div className="text-xs text-white/40">
           {blend.cultivars.length === 1 
             ? 'Single cultivar recommendation'
             : `${blend.cultivars.length}-cultivar blend`}
@@ -686,7 +691,7 @@ export default function ResolutionPanel({ blend, intent, isComputing }: Resoluti
       {/* 1. PRIMARY: Physical Stack Visualization - Only renders if ResolutionPanel explicitly allows it */}
       <PhysicalStackVisualization cultivars={blend.cultivars} stack={blend.stack} />
       
-      {/* 2. SECONDARY: Cultivar Breakdown */}
+      {/* 2. SECONDARY: Cultivar Breakdown - Strain names = primary typography */}
       <BlendBars cultivars={blend.cultivars} />
       
       {/* 3. TERTIARY: Metadata (optional) */}
@@ -696,7 +701,7 @@ export default function ResolutionPanel({ blend, intent, isComputing }: Resoluti
         </div>
       )}
       
-      {/* Resolution Rationale - replaces adjustment sliders */}
+      {/* Resolution Rationale - collapsed by default, lower contrast */}
       {intent && <ResolutionRationale intent={intent} />}
     </div>
   );

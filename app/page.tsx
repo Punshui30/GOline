@@ -547,7 +547,8 @@ export default function GOLineCalculator() {
   // Phase management
   const [phase, setPhase] = useState<InteractionPhase>('FREE');
   const [guidance, setGuidance] = useState<StrategicGuidance | null>(null);
-  const [clarificationAnswers, setClarificationAnswers] = useState<Record<string, string>>({});
+  // Clarification answers: can be string (single-select) or string[] (multi-select for sensitivities)
+  const [clarificationAnswers, setClarificationAnswers] = useState<Record<string, string | string[]>>({});
 
   // Phase 3 (LOCKED): Engine inputs and outputs
   const [intent, setIntent] = useState<OutcomeIntent | null>(null);
@@ -890,7 +891,7 @@ export default function GOLineCalculator() {
 
   // Phase 3: Lock and resolve - translate guidance to intent, call engine
   // VOICE STATE FIX #6: stopListening() must be called automatically on Resolve
-  const handleLock = (finalGuidance: StrategicGuidance, answers: Record<string, string>) => {
+  const handleLock = (finalGuidance: StrategicGuidance, answers: Record<string, string | string[]>) => {
     // Stop voice listening before resolving
     if (isListening && recognitionRef.current) {
       try {
@@ -963,11 +964,50 @@ export default function GOLineCalculator() {
   // REMOVED: handleReResolution - no adjustment sliders, no re-resolution
 
   // Handle clarification answer updates
-  const handleClarificationAnswer = (questionType: string, answer: string) => {
-    setClarificationAnswers(prev => ({
-      ...prev,
-      [questionType]: answer,
-    }));
+  // For sensitivity questions (tradeoff type), supports multi-select with mutual exclusivity for "None / Balanced"
+  const handleClarificationAnswer = (questionType: string, answer: string, isMultiSelect: boolean = false) => {
+    setClarificationAnswers(prev => {
+      // Check if this is a sensitivity question (tradeoff type with specific options)
+      const isSensitivityQuestion = questionType === 'tradeoff' && 
+        ['Anxiety', 'Overstimulation', 'Mental drift', 'None / Balanced'].includes(answer);
+      
+      if (isSensitivityQuestion || isMultiSelect) {
+        const current = prev[questionType];
+        const currentArray = Array.isArray(current) ? current : (current ? [current] : []);
+        
+        // Handle "None / Balanced" mutual exclusivity
+        if (answer === 'None / Balanced') {
+          // If selecting "None / Balanced", clear all others
+          return {
+            ...prev,
+            [questionType]: ['None / Balanced'],
+          };
+        } else {
+          // If selecting any other option, remove "None / Balanced" if present
+          let newArray = currentArray.filter(item => item !== 'None / Balanced');
+          
+          // Toggle the selected option
+          if (newArray.includes(answer)) {
+            // Deselect if already selected
+            newArray = newArray.filter(item => item !== answer);
+          } else {
+            // Select if not already selected
+            newArray.push(answer);
+          }
+          
+          return {
+            ...prev,
+            [questionType]: newArray.length > 0 ? newArray : undefined,
+          };
+        }
+      } else {
+        // Single-select behavior (non-sensitivity questions)
+        return {
+          ...prev,
+          [questionType]: answer,
+        };
+      }
+    });
   };
 
   // Check if all clarifications are answered
@@ -975,7 +1015,15 @@ export default function GOLineCalculator() {
     if (!guidance || !guidance.clarificationNeeded || guidance.clarificationNeeded.length === 0) {
       return true;
     }
-    return guidance.clarificationNeeded.every(q => clarificationAnswers[q.type] !== undefined);
+    return guidance.clarificationNeeded.every(q => {
+      const answer = clarificationAnswers[q.type];
+      // For multi-select (sensitivity questions), check if array has at least one item
+      if (Array.isArray(answer)) {
+        return answer.length > 0;
+      }
+      // For single-select, check if value exists
+      return answer !== undefined && answer !== null && answer !== '';
+    });
   };
 
   // convertToResolvedBlend function extracted to @/lib/convertToResolvedBlend
@@ -1127,9 +1175,9 @@ export default function GOLineCalculator() {
             </div>
           )}
 
-          {/* Input Section */}
-          <div className="mb-16">
-            <div className="text-xs uppercase tracking-wider text-white/40 mb-3">
+          {/* Input Section - De-emphasized, thought capture style */}
+          <div className="mb-12">
+            <div className="text-xs uppercase tracking-wider text-white/30 mb-2">
               OUTCOME INPUT
             </div>
               <div className="relative">
@@ -1143,9 +1191,9 @@ export default function GOLineCalculator() {
                     }
                   }}
                 placeholder="Describe desired outcome..."
-                className={`w-full h-32 px-4 py-3 pr-24 bg-transparent border-b border-white/10 text-white placeholder-white/20 text-sm focus:outline-none focus:border-white/30 resize-none transition-colors ${
+                className={`w-full h-28 px-3 py-2 pr-20 bg-transparent text-white/70 placeholder-white/15 text-xs focus:outline-none resize-none transition-colors ${
                     phase === 'LOCKED' 
-                      ? 'border-white/5 opacity-50 cursor-not-allowed' 
+                      ? 'opacity-40 cursor-not-allowed' 
                     : ''
                   }`}
                   disabled={isProcessing || phase === 'LOCKED'}
@@ -1311,22 +1359,33 @@ export default function GOLineCalculator() {
                           {question.question}
                         </label>
                         <div className="space-y-2">
-                          {question.options.map((option) => (
-                            <label
-                              key={option}
-                              className="flex items-center gap-3 p-3 bg-[#0a0b0e] border border-white/10 rounded-sm cursor-pointer hover:bg-white/5 transition-colors"
-                            >
-                              <input
-                                type="radio"
-                                name={`clarification-${question.type}`}
-                                value={option}
-                                checked={clarificationAnswers[question.type] === option}
-                                onChange={(e) => handleClarificationAnswer(question.type, e.target.value)}
-                                className="w-4 h-4 text-white border-white/30 focus:ring-white/50"
-                              />
-                              <span className="text-sm text-white/80">{option}</span>
-                            </label>
-                          ))}
+                          {question.options.map((option) => {
+                            // Determine if this is a sensitivity question (tradeoff type with specific options)
+                            const isSensitivityQuestion = question.type === 'tradeoff' && 
+                              ['Anxiety', 'Overstimulation', 'Mental drift', 'None / Balanced'].includes(option);
+                            
+                            const answer = clarificationAnswers[question.type];
+                            const isChecked = isSensitivityQuestion
+                              ? Array.isArray(answer) && answer.includes(option)
+                              : answer === option;
+                            
+                            return (
+                              <label
+                                key={option}
+                                className="flex items-center gap-3 p-3 bg-[#0a0b0e] border border-white/10 rounded-sm cursor-pointer hover:bg-white/5 transition-colors"
+                              >
+                                <input
+                                  type={isSensitivityQuestion ? "checkbox" : "radio"}
+                                  name={`clarification-${question.type}`}
+                                  value={option}
+                                  checked={isChecked}
+                                  onChange={(e) => handleClarificationAnswer(question.type, e.target.value, isSensitivityQuestion)}
+                                  className="w-4 h-4 text-white border-white/30 focus:ring-white/50"
+                                />
+                                <span className="text-sm text-white/80">{option}</span>
+                              </label>
+                            );
+                          })}
                         </div>
                       </div>
                     ))}
