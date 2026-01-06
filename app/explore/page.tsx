@@ -365,11 +365,6 @@ export default function ExplorePage() {
               cognitiveEndurance: intent.cognitiveEndurance,
               anxietySensitivity: intent.anxietySensitivity,
             }}
-            onAdjust={(adjustments) => {
-              // Re-evaluate with adjusted constraints
-              // For now, just log - full re-evaluation would require re-running exploreOutcomes
-              console.log('Adjustments requested:', adjustments);
-            }}
           />
         </div>
       </div>
@@ -378,4 +373,6 @@ export default function ExplorePage() {
 
   return null;
 }
+
+
 

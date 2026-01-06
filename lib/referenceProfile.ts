@@ -57,7 +57,7 @@ export function referenceProfileToIntent(reference: ReferenceProfile): OutcomeIn
     totalTerpeneLoad: Object.values(reference.terpenes).reduce((sum, val) => sum + (val || 0), 0),
     volatility: 'medium',
     sedationRisk: 'medium',
-    dataConfidence: 'user_provided',
+    dataConfidence: 'canonical' as const,
   };
 
   // Compute effect vectors from reference chemistry
@@ -71,7 +71,7 @@ export function referenceProfileToIntent(reference: ReferenceProfile): OutcomeIn
   
   const activationTarget = Math.max(0.1, Math.min(0.9, vectors.energy * 0.8 + (1 - vectors.bodyRelaxation) * 0.2));
   const anxietySensitivity = Math.max(0.1, Math.min(0.9, vectors.anxietyRisk * 0.7 + (reference.thc > 20 ? 0.2 : 0)));
-  const cognitiveEndurance = Math.max(0.1, Math.min(0.9, vectors.cognitiveClarity * 0.6 + vectors.duration * 0.4));
+  const cognitiveEndurance = Math.max(0.1, Math.min(0.9, vectors.clarity * 0.6 + vectors.duration * 0.4));
   const overshootTolerance = Math.max(0.1, Math.min(0.9, 0.5 - (vectors.anxietyRisk * 0.3)));
 
   return {

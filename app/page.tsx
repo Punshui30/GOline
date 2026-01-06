@@ -1045,7 +1045,7 @@ export default function GOLineCalculator() {
           
           return {
             ...prev,
-            [questionType]: newArray.length > 0 ? newArray : undefined,
+            ...(newArray.length > 0 ? { [questionType]: newArray } : {}),
           };
         }
       } else {
@@ -1307,16 +1307,21 @@ export default function GOLineCalculator() {
                   )}
                 </div>
               )}
-            </div>
-            
+              
               {isListening && (
-              <div className="mt-2 space-y-1">
-                <div className="text-xs text-white/40 uppercase tracking-wider">
-                  Listening...
+                <div className="mt-2 space-y-1">
+                  <div className="text-xs text-white/40 uppercase tracking-wider">
+                    Listening...
+                  </div>
+                  <div className="text-xs text-white/30">
+                    You can pause while speaking — press Stop when you're done.
+                  </div>
                 </div>
-                <div className="text-xs text-white/30">
-                  You can pause while speaking — press Stop when you're done.
-                </div>
+              )}
+            </div>
+            ) : (
+              <div className="text-white/50 text-sm">
+                Reference profile input form (to be implemented)
               </div>
             )}
             
