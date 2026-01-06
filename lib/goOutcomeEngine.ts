@@ -21,6 +21,7 @@ import { generateOutcomeExplanation } from '@/lib/outcomeBrain/explainability';
 
 export interface OutcomeIntent {
   activation: number; // 0-1: desire for stimulation/energy
+  activationTarget: number; // 0-1: target activation level (alias for activation in some contexts)
   anxietySensitivity: number; // 0-1: sensitivity to anxiety-inducing compounds
   cognitiveEndurance: number; // 0-1: need for sustained focus vs intensity
   avoidSedation: boolean; // avoid sedating profiles

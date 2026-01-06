@@ -75,11 +75,16 @@ export function referenceProfileToIntent(reference: ReferenceProfile): OutcomeIn
   const overshootTolerance = Math.max(0.1, Math.min(0.9, 0.5 - (vectors.anxietyRisk * 0.3)));
 
   return {
+    activation: activationTarget, // Map activationTarget to activation
     activationTarget,
     anxietySensitivity,
     cognitiveEndurance,
-    overshootTolerance,
-    temporalProfile: 'single-phase',
+    avoidSedation: false, // Default to false for reference profiles
+    physicalRelief: vectors.bodyRelaxation > 0.6 ? 0.7 : undefined,
+    cognitiveClarity: vectors.clarity > 0.6 ? 0.75 : undefined,
+    functionalEnergy: vectors.energy > 0.5 && vectors.energy < 0.8 ? 0.6 : undefined,
+    temporalOnset: vectors.duration > 0.5 ? 0.6 : 0.3,
+    temporalDuration: vectors.duration > 0.5 ? 0.7 : 0.4,
   };
 }
 

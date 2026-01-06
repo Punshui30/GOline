@@ -147,6 +147,7 @@ export function translateGuidanceToIntent(
 
   return {
     activation,
+    activationTarget: activation, // Set activationTarget equal to activation
     anxietySensitivity,
     cognitiveEndurance,
     avoidSedation,
