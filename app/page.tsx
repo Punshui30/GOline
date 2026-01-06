@@ -55,32 +55,6 @@ interface OutcomeResult {
   error?: string;
 }
 
-export default function Home() {
-  return (
-    <div className="py-4">
-      <div className="flex gap-1 h-12 items-stretch">
-        {composition.map((comp, idx) => (
-          <div
-            key={comp.cultivarId}
-            className="flex-1 bg-white/5 border border-white/10 rounded-sm flex flex-col items-center justify-center px-2 relative group"
-            style={{ flexBasis: `${comp.ratio}%` }}
-          >
-            <span className="text-white/70 text-xs font-light text-center truncate w-full">
-              {comp.displayName}
-            </span>
-            <span className="text-white/40 text-[10px] mt-0.5">{comp.ratio}%</span>
-          </div>
-        ))}
-      </div>
-      {composition.length > 1 && (
-        <div className="mt-2 flex items-center justify-center gap-2 text-xs text-white/40">
-          <span>Mix evenly</span>
-        </div>
-      )}
-    </div>
-  );
-}
-
 function generateConservativeExplanations(intent: OutcomeIntent, tier: ResolutionTier): string[] {
   const explanations: string[] = [];
   
@@ -341,7 +315,7 @@ interface Window {
   webkitSpeechRecognition: new () => SpeechRecognition;
 }
 
-export default function GOLineCalculator() {
+export default function Home() {
   // Phase 1 (FREE): User input
   const [userInput, setUserInput] = useState('');
   
