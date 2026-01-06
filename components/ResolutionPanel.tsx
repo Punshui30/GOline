@@ -259,8 +259,9 @@ function PreRollStacking({ stack, cultivars }: { stack?: ResolvedStack; cultivar
  * Deterministic stacked pre-roll visualization using divs
  * Each layer's height is proportional to its resolved percentage
  * Ordered by stack position (bottom → middle → top)
+ * Includes gram weight calculations and instructional copy
  */
-function PhysicalStackVisualization({ cultivars, stack }: { cultivars: ResolvedCultivar[]; stack?: ResolvedStack }) {
+function PhysicalStackVisualization({ cultivars, stack, totalWeight = 3.5 }: { cultivars: ResolvedCultivar[]; stack?: ResolvedStack; totalWeight?: number }) {
   // Type for layer with deterministic percentage
   type Layer = { 
     name: string; 
@@ -356,10 +357,25 @@ function PhysicalStackVisualization({ cultivars, stack }: { cultivars: ResolvedC
   // Fixed container height for deterministic rendering
   const CONTAINER_HEIGHT = 400; // pixels
 
+  // Calculate gram weights for each layer
+  const layersWithWeights = layers.map(layer => {
+    const weight = totalWeight * (layer.percentage / 100);
+    const roundedWeight = Math.round(weight * 100) / 100;
+    return {
+      ...layer,
+      weight: roundedWeight,
+    };
+  });
+
   return (
     <div className="mb-12">
-      <div className="text-xs uppercase tracking-wider text-[#A1A1AA] mb-6 font-medium">
+      <div className="text-xs uppercase tracking-wider text-[#A1A1AA] mb-4 font-medium">
         Stacked Consumption Visualization
+      </div>
+      
+      {/* Instructional copy */}
+      <div className="text-sm text-[#A1A1AA] mb-6 leading-relaxed" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+        If rolling a {totalWeight}g pre-roll, use:
       </div>
       
       {/* Deterministic vertical pre-roll representation */}
@@ -369,10 +385,10 @@ function PhysicalStackVisualization({ cultivars, stack }: { cultivars: ResolvedC
           className="flex flex-col-reverse items-center w-40 relative"
           style={{ height: `${CONTAINER_HEIGHT}px` }}
         >
-          {layers.map((layer, idx) => {
+          {layersWithWeights.map((layer, idx) => {
             // Calculate height in pixels from percentage
             const heightPx = (layer.percentage / 100) * CONTAINER_HEIGHT;
-            const minHeightPx = 32; // Minimum readable height
+            const minHeightPx = 40; // Minimum readable height (increased to fit gram weight)
             
             return (
               <div
@@ -391,8 +407,11 @@ function PhysicalStackVisualization({ cultivars, stack }: { cultivars: ResolvedC
                       {layer.role === 'foundation' ? 'Foundation' : 
                        layer.role === 'modulator' ? 'Modulator' : 'Accent'}
                     </div>
-                    <div className="text-[10px] text-[#A1A1AA] font-mono font-light">
+                    <div className="text-[10px] text-[#A1A1AA] font-mono font-light mb-0.5">
                       {layer.percentage.toFixed(0)}%
+                    </div>
+                    <div className="text-[10px] text-[#A1A1AA] font-mono font-light">
+                      {layer.weight.toFixed(2)}g
                     </div>
                   </div>
                 </div>
@@ -942,7 +961,7 @@ export default function ResolutionPanel({ blend, intent, isComputing }: Resoluti
       {blend.stack && <PreRollStacking stack={blend.stack} cultivars={blend.cultivars} />}
       
       {/* 1. PRIMARY: Physical Stack Visualization - Only renders if ResolutionPanel explicitly allows it */}
-      <PhysicalStackVisualization cultivars={blend.cultivars} stack={blend.stack} />
+      <PhysicalStackVisualization cultivars={blend.cultivars} stack={blend.stack} totalWeight={totalWeight} />
       
       {/* 3. Resolved Metrics - Read-only static bars */}
       {intent && <ResolvedMetrics intent={intent} />}
