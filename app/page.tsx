@@ -400,76 +400,7 @@ function BlendResolutionPanel({ blend, onAdjustment }: BlendResolutionPanelProps
         ))}
       </div>
 
-      {/* Adjustment Controls */}
-      {onAdjustment && (
-        <div className="border-t border-white/5 pt-8 space-y-8">
-          <div className="text-xs uppercase tracking-wider text-white/40 mb-6">
-            Adjustment Controls
-          </div>
-          
-          <div className="space-y-6">
-            {/* Energy ↔ Calm */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <div className="text-xs text-white/60 uppercase tracking-wider">Energy ↔ Calm</div>
-                <div className="text-xs text-white/40 font-mono">{energyValue}</div>
-              </div>
-              <input
-                type="range"
-                min="0"
-                max="100"
-                value={energyValue}
-                onChange={(e) => {
-                  const val = parseInt(e.target.value);
-                  setEnergyValue(val);
-                  onAdjustment('energy', val);
-                }}
-                className="w-full h-1 bg-white/5 appearance-none cursor-pointer accent-white/20"
-              />
-            </div>
-
-            {/* Duration ↔ Intensity */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <div className="text-xs text-white/60 uppercase tracking-wider">Duration ↔ Intensity</div>
-                <div className="text-xs text-white/40 font-mono">{durationValue}</div>
-              </div>
-              <input
-                type="range"
-                min="0"
-                max="100"
-                value={durationValue}
-                onChange={(e) => {
-                  const val = parseInt(e.target.value);
-                  setDurationValue(val);
-                  onAdjustment('duration', val);
-                }}
-                className="w-full h-1 bg-white/5 appearance-none cursor-pointer accent-white/20"
-              />
-            </div>
-
-            {/* Pain Relief ↔ Cognitive Lift */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <div className="text-xs text-white/60 uppercase tracking-wider">Pain Relief ↔ Cognitive Lift</div>
-                <div className="text-xs text-white/40 font-mono">{painValue}</div>
-              </div>
-              <input
-                type="range"
-                min="0"
-                max="100"
-                value={painValue}
-                onChange={(e) => {
-                  const val = parseInt(e.target.value);
-                  setPainValue(val);
-                  onAdjustment('pain', val);
-                }}
-                className="w-full h-1 bg-white/5 appearance-none cursor-pointer accent-white/20"
-              />
-            </div>
-          </div>
-        </div>
-      )}
+      {/* REMOVED: Adjustment Controls - no sliders allowed */}
     </div>
   );
 }
@@ -844,12 +775,15 @@ export default function GOLineCalculator() {
       return;
     }
 
+    // RESOLUTION CONTRACT: Each Resolve action invalidates and replaces all prior results
     setIsProcessing(true);
     setError(null);
     setGuidance(null);
     setClarificationAnswers({});
     setIntent(null);
     setOutcome(null);
+    setResolvedBlend(null); // Clear previous resolution
+    setNamedResolution(null); // Clear previous named resolution
     setLlmFailed(false);
     setPhase('FREE');
 
@@ -1026,43 +960,7 @@ export default function GOLineCalculator() {
     }
   };
   
-  // Re-resolution handler for sliders (triggers full pipeline with named outputs)
-  // VOICE STATE FIX #6: stopListening() must be called automatically on Re-resolution
-  const handleReResolution = (adjustedIntent: OutcomeIntent) => {
-    // Stop voice listening before re-resolving
-    if (isListening && recognitionRef.current) {
-      try {
-        explicitStopRef.current = true;
-        recognitionRef.current.stop();
-        setIsListening(false);
-      } catch (err) {
-        console.error('Failed to stop recognition during re-resolution:', err);
-      }
-    }
-    
-    try {
-      const resolvedOutcome = resolveOutcome(adjustedIntent);
-      setOutcome(resolvedOutcome);
-      
-      // Check for failure state
-      if (resolvedOutcome.failure) {
-        const blend = convertToResolvedBlend({ primaryBlend: [], stackingOptions: [], confidenceScore: 0, tradeoffs: [], rationaleSummary: '', resolutionMode: 'BLENDED' }, resolvedOutcome);
-        setResolvedBlend(blend);
-        return;
-      }
-      
-      // MANDATORY: Re-resolve to named strains
-      const named = resolveToNamedStrains(resolvedOutcome);
-      setNamedResolution(named);
-      
-      // Update ResolvedBlend
-      const blend = convertToResolvedBlend(named, resolvedOutcome);
-      setResolvedBlend(blend);
-    } catch (err) {
-      console.error('Re-resolution error:', err);
-      setError('Failed to re-resolve with adjustments.');
-    }
-  };
+  // REMOVED: handleReResolution - no adjustment sliders, no re-resolution
 
   // Handle clarification answer updates
   const handleClarificationAnswer = (questionType: string, answer: string) => {
@@ -1359,17 +1257,6 @@ export default function GOLineCalculator() {
                 phase === 'LOCKED' && // Only during active resolution (not clarification)
                 (!resolvedBlend || !intent) // Resolution not yet complete
               }
-              onAdjust={(adjustments) => {
-                if (!intent) return;
-                const adjustedIntent: OutcomeIntent = {
-                  ...intent,
-                  activationTarget: adjustments.activationTarget,
-                  cognitiveEndurance: adjustments.cognitiveEndurance,
-                  anxietySensitivity: adjustments.anxietySensitivity,
-                };
-                setIntent(adjustedIntent);
-                handleReResolution(adjustedIntent);
-              }}
             />
           )}
 

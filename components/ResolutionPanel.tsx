@@ -49,11 +49,6 @@ interface ResolutionPanelProps {
     cognitiveEndurance: number;
     anxietySensitivity: number;
   } | null;
-  onAdjust?: (adjustments: {
-    activationTarget: number;
-    cognitiveEndurance: number;
-    anxietySensitivity: number;
-  }) => void;
   isComputing?: boolean; // True when resolver is actively evaluating candidates
 }
 
@@ -303,108 +298,98 @@ function StackedConsumptionView({ stack }: { stack?: ResolvedStack }) {
 }
 
 /**
- * AdjustmentControls Component
- * Sliders that re-run the engine
+ * Resolution Rationale Component
+ * Read-only explanation of why this composition was chosen
+ * Replaces adjustment sliders with trust-building clarity
  */
-function AdjustmentControls({
-  intent,
-  onAdjust,
-}: {
+function ResolutionRationale({ 
+  intent 
+}: { 
   intent: {
     activationTarget: number;
     cognitiveEndurance: number;
     anxietySensitivity: number;
   };
-  onAdjust: (adjustments: {
-    activationTarget: number;
-    cognitiveEndurance: number;
-    anxietySensitivity: number;
-  }) => void;
 }) {
-  const [localActivation, setLocalActivation] = useState(intent.activationTarget * 100);
-  const [localEndurance, setLocalEndurance] = useState(intent.cognitiveEndurance * 100);
-  const [localAnxiety, setLocalAnxiety] = useState(intent.anxietySensitivity * 100);
-  
-  const handleActivationChange = (value: number) => {
-    setLocalActivation(value);
-    onAdjust({
-      activationTarget: value / 100,
-      cognitiveEndurance: intent.cognitiveEndurance,
-      anxietySensitivity: intent.anxietySensitivity,
-    });
+  // Derive outcome alignment statements from intent
+  const getOutcomeAlignment = () => {
+    const alignments: string[] = [];
+    
+    if (intent.activationTarget > 0.6) {
+      alignments.push('Mental stimulation without overstimulation');
+    } else if (intent.activationTarget < 0.4) {
+      alignments.push('Calm relaxation without sedation');
+    } else {
+      alignments.push('Balanced energy curve');
+    }
+    
+    if (intent.anxietySensitivity < 0.4) {
+      alignments.push('Low anxiety risk profile');
+    } else if (intent.anxietySensitivity > 0.6) {
+      alignments.push('Anxiety sensitivity constraints applied');
+    }
+    
+    if (intent.cognitiveEndurance > 0.6) {
+      alignments.push('Suitable for extended cognitive tasks');
+    } else if (intent.cognitiveEndurance < 0.4) {
+      alignments.push('Optimized for shorter duration');
+    }
+    
+    if (intent.activationTarget > 0.5 && intent.anxietySensitivity < 0.5) {
+      alignments.push('Suitable for social alertness');
+    }
+    
+    return alignments;
   };
   
-  const handleEnduranceChange = (value: number) => {
-    setLocalEndurance(value);
-    onAdjust({
-      activationTarget: intent.activationTarget,
-      cognitiveEndurance: value / 100,
-      anxietySensitivity: intent.anxietySensitivity,
-    });
-  };
-  
-  const handleAnxietyChange = (value: number) => {
-    setLocalAnxiety(value);
-    onAdjust({
-      activationTarget: intent.activationTarget,
-      cognitiveEndurance: intent.cognitiveEndurance,
-      anxietySensitivity: value / 100,
-    });
+  // Derive composition logic from intent
+  const getCompositionLogic = () => {
+    const logic: string[] = [];
+    
+    if (intent.activationTarget > 0.6) {
+      logic.push('Foundation strain establishes baseline mental clarity');
+    } else {
+      logic.push('Foundation strain provides stable base');
+    }
+    
+    if (intent.anxietySensitivity < 0.4) {
+      logic.push('Accent strain adds lift without increasing jitter');
+    } else {
+      logic.push('Modulator strain balances activation with anxiety mitigation');
+    }
+    
+    logic.push('Overall ratio minimizes sympathetic nervous system activation');
+    
+    return logic;
   };
   
   return (
-    <div className="border-t border-white/5 pt-8 space-y-8">
+    <div className="border-t border-white/5 pt-8 mt-12">
       <div className="text-xs uppercase tracking-wider text-white/40 mb-6">
-        Adjustment Controls
+        Why this works for your outcome
       </div>
       
-      <div className="space-y-6">
-        {/* Energy ↔ Calm */}
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <div className="text-xs text-white/60 uppercase tracking-wider">Energy ↔ Calm</div>
-            <div className="text-xs text-white/40 font-mono">{localActivation}</div>
-          </div>
-          <input
-            type="range"
-            min="0"
-            max="100"
-            value={localActivation}
-            onChange={(e) => handleActivationChange(parseInt(e.target.value))}
-            className="w-full h-1 bg-white/5 appearance-none cursor-pointer accent-white/20"
-          />
+      {/* Outcome Alignment */}
+      <div className="mb-8">
+        <div className="text-xs text-white/50 mb-3">Outcome Alignment</div>
+        <div className="space-y-2">
+          {getOutcomeAlignment().map((alignment, idx) => (
+            <div key={idx} className="text-xs text-white/60 leading-relaxed">
+              • {alignment}
+            </div>
+          ))}
         </div>
-        
-        {/* Duration ↔ Intensity */}
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <div className="text-xs text-white/60 uppercase tracking-wider">Duration ↔ Intensity</div>
-            <div className="text-xs text-white/40 font-mono">{localEndurance}</div>
-          </div>
-          <input
-            type="range"
-            min="0"
-            max="100"
-            value={localEndurance}
-            onChange={(e) => handleEnduranceChange(parseInt(e.target.value))}
-            className="w-full h-1 bg-white/5 appearance-none cursor-pointer accent-white/20"
-          />
-        </div>
-        
-        {/* Anxiety Sensitivity */}
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <div className="text-xs text-white/60 uppercase tracking-wider">Anxiety Sensitivity</div>
-            <div className="text-xs text-white/40 font-mono">{localAnxiety}</div>
-          </div>
-          <input
-            type="range"
-            min="0"
-            max="100"
-            value={localAnxiety}
-            onChange={(e) => handleAnxietyChange(parseInt(e.target.value))}
-            className="w-full h-1 bg-white/5 appearance-none cursor-pointer accent-white/20"
-          />
+      </div>
+      
+      {/* Composition Logic */}
+      <div className="mb-8">
+        <div className="text-xs text-white/50 mb-3">Composition Logic</div>
+        <div className="space-y-2">
+          {getCompositionLogic().map((logic, idx) => (
+            <div key={idx} className="text-xs text-white/60 leading-relaxed">
+              • {logic}
+            </div>
+          ))}
         </div>
       </div>
     </div>
@@ -417,8 +402,7 @@ function AdjustmentControls({
  */
 function InvalidResolutionState({ 
   failure, 
-  intent, 
-  onAdjust 
+  intent
 }: { 
   failure: ResolvedBlend['failure'];
   intent?: {
@@ -426,11 +410,6 @@ function InvalidResolutionState({
     cognitiveEndurance: number;
     anxietySensitivity: number;
   };
-  onAdjust?: (adjustments: {
-    activationTarget: number;
-    cognitiveEndurance: number;
-    anxietySensitivity: number;
-  }) => void;
 }) {
   const getFailureTitle = () => {
     return 'Unable to Resolve Blend';
@@ -489,42 +468,9 @@ function InvalidResolutionState({
     }
   };
 
-  const adjustmentControlsRef = useRef<HTMLDivElement>(null);
-  const [allowSingleCultivar, setAllowSingleCultivar] = useState(false);
-
-  const handleAdjustConstraints = () => {
-    // Scroll to adjustment controls
-    if (adjustmentControlsRef.current) {
-      adjustmentControlsRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      // Highlight the controls briefly
-      adjustmentControlsRef.current.style.transition = 'background-color 0.3s';
-      adjustmentControlsRef.current.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
-      setTimeout(() => {
-        if (adjustmentControlsRef.current) {
-          adjustmentControlsRef.current.style.backgroundColor = '';
-        }
-      }, 1000);
-    }
-  };
-
   const handleChangeInventory = () => {
     // For now, show a message - in future this could open inventory panel
-    alert('Inventory selection coming soon. For now, adjusting constraints may help.');
-  };
-
-  const handleAllowSingleCultivar = () => {
-    setAllowSingleCultivar(true);
-    // Re-run resolution with single cultivar allowed
-    // This would need to be passed through to the resolver
-    // For now, just set the flag and let user adjust constraints
-    if (onAdjust && intent) {
-      // Slightly relax constraints to increase chances
-      onAdjust({
-        activationTarget: intent.activationTarget,
-        cognitiveEndurance: intent.cognitiveEndurance,
-        anxietySensitivity: Math.max(0.1, intent.anxietySensitivity - 0.1),
-      });
-    }
+    alert('Inventory selection coming soon. Please try a different outcome description.');
   };
 
   // PART 6: Invalid resolutions show no stack, no cultivar list
@@ -548,43 +494,15 @@ function InvalidResolutionState({
       
       {/* PART 6: No stack visualization, no cultivar breakdown in invalid state */}
       
-      {/* Action Buttons - PART 2: Functional Buttons */}
+      {/* Action Buttons */}
       <div className="mb-12 flex flex-wrap gap-3">
-        <button
-          onClick={handleAdjustConstraints}
-          className="px-4 py-2 bg-white/10 hover:bg-white/15 border border-white/20 rounded-sm text-sm text-white/80 transition-colors"
-        >
-          [ Adjust constraints ]
-        </button>
         <button
           onClick={handleChangeInventory}
           className="px-4 py-2 bg-white/10 hover:bg-white/15 border border-white/20 rounded-sm text-sm text-white/80 transition-colors"
         >
           [ Change inventory ]
         </button>
-        <button
-          onClick={handleAllowSingleCultivar}
-          className="px-4 py-2 bg-white/10 hover:bg-white/15 border border-white/20 rounded-sm text-sm text-white/80 transition-colors"
-        >
-          [ Allow single-cultivar blend ]
-        </button>
       </div>
-
-      {/* Adjustment Controls - Visually Muted - PART 2: Scrollable target */}
-      {intent && onAdjust && (
-        <div ref={adjustmentControlsRef} className="mb-12 opacity-40">
-          <div className="text-xs uppercase tracking-wider text-white/40 mb-2">
-            ────────────────────────
-          </div>
-          <div className="text-xs uppercase tracking-wider text-white/30 mb-6">
-            Adjustment Controls
-          </div>
-          <div className="text-xs text-white/20 italic mb-4">
-            (sliders active, visually muted)
-          </div>
-          <AdjustmentControls intent={intent} onAdjust={onAdjust} />
-        </div>
-      )}
 
       {/* Resolution Rationale - PART 7: Bullet-only, factual */}
       <div className="mb-8">
@@ -603,12 +521,6 @@ function InvalidResolutionState({
         </div>
       </div>
 
-      {/* Single cultivar notice if allowed */}
-      {allowSingleCultivar && (
-        <div className="mt-4 text-xs text-white/40 italic">
-          Single-cultivar composition (explicitly allowed)
-        </div>
-      )}
     </div>
   );
 }
@@ -635,7 +547,7 @@ function ComputingState() {
  * ResolutionPanel Component
  * Main panel for structured resolution output
  */
-export default function ResolutionPanel({ blend, intent, onAdjust, isComputing }: ResolutionPanelProps) {
+export default function ResolutionPanel({ blend, intent, isComputing }: ResolutionPanelProps) {
   // Computing / Evaluation State - Show when resolver is actively working
   // Timing rules:
   // - Display immediately when resolve action is initiated
@@ -653,7 +565,7 @@ export default function ResolutionPanel({ blend, intent, onAdjust, isComputing }
   
   // PART 4: Hard Guards - Check for failure state first
   if (blend.failure) {
-    return <InvalidResolutionState failure={blend.failure} intent={intent} onAdjust={onAdjust} />;
+    return <InvalidResolutionState failure={blend.failure} intent={intent} />;
   }
   
   // PART 4: Hard Guards - Enforce naming rule
@@ -665,7 +577,6 @@ export default function ResolutionPanel({ blend, intent, onAdjust, isComputing }
         details: 'Resolution without cultivar names is invalid',
       }}
       intent={intent}
-      onAdjust={onAdjust}
     />;
   }
   
@@ -679,7 +590,6 @@ export default function ResolutionPanel({ blend, intent, onAdjust, isComputing }
         details: 'Resolution contains unnamed cultivars - invalid resolution',
       }}
       intent={intent}
-      onAdjust={onAdjust}
     />;
   }
   
@@ -694,7 +604,6 @@ export default function ResolutionPanel({ blend, intent, onAdjust, isComputing }
         details: 'Blend contains duplicate cultivars - invalid composition',
       }}
       intent={intent}
-      onAdjust={onAdjust}
     />;
   }
   
@@ -709,7 +618,6 @@ export default function ResolutionPanel({ blend, intent, onAdjust, isComputing }
         details: `Percentages sum to ${totalPercentage}%, must be exactly 100%`,
       }}
       intent={intent}
-      onAdjust={onAdjust}
     />;
   }
   
@@ -745,8 +653,8 @@ export default function ResolutionPanel({ blend, intent, onAdjust, isComputing }
         </div>
       )}
       
-      {/* Adjustment Controls - render exactly once */}
-      {onAdjust && <AdjustmentControls intent={intent} onAdjust={onAdjust} />}
+      {/* Resolution Rationale - replaces adjustment sliders */}
+      {intent && <ResolutionRationale intent={intent} />}
     </div>
   );
 }
