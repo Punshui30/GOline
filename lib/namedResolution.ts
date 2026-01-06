@@ -249,11 +249,35 @@ export function resolveToNamedStrains(outcome: OutcomeResult): NamedResolutionRe
     const stackedPhases = outcome.phases.map(phase => {
       const namedStrains: NamedStrainComponent[] = [];
       
+      // Log all components being mapped
+      if (process.env.NODE_ENV === 'development') {
+        console.debug(`[NAMED_RESOLUTION] STACKED mode - Mapping ${phase.composition.length} components for phase: ${phase.phase}`);
+        phase.composition.forEach((c, idx) => {
+          console.debug(`  [${idx}] cultivarId: "${c.cultivarId}", displayName: "${c.displayName}"`);
+        });
+      }
+      
       for (const component of phase.composition) {
         const named = convertToNamedComponent(component);
         if (named) {
           namedStrains.push(named);
+        } else {
+          // Log which component failed to map
+          console.error(`[NAMED_RESOLUTION] STACKED mode - Failed to map component: cultivarId="${component.cultivarId}", displayName="${component.displayName}"`);
+          console.error(`[NAMED_RESOLUTION] STRAIN_LIBRARY IDs: ${STRAIN_LIBRARY.map(s => s.id).join(', ')}`);
         }
+      }
+      
+      // Fail if no strains mapped for this phase
+      if (namedStrains.length === 0) {
+        const failedIds = phase.composition.map(c => c.cultivarId).join(', ');
+        const availableIds = STRAIN_LIBRARY.map(s => s.id).join(', ');
+        throw new Error(
+          `Failed to map chemotypes to named strains (STACKED mode, phase: ${phase.phase}).\n` +
+          `  CultivarIds from resolver: ${failedIds}\n` +
+          `  STRAIN_LIBRARY size: ${STRAIN_LIBRARY.length}\n` +
+          `  Available IDs: ${availableIds}`
+        );
       }
       
       // Normalize percentages to sum to 100
@@ -274,6 +298,15 @@ export function resolveToNamedStrains(outcome: OutcomeResult): NamedResolutionRe
     
     // Use first phase as primary blend for stacking options
     const primaryBlend = stackedPhases[0]?.strains || [];
+    
+    // Fail if primary blend is empty
+    if (primaryBlend.length === 0) {
+      throw new Error(
+        `Failed to map chemotypes to named strains (STACKED mode - no strains in primary phase).\n` +
+        `  STRAIN_LIBRARY size: ${STRAIN_LIBRARY.length}`
+      );
+    }
+    
     const stackingOptions = primaryBlend.length > 0 
       ? [generateStackingPlan(primaryBlend)]
       : [];
