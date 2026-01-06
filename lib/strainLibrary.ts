@@ -396,13 +396,6 @@ export const STRAIN_LIBRARY: Record<string, Strain> = {
 };
 
 // HARD ENFORCEMENT: Must have exactly 40 strains
-// In development: throw immediately to catch issues early
-// In production: warn but allow build to proceed (temporary until all 40 strains are added)
-const strainCount = Object.keys(STRAIN_LIBRARY).length;
-if (strainCount !== 40) {
-  if (process.env.NODE_ENV === 'development') {
-    throw new Error(`STRAIN_LIBRARY MUST CONTAIN EXACTLY 40 STRAINS. Found: ${strainCount}`);
-  } else {
-    console.warn(`[STRAIN_LIBRARY] WARNING: Expected 40 strains, found ${strainCount}. Missing ${40 - strainCount} strains.`);
-  }
+if (Object.keys(STRAIN_LIBRARY).length !== 40) {
+  throw new Error(`STRAIN_LIBRARY MUST CONTAIN EXACTLY 40 STRAINS. Found: ${Object.keys(STRAIN_LIBRARY).length}`);
 }
