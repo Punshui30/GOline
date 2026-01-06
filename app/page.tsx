@@ -880,11 +880,12 @@ export default function Home() {
                 <button
                   onClick={() => {
                     const preset: OutcomeIntent = {
+                      activation: 0.75,
                       activationTarget: 0.75,
                       anxietySensitivity: 0.3,
                       cognitiveEndurance: 0.6,
                       overshootTolerance: 0.5,
-                      temporalProfile: 'single-phase',
+                      avoidSedation: false,
                     };
                     setIntent(preset);
                     setUserInput('Social & upbeat');
@@ -912,11 +913,12 @@ export default function Home() {
                 <button
                   onClick={() => {
                     const preset: OutcomeIntent = {
+                      activation: 0.45,
                       activationTarget: 0.45,
                       anxietySensitivity: 0.5,
                       cognitiveEndurance: 0.7,
                       overshootTolerance: 0.4,
-                      temporalProfile: 'single-phase',
+                      avoidSedation: false,
                     };
                     setIntent(preset);
                     setUserInput('Relaxed but alert');
@@ -944,27 +946,12 @@ export default function Home() {
                 <button
                   onClick={() => {
                     const preset: OutcomeIntent = {
+                      activation: 0.6,
                       activationTarget: 0.6,
                       anxietySensitivity: 0.4,
                       cognitiveEndurance: 0.5,
                       overshootTolerance: 0.6,
-                      temporalProfile: 'multi-phase',
-                      phases: [
-                        {
-                          phase: 'Primary / Early',
-                          activationTarget: 0.7,
-                          anxietySensitivity: 0.4,
-                          cognitiveEndurance: 0.6,
-                          overshootTolerance: 0.5,
-                        },
-                        {
-                          phase: 'Later / Wind-Down',
-                          activationTarget: 0.3,
-                          anxietySensitivity: 0.5,
-                          cognitiveEndurance: 0.4,
-                          overshootTolerance: 0.6,
-                        },
-                      ],
+                      avoidSedation: false,
                     };
                     setIntent(preset);
                     setUserInput('Wind down later');
