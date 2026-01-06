@@ -1,9 +1,2 @@
 [build]
-  command = "pnpm install && pnpm build"
-  publish = ".next"
-
-[functions]
-  directory = "netlify/functions"
-
-[[plugins]]
-  package = "@netlify/plugin-nextjs"
+  command = "npm run build"
