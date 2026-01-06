@@ -853,11 +853,11 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen w-full bg-[#0a0b0e] text-white">
+    <main className="min-h-screen w-full bg-[#0B0B0D] text-[#EDEDED]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
       <div className="pt-16 pb-20">
         <div className="max-w-[900px] mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header */}
-          <div className="mb-12 text-center border-b border-white/5 pb-8 go-fade-in">
+            <div className="mb-12 text-center border-b border-white/6 pb-8 go-fade-in">
             <div className="flex items-center justify-center mb-4">
               <Image 
                 src="/go-logo.png" 
@@ -936,7 +936,7 @@ export default function Home() {
                     }
                   }}
                 placeholder="Describe desired outcome..."
-                className={`w-full h-28 px-3 py-2 pr-20 bg-transparent text-white/70 placeholder-white/15 text-xs focus:outline-none resize-none transition-colors ${
+                className={`w-full h-28 px-3 py-2 pr-20 bg-transparent text-[#EDEDED] placeholder-[#A1A1AA]/30 text-xs focus:outline-none resize-none transition-colors ${
                     phase === 'LOCKED' 
                       ? 'opacity-40 cursor-not-allowed' 
                     : ''
@@ -1068,7 +1068,7 @@ export default function Home() {
             <div className="mb-8 space-y-6 go-fade-in">
               {/* Clarification Questions */}
               {guidance.clarificationNeeded && guidance.clarificationNeeded.length > 0 && (
-                <div className="bg-[#0a0b0e] border border-white/20 p-8" style={{ boxShadow: '0 1px 3px rgba(0, 0, 0, 0.3)' }}>
+                <div className="bg-[#0F1013] border border-white/6 p-8" style={{ boxShadow: '0 1px 3px rgba(0, 0, 0, 0.3)' }}>
                   <h2 className="text-base font-medium text-white mb-6">
                     Clarifications Needed
                   </h2>
@@ -1094,7 +1094,7 @@ export default function Home() {
                                 key={option}
                                 className={`inline-flex items-center px-3 py-1.5 cursor-pointer transition-colors ${
                                   isChecked
-                                    ? 'bg-[#D4AF37]/20 text-white border border-[#D4AF37]/40'
+                                    ? 'bg-[#D6A84A]/20 text-[#EDEDED] border border-[#D6A84A]/40'
                                     : 'bg-white/5 text-white/70 border border-white/10 hover:bg-white/10 hover:border-white/20'
                                 }`}
                               >
@@ -1118,7 +1118,7 @@ export default function Home() {
               )}
 
               {/* Assumptions Panel */}
-              <div className="bg-[#111216] border border-white/10 p-6">
+              <div className="bg-[#0F1013] border border-white/6 p-6">
                 <h2 className="text-lg font-medium text-white mb-4">
                   Assumptions We're Making
                 </h2>
@@ -1196,7 +1196,7 @@ export default function Home() {
 
           {/* LLM Failure State */}
           {llmFailed && (
-            <div className="mb-8 p-8 bg-[#111216] border border-white/10 rounded-sm text-center">
+            <div className="mb-8 p-8 bg-[#0F1013] border border-white/6 text-center">
               <h2 className="text-xl font-medium text-white mb-4">
                 Unable to Resolve Outcome
               </h2>

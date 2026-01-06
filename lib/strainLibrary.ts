@@ -13,6 +13,7 @@ import { normalizeCultivarId } from './strainIdNormalization';
 
 export interface Strain {
   name: string;
+  aliases?: string[];  // Known aliases (e.g., ["gsc", "girl scout cookies"])
   thc: [number, number];  // [min, max] THC range
   cbd: [number, number];  // [min, max] CBD range
   terpenes: {
@@ -34,6 +35,7 @@ export interface Strain {
 export const STRAIN_LIBRARY: Record<string, Strain> = {
   "blue-dream": {
     name: "Blue Dream",
+    aliases: ["blue dream", "bluedream"],
     thc: [18, 24],
     cbd: [0, 1],
     terpenes: {
@@ -496,7 +498,11 @@ if (STRAIN_COUNT === 0) {
 }
 
 if (STRAIN_COUNT !== 40) {
-  console.warn(`[STRAIN_LIBRARY] Expected 40 strains, found ${STRAIN_COUNT}`);
+  const errorMsg = `[STRAIN_LIBRARY] CRITICAL: Expected exactly 40 strains, found ${STRAIN_COUNT}`;
+  console.error(errorMsg);
+  if (process.env.NODE_ENV === 'development') {
+    throw new Error(errorMsg);
+  }
 }
 
 /**
@@ -509,6 +515,34 @@ const NORMALIZED_STRAIN_LIBRARY: Record<string, Strain> = Object.fromEntries(
     data
   ])
 );
+
+/**
+ * Create alias lookup map for O(1) alias resolution
+ * Maps normalized aliases to canonical strain IDs
+ */
+const ALIAS_TO_CANONICAL: Record<string, string> = {};
+Object.entries(STRAIN_LIBRARY).forEach(([canonicalId, strain]) => {
+  const normalizedCanonical = normalizeCultivarId(canonicalId);
+  
+  // Add normalized canonical ID as self-reference
+  ALIAS_TO_CANONICAL[normalizedCanonical] = normalizedCanonical;
+  
+  // Add normalized name as alias
+  const normalizedName = normalizeCultivarId(strain.name);
+  if (normalizedName !== normalizedCanonical) {
+    ALIAS_TO_CANONICAL[normalizedName] = normalizedCanonical;
+  }
+  
+  // Add normalized aliases
+  if (strain.aliases && Array.isArray(strain.aliases)) {
+    strain.aliases.forEach(alias => {
+      const normalizedAlias = normalizeCultivarId(alias);
+      if (normalizedAlias !== normalizedCanonical) {
+        ALIAS_TO_CANONICAL[normalizedAlias] = normalizedCanonical;
+      }
+    });
+  }
+});
 
 /**
  * Get strain by normalized ID (deterministic lookup, O(1))
@@ -536,9 +570,17 @@ export function getStrainById(cultivarId: string): Strain | null {
 }
 
 /**
+ * Resolve alias to canonical ID
+ * Checks aliases, normalized names, and canonical IDs
+ */
+function resolveAliasToCanonical(normalizedId: string): string | null {
+  return ALIAS_TO_CANONICAL[normalizedId] || null;
+}
+
+/**
  * Map cultivarId to Strain from STRAIN_LIBRARY
  * 
- * MANDATORY: Normalizes IDs and enforces strict mapping
+ * MANDATORY: Normalizes IDs, resolves aliases, and enforces strict mapping
  * If mapping fails, throws error (no silent skipping)
  */
 export function mapCultivarIdToStrain(cultivarId: string): Strain {
@@ -548,15 +590,27 @@ export function mapCultivarIdToStrain(cultivarId: string): Strain {
   
   // Normalize the ID
   const normalizedId = normalizeCultivarId(cultivarId);
-  const strain = NORMALIZED_STRAIN_LIBRARY[normalizedId];
+  
+  // Try direct lookup first
+  let strain = NORMALIZED_STRAIN_LIBRARY[normalizedId];
+  
+  // If not found, try alias resolution
+  if (!strain) {
+    const canonicalId = resolveAliasToCanonical(normalizedId);
+    if (canonicalId) {
+      strain = NORMALIZED_STRAIN_LIBRARY[canonicalId];
+    }
+  }
   
   if (!strain) {
     const availableIds = Object.keys(NORMALIZED_STRAIN_LIBRARY).slice(0, 10).join(', ');
+    const availableAliases = Object.keys(ALIAS_TO_CANONICAL).slice(0, 10).join(', ');
     throw new Error(
       `STRAIN_MAPPING_FAILURE: ${cultivarId} → ${normalizedId}\n` +
       `  CultivarId "${cultivarId}" does not exist in STRAIN_LIBRARY.\n` +
       `  STRAIN_LIBRARY has ${STRAIN_COUNT} strains.\n` +
-      `  Available IDs (first 10): ${availableIds}`
+      `  Available IDs (first 10): ${availableIds}\n` +
+      `  Available aliases (first 10): ${availableAliases}`
     );
   }
   

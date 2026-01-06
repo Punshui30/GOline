@@ -358,31 +358,44 @@ export function resolveToNamedStrains(outcome: OutcomeResult): NamedResolutionRe
     });
   }
   
-  // Validate all cultivarIds exist in STRAIN_LIBRARY before processing
-  const invalidIds: string[] = [];
-  for (const cultivar of outcome.selectedCultivars) {
-    const normalizedId = normalizeCultivarId(cultivar.id);
-    try {
-      mapCultivarIdToStrain(cultivar.id);
-    } catch (error) {
-      invalidIds.push(cultivar.id);
-    }
-  }
-  
-  if (invalidIds.length > 0) {
-    const availableIds = getAllStrainIds().slice(0, 20).join(', ');
-    throw new Error(
-      `STRAIN_MAPPING_FAILURE: Resolver output contains invalid cultivarIds.\n` +
-      `  Invalid IDs: ${invalidIds.join(', ')}\n` +
-      `  STRAIN_LIBRARY size: ${getStrainCount()}\n` +
-      `  Available IDs (first 20): ${availableIds}\n` +
-      `  Resolver may only output cultivarIds that exist in STRAIN_LIBRARY after normalization.`
-    );
-  }
-  
+  // Map cultivarIds to strains
+  // In development: throw on unmapped strains (hard assertion)
+  // In production: skip unmapped strains (defensive fallback)
   for (let i = 0; i < outcome.selectedCultivars.length; i++) {
     const cultivar = outcome.selectedCultivars[i];
     const ratio = outcome.ratios[i];
+    
+    // Normalize ID before mapping
+    const normalizedId = normalizeCultivarId(cultivar.id);
+    
+    // Try to map - behavior differs by environment
+    let strain: Strain | null = null;
+    try {
+      strain = mapCultivarIdToStrain(cultivar.id);
+    } catch (error: any) {
+      // Development: Hard assertion - throw immediately
+      if (process.env.NODE_ENV === 'development') {
+        console.error(`[NAMED_RESOLUTION] DEVELOPMENT: Unmapped cultivarId detected`);
+        console.error(`[NAMED_RESOLUTION] CultivarId: "${cultivar.id}" → normalized: "${normalizedId}"`);
+        console.error(`[NAMED_RESOLUTION] Error: ${error.message}`);
+        console.error(`[NAMED_RESOLUTION] STRAIN_LIBRARY has ${getStrainCount()} strains`);
+        console.error(`[NAMED_RESOLUTION] Available IDs (first 10): ${getAllStrainIds().slice(0, 10).join(', ')}`);
+        throw new Error(
+          `STRAIN_MAPPING_FAILURE (DEV): Resolver output contains unmapped cultivarId.\n` +
+          `  This should not happen during normal operation.\n` +
+          `  CultivarId: "${cultivar.id}" → normalized: "${normalizedId}"\n` +
+          `  ${error.message}`
+        );
+      }
+      
+      // Production: Defensive fallback - log and skip
+      console.warn(`[NAMED_RESOLUTION] PRODUCTION: Skipping unmapped cultivarId: "${cultivar.id}" → normalized: "${normalizedId}"`);
+      console.warn(`[NAMED_RESOLUTION] Error: ${error.message}`);
+      console.warn(`[NAMED_RESOLUTION] STRAIN_LIBRARY has ${getStrainCount()} strains`);
+      console.warn(`[NAMED_RESOLUTION] Available IDs (first 10): ${getAllStrainIds().slice(0, 10).join(', ')}`);
+      // Skip this cultivar - do not add to namedStrains
+      continue;
+    }
     
     // Convert to the format expected by convertToNamedComponent
     const component = {
@@ -392,18 +405,23 @@ export function resolveToNamedStrains(outcome: OutcomeResult): NamedResolutionRe
       ratio: ratio,
     };
     
-    // This will not throw now since we validated above, but keep try-catch for safety
+    // Convert to named component (should not throw since we validated above)
     try {
       const named = convertToNamedComponent(component);
       namedStrains.push(named);
     } catch (error: any) {
-      // Log which component failed to map with full context (ALWAYS log, not just dev)
-      console.error(`[NAMED_RESOLUTION] Failed to map component: cultivarId="${cultivar.id}", displayName="${cultivar.displayName}"`);
-      console.error(`[NAMED_RESOLUTION] Error: ${error.message}`);
-      console.error(`[NAMED_RESOLUTION] STRAIN_LIBRARY has ${getStrainCount()} strains`);
-      console.error(`[NAMED_RESOLUTION] Available IDs (first 10): ${getAllStrainIds().slice(0, 10).join(', ')}`);
-      // Re-throw to abort render (no partial rendering)
-      throw error;
+      // This should not happen if mapCultivarIdToStrain succeeded
+      if (process.env.NODE_ENV === 'development') {
+        throw new Error(
+          `STRAIN_MAPPING_FAILURE (DEV): Failed to convert component after successful mapping.\n` +
+          `  CultivarId: "${cultivar.id}"\n` +
+          `  Error: ${error.message}`
+        );
+      }
+      // Production: Log and skip
+      console.warn(`[NAMED_RESOLUTION] PRODUCTION: Failed to convert component: cultivarId="${cultivar.id}"`);
+      console.warn(`[NAMED_RESOLUTION] Error: ${error.message}`);
+      continue;
     }
   }
   

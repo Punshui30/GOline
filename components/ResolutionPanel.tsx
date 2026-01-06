@@ -65,17 +65,17 @@ function BlendBars({ cultivars }: { cultivars: ResolvedCultivar[] }) {
         <div key={index} className="flex items-center gap-6">
           {/* Strain name - primary typography (H1) */}
           <div className="flex-1">
-            <div className="text-xl font-semibold text-white">
+            <div className="text-xl font-medium text-[#EDEDED]" style={{ fontFamily: 'Inter, system-ui, sans-serif', letterSpacing: '-0.01em' }}>
               {cultivar.name}
             </div>
           </div>
           {/* Role - uppercase, subdued (Meta) */}
-          <div className="text-xs uppercase tracking-wider text-white/40 w-24">
+          <div className="text-xs uppercase tracking-wider text-[#A1A1AA] w-24 font-light">
             {cultivar.role === 'foundation' ? 'Foundation' : 
              cultivar.role === 'modulator' ? 'Modulator' : 'Accent'}
           </div>
           {/* Percentage - right-aligned (Meta) */}
-          <div className="text-base font-medium text-white/70 tabular-nums w-16 text-right">
+          <div className="text-base font-light text-[#A1A1AA] tabular-nums w-16 text-right">
             {cultivar.percentage}%
           </div>
         </div>
@@ -188,8 +188,8 @@ function PhysicalStackVisualization({ cultivars, stack }: { cultivars: ResolvedC
 
   return (
     <div className="mb-12">
-      <div className="text-xs uppercase tracking-wider text-white/40 mb-6">
-        Physical Stack Layout
+      <div className="text-xs uppercase tracking-wider text-[#A1A1AA] mb-6 font-medium">
+        Stacked Consumption Visualization
       </div>
       
       {/* Deterministic vertical pre-roll representation */}
@@ -214,14 +214,14 @@ function PhysicalStackVisualization({ cultivars, stack }: { cultivars: ResolvedC
               >
                 <div className="h-full flex items-center justify-center p-2">
                   <div className="text-center">
-                    <div className="text-xs font-medium text-white mb-1 leading-tight">
+                    <div className="text-xs font-medium text-[#EDEDED] mb-1 leading-tight" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
                       {layer.name}
                     </div>
-                    <div className="text-[10px] uppercase tracking-wider text-white/50 mb-1">
+                    <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] mb-1 font-light">
                       {layer.role === 'foundation' ? 'Foundation' : 
                        layer.role === 'modulator' ? 'Modulator' : 'Accent'}
                     </div>
-                    <div className="text-[10px] text-white/40 font-mono">
+                    <div className="text-[10px] text-[#A1A1AA] font-mono font-light">
                       {layer.percentage.toFixed(0)}%
                     </div>
                   </div>
@@ -243,7 +243,7 @@ function StackedConsumptionView({ stack }: { stack?: ResolvedStack }) {
   if (!stack) return null;
   
   return (
-    <div className="mb-12 pt-8 border-t border-white/5">
+    <div className="mb-12 pt-8 border-t border-white/6">
       <div className="text-xs uppercase tracking-wider text-white/40 mb-6">
         Stacked Consumption Layout
       </div>
@@ -314,23 +314,23 @@ function ResolvedMetrics({
   ];
 
   return (
-    <div className="mb-8 pt-6 border-t border-white/5">
-      <div className="text-xs uppercase tracking-wider text-white/40 mb-4">
+    <div className="mb-8 pt-6 border-t border-white/6">
+      <div className="text-xs uppercase tracking-wider text-[#A1A1AA] mb-4 font-medium">
         Resolved Metrics
       </div>
       <div className="space-y-4">
         {metrics.map((metric, idx) => (
           <div key={idx} className="flex items-center gap-4">
-            <div className="text-xs text-white/60 w-24 uppercase tracking-wider">
+            <div className="text-xs text-[#A1A1AA] w-24 uppercase tracking-wider font-light">
               {metric.label}
             </div>
-            <div className="flex-1 h-1 bg-white/5">
+            <div className="flex-1 h-1 bg-white/6">
               <div
-                className="h-full bg-white/30"
+                className="h-full bg-[#D6A84A]/40"
                 style={{ width: `${metric.value * 100}%` }}
               />
             </div>
-            <div className="text-xs text-white/50 tabular-nums w-12 text-right">
+            <div className="text-xs text-[#A1A1AA] tabular-nums w-12 text-right font-light">
               {Math.round(metric.value * 100)}%
             </div>
           </div>
@@ -442,23 +442,24 @@ function ResolutionRationale({
   };
 
   return (
-    <div className="mt-8 pt-6 border-t border-white/5">
+    <div className="mt-8 pt-6 border-t border-white/6">
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center justify-between text-left text-xs uppercase tracking-wider text-white/40 hover:text-white/60 transition-colors"
+        className="w-full flex items-center justify-between text-left text-xs uppercase tracking-wider text-[#A1A1AA] hover:text-[#EDEDED] transition-colors font-medium"
+        style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
       >
         <span>Why this works</span>
-        <span className="text-white/30">{isExpanded ? '−' : '+'}</span>
+        <span className="text-[#A1A1AA]/50">{isExpanded ? '−' : '+'}</span>
       </button>
       
       {isExpanded && (
-        <div className="mt-6 space-y-6 text-white/50">
+        <div className="mt-6 space-y-6 text-[#A1A1AA]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
           {/* Outcome Alignment */}
           <div>
-            <div className="text-xs text-white/40 mb-2">Outcome Alignment</div>
+            <div className="text-xs text-[#A1A1AA] mb-2 font-medium">Outcome Alignment</div>
             <div className="space-y-1.5">
               {getOutcomeAlignment().map((alignment, idx) => (
-                <div key={idx} className="text-xs text-white/50 leading-relaxed">
+                <div key={idx} className="text-xs text-[#A1A1AA] leading-relaxed font-light">
                   • {alignment}
                 </div>
               ))}
@@ -467,10 +468,10 @@ function ResolutionRationale({
           
           {/* Composition Logic */}
           <div>
-            <div className="text-xs text-white/40 mb-2">Composition Logic</div>
+            <div className="text-xs text-[#A1A1AA] mb-2 font-medium">Composition Logic</div>
             <div className="space-y-1.5">
               {getCompositionLogic().map((logic, idx) => (
-                <div key={idx} className="text-xs text-white/50 leading-relaxed">
+                <div key={idx} className="text-xs text-[#A1A1AA] leading-relaxed font-light">
                   • {logic}
                 </div>
               ))}
@@ -596,7 +597,7 @@ function InvalidResolutionState({
       <div className="mb-12 flex flex-wrap gap-3">
         <button
           onClick={handleChangeInventory}
-          className="px-4 py-2 bg-white/10 hover:bg-white/15 border border-white/10 hover:border-white/20 text-xs text-white/70 uppercase tracking-wider transition-colors"
+          className="px-4 py-2 bg-[#0F1013] hover:bg-[#0F1013]/80 border border-white/6 hover:border-white/10 text-xs text-[#A1A1AA] uppercase tracking-wider transition-colors"
         >
           [ Change inventory ]
         </button>
@@ -604,15 +605,12 @@ function InvalidResolutionState({
 
       {/* Resolution Rationale - PART 7: Bullet-only, factual */}
       <div className="mb-8">
-        <div className="text-xs uppercase tracking-wider text-white/40 mb-4">
-          ────────────────────────
-        </div>
-        <div className="text-xs uppercase tracking-wider text-white/40 mb-4">
+        <div className="text-xs uppercase tracking-wider text-[#A1A1AA] mb-4 font-medium">
           Resolution Rationale
         </div>
         <div className="space-y-2">
           {getRationalePoints().map((point, idx) => (
-            <div key={idx} className="text-xs text-white/50 leading-relaxed">
+            <div key={idx} className="text-xs text-[#A1A1AA] leading-relaxed" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
               • {point}
           </div>
           ))}
