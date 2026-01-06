@@ -856,9 +856,9 @@ export default function Home() {
     <main className="min-h-screen w-full bg-[#0B0B0D] text-[#EDEDED]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
       <div className="pt-16 pb-20">
         <div className="max-w-[900px] mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Header */}
-            <div className="mb-12 text-center border-b border-white/6 pb-8 go-fade-in">
-            <div className="flex items-center justify-center mb-4">
+          {/* SECTION 1: LOGO + PRODUCT IDENTITY */}
+          <div className="mb-12 text-center pb-8 border-b border-[rgba(255,255,255,0.06)]">
+            <div className="flex items-center justify-center">
               <Image 
                 src="/go-logo.png" 
                 alt="GO Line" 
@@ -869,17 +869,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Explore Mode Link */}
-          {phase === 'FREE' && (
-            <div className="mb-8">
-              <a
-                href="/explore"
-                className="inline-block px-4 py-2 bg-white/5 border border-white/10 rounded-sm text-sm text-white/70 hover:text-white hover:bg-white/10 transition-colors"
-              >
-                Add what you have →
-              </a>
-            </div>
-          )}
 
           {/* Input Mode Toggle */}
           <div className="mb-6 flex gap-4 text-xs">
@@ -918,9 +907,9 @@ export default function Home() {
             </button>
           </div>
 
-          {/* Input Section - De-emphasized, thought capture style */}
-          <div className="mb-12">
-            <div className="text-xs uppercase tracking-wider text-white/30 mb-2">
+          {/* SECTION 2: INPUT PANEL */}
+          <div className="mb-12 border-b border-[rgba(255,255,255,0.06)] pb-8">
+            <div className="text-xs uppercase tracking-wider text-[#A1A1AA] mb-4 font-medium">
               {inputMode === 'outcome' ? 'OUTCOME INPUT' : 'REFERENCE PROFILE'}
             </div>
             
@@ -969,12 +958,9 @@ export default function Home() {
               )}
               
               {isListening && (
-                <div className="mt-2 space-y-1">
-                  <div className="text-xs text-white/40 uppercase tracking-wider">
+                <div className="mt-2">
+                  <div className="text-xs text-[#A1A1AA] uppercase tracking-wider">
                     Listening...
-                  </div>
-                  <div className="text-xs text-white/30">
-                    You can pause while speaking — press Stop when you're done.
                   </div>
                 </div>
               )}
@@ -1004,10 +990,7 @@ export default function Home() {
               </div>
             </div>
 
-          {/* Deterministic Resolution Panel - NO CHAT-STYLE OUTPUT */}
-          {/* STEP 1: Chat-style rendering is DISABLED - removed all conversation.map JSX */}
-          {/* Show ResolutionPanel when computing OR when we have resolution data */}
-          {/* Computing state: Only show when actively resolving (not during clarification) */}
+          {/* SECTION 3: OUTPUT / RESOLUTION PANEL */}
           {(isProcessing || resolvedBlend || intent) && (
             <ResolutionPanel
               blend={resolvedBlend}
@@ -1017,42 +1000,14 @@ export default function Home() {
                 anxietySensitivity: intent.anxietySensitivity || 0.5,
               } : null}
               isComputing={
-                // Timing rules:
-                // - Display immediately when resolve action is initiated
-                // - Remove instantly when resolver returns resolved or rejected
-                // - Do not persist after resolution completes
                 isProcessing && 
-                phase === 'LOCKED' && // Only during active resolution (not clarification)
-                (!resolvedBlend || !intent) // Resolution not yet complete
+                phase === 'LOCKED' && 
+                (!resolvedBlend || !intent)
               }
             />
           )}
 
           {/* Adjustment Controls are now handled by ResolutionPanel component - no duplicate */}
-
-          {/* Conversation Output - Only show if no structured resolution */}
-          {(conversation.length > 0 || isProcessing) && !outcome && (
-            <div className="mb-20 space-y-6">
-              {conversation.map((msg, idx) => (
-                <div
-                  key={idx}
-                  className={
-                    msg.role === "assistant"
-                      ? "text-white text-sm leading-relaxed whitespace-pre-wrap max-w-[85%]"
-                      : "text-white/50 text-sm ml-auto text-right max-w-[80%]"
-                  }
-                >
-                  {msg.content}
-                </div>
-              ))}
-
-              {isProcessing && (
-                <div className="text-white/40 text-sm">
-                  Resolving outcome...
-                </div>
-              )}
-            </div>
-          )}
 
           {/* Explanatory copy removed per PART 5 - no marketing copy in active states */}
 

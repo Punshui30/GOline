@@ -53,206 +53,132 @@ interface ResolutionPanelProps {
 }
 
 /**
- * Blend Summary Component
- * Cultivar names, percentages, one-sentence purpose
+ * Blend Composition Table Component
+ * Table-style layout: Cultivar | Role | % | Grams
  */
-function BlendSummary({ cultivars, intent }: { cultivars: ResolvedCultivar[]; intent: { activationTarget: number; cognitiveEndurance: number; anxietySensitivity: number } }) {
-  // Derive purpose from outcome vectors (deterministic, not prose)
-  const getPurpose = () => {
-    const duration = intent.cognitiveEndurance > 0.6 ? '4-hour' : intent.cognitiveEndurance > 0.4 ? '3-hour' : '2-hour';
-    
-    if (intent.anxietySensitivity < 0.4 && intent.activationTarget > 0.5) {
-      return `Balanced Social Calm (${duration} window). Designed to reduce anxiety while maintaining verbal clarity and light mood elevation.`;
-    } else if (intent.activationTarget > 0.6) {
-      return `Mental Activation (${duration} window). Designed for sustained focus and cognitive clarity without overstimulation.`;
-    } else if (intent.activationTarget < 0.4) {
-      return `Calm Relaxation (${duration} window). Designed for physical comfort and mental ease without sedation.`;
-    } else {
-      return `Balanced Effect (${duration} window). Designed for stable mood and moderate energy throughout the session.`;
-    }
+function BlendCompositionTable({ cultivars, totalWeight = 3.5 }: { cultivars: ResolvedCultivar[]; totalWeight?: number }) {
+  const rows = cultivars.map(c => ({
+    name: c.name,
+    role: c.role,
+    percentage: c.percentage,
+    grams: Math.round((totalWeight * (c.percentage / 100)) * 100) / 100,
+  }));
+
+  const getRoleLabel = (role: CultivarRole) => {
+    if (role === 'foundation') return 'Foundation';
+    if (role === 'modulator') return 'Modulator';
+    return 'Accent';
   };
 
   return (
     <div className="mb-8">
       <div className="text-xs uppercase tracking-wider text-[#A1A1AA] mb-4 font-medium">
-        Blend Summary
+        Blend Composition
       </div>
-      <div className="space-y-3 mb-4">
-        {cultivars.map((cultivar, index) => (
-          <div key={index} className="flex items-center gap-6">
-            <div className="flex-1">
-              <div className="text-lg font-medium text-[#EDEDED]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
-                {cultivar.name}
-              </div>
-            </div>
-            <div className="text-base font-light text-[#A1A1AA] tabular-nums w-16 text-right">
-              {cultivar.percentage}%
-            </div>
-          </div>
-        ))}
-      </div>
-      <div className="text-sm text-[#A1A1AA] leading-relaxed" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
-        {getPurpose()}
-      </div>
-    </div>
-  );
-}
-
-/**
- * Mixing Instructions Component
- * Procedural steps for combining cultivars
- */
-function MixingInstructions() {
-  return (
-    <div className="mb-8 pt-6 border-t border-[rgba(255,255,255,0.06)]">
-      <div className="text-xs uppercase tracking-wider text-[#A1A1AA] mb-4 font-medium">
-        How to prepare
-      </div>
-      <div className="space-y-2 text-sm text-[#A1A1AA] leading-relaxed" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
-        <div>1. Grind each cultivar separately.</div>
-        <div>2. Combine according to the ratios below.</div>
-        <div>3. Mix thoroughly before rolling or packing.</div>
+      <div className="border border-[rgba(255,255,255,0.06)]">
+        <table className="w-full" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+          <thead>
+            <tr className="border-b border-[rgba(255,255,255,0.06)]">
+              <th className="text-left text-xs uppercase tracking-wider text-[#A1A1AA] font-medium px-4 py-3">Cultivar</th>
+              <th className="text-left text-xs uppercase tracking-wider text-[#A1A1AA] font-medium px-4 py-3">Role</th>
+              <th className="text-right text-xs uppercase tracking-wider text-[#A1A1AA] font-medium px-4 py-3">%</th>
+              <th className="text-right text-xs uppercase tracking-wider text-[#A1A1AA] font-medium px-4 py-3">Grams</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row, idx) => (
+              <tr key={idx} className="border-b border-[rgba(255,255,255,0.06)] last:border-b-0">
+                <td className="px-4 py-3 text-sm text-[#EDEDED] font-medium">{row.name}</td>
+                <td className="px-4 py-3 text-xs text-[#A1A1AA] uppercase tracking-wider">{getRoleLabel(row.role)}</td>
+                <td className="px-4 py-3 text-sm text-[#A1A1AA] tabular-nums text-right">{row.percentage}%</td>
+                <td className="px-4 py-3 text-sm text-[#A1A1AA] tabular-nums text-right">{row.grams.toFixed(2)} g</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );
 }
 
 /**
- * Weight Breakdown Component
- * Math-exact weight calculations based on total weight
+ * Visual Blend Bar Component
+ * Horizontal stacked bar showing percentages visually
  */
-function WeightBreakdown({ cultivars, totalWeight = 3.5 }: { cultivars: ResolvedCultivar[]; totalWeight?: number }) {
-  // Calculate weights: weight = totalWeight × (percentage / 100)
-  const weights = cultivars.map(c => ({
+function VisualBlendBar({ cultivars, totalWeight = 3.5 }: { cultivars: ResolvedCultivar[]; totalWeight?: number }) {
+  const segments = cultivars.map(c => ({
     name: c.name,
     percentage: c.percentage,
-    weight: totalWeight * (c.percentage / 100),
+    grams: Math.round((totalWeight * (c.percentage / 100)) * 100) / 100,
+    role: c.role,
   }));
 
-  // Round to 0.01g for display
-  const roundedWeights = weights.map(w => ({
-    ...w,
-    weight: Math.round(w.weight * 100) / 100,
-  }));
-
-  // Calculate checksum
-  const totalCalculated = roundedWeights.reduce((sum, w) => sum + w.weight, 0);
-  const variance = Math.abs(totalCalculated - totalWeight);
+  const getRoleColor = (role: CultivarRole) => {
+    if (role === 'foundation') return 'bg-[#D6A84A]/40';
+    if (role === 'modulator') return 'bg-[#D6A84A]/30';
+    return 'bg-[#D6A84A]/20';
+  };
 
   return (
-    <div className="mb-8 pt-6 border-t border-[rgba(255,255,255,0.06)]">
+    <div className="mb-8">
       <div className="text-xs uppercase tracking-wider text-[#A1A1AA] mb-4 font-medium">
-        Weight breakdown ({totalWeight} g total)
+        Visual Blend
       </div>
-      <div className="space-y-2 mb-4">
-        {roundedWeights.map((w, idx) => (
-          <div key={idx} className="flex items-center justify-between text-sm text-[#EDEDED]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
-            <span>
-              {w.name} ({w.percentage}%)
-            </span>
-            <span className="tabular-nums font-light text-[#A1A1AA]">
-              → {w.weight.toFixed(2)} g
-            </span>
+      <div className="w-full h-16 border border-[rgba(255,255,255,0.06)] flex overflow-hidden">
+        {segments.map((seg, idx) => (
+          <div
+            key={idx}
+            className={`${getRoleColor(seg.role)} border-r border-[rgba(255,255,255,0.06)] last:border-r-0 flex flex-col items-center justify-center px-2 relative`}
+            style={{ width: `${seg.percentage}%` }}
+          >
+            <div className="text-[10px] font-medium text-[#EDEDED] text-center leading-tight mb-0.5" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+              {seg.name}
+            </div>
+            <div className="text-[9px] text-[#A1A1AA] tabular-nums text-center">
+              {seg.percentage}% / {seg.grams.toFixed(2)}g
+            </div>
           </div>
         ))}
-      </div>
-      <div className="text-xs text-[#A1A1AA] font-light" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
-        Total: {totalCalculated.toFixed(2)} g {variance > 0.01 ? `(rounding variance ±${variance.toFixed(2)} g)` : ''}
       </div>
     </div>
   );
 }
 
+
+
 /**
- * Consumption Guidance Component
- * Derived from outcome vectors (anxiety sensitivity, duration, cognitive endurance)
+ * Usage Instructions Component
+ * Micro copy only - bullet points, max 1 line per bullet
  */
-function ConsumptionGuidance({ intent }: { intent: { activationTarget: number; cognitiveEndurance: number; anxietySensitivity: number } }) {
-  // Derive duration estimate
+function UsageInstructions({ intent }: { intent: { activationTarget: number; cognitiveEndurance: number; anxietySensitivity: number } }) {
   const getDuration = () => {
     if (intent.cognitiveEndurance > 0.7) return '~4 hours';
     if (intent.cognitiveEndurance > 0.4) return '~3 hours';
     return '~2 hours';
   };
 
-  // Derive pacing guidance
-  const getPacing = () => {
-    if (intent.anxietySensitivity > 0.6) {
-      return 'Take 1–2 draws, then wait 10–15 minutes before continuing.';
-    } else if (intent.anxietySensitivity > 0.4) {
-      return 'Take 2–3 draws, then wait 5–10 minutes before continuing.';
-    } else {
-      return 'Take 2–4 draws, then wait 5–10 minutes before continuing.';
-    }
-  };
-
-  // Derive stop conditions
-  const getStopConditions = () => {
-    const conditions: string[] = [];
-    
-    if (intent.anxietySensitivity > 0.5) {
-      conditions.push('anxiety increases');
-    }
-    
-    if (intent.cognitiveEndurance < 0.5) {
-      conditions.push('mental clarity drops');
-    }
-    
-    if (intent.activationTarget < 0.4) {
-      conditions.push('physical heaviness becomes noticeable');
-    }
-    
-    if (conditions.length === 0) {
-      conditions.push('desired effect plateaus');
-    }
-    
-    return conditions.join(' or ');
-  };
+  const bullets: string[] = [
+    'Grind strains separately',
+    'Combine by weight',
+    `Consume over ${getDuration()}`,
+  ];
 
   return (
     <div className="mb-8 pt-6 border-t border-[rgba(255,255,255,0.06)]">
-      <div className="text-xs uppercase tracking-wider text-[#A1A1AA] mb-4 font-medium">
-        Suggested use
+      <div className="text-xs uppercase tracking-wider text-[#A1A1AA] mb-3 font-medium">
+        Usage Instructions
       </div>
-      <div className="space-y-2 text-sm text-[#A1A1AA] leading-relaxed" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
-        <div>Best consumed over {getDuration()}.</div>
-        <div>{getPacing()}</div>
-        <div>Stop if {getStopConditions()}.</div>
-      </div>
+      <ul className="space-y-1" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+        {bullets.map((bullet, idx) => (
+          <li key={idx} className="text-xs text-[#A1A1AA]">
+            • {bullet}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
 
-/**
- * Pre-roll Stacking Instructions Component
- * For stacked blends only
- */
-function PreRollStacking({ stack, cultivars }: { stack?: ResolvedStack; cultivars: ResolvedCultivar[] }) {
-  if (!stack) return null;
-
-  return (
-    <div className="mb-8 pt-6 border-t border-[rgba(255,255,255,0.06)]">
-      <div className="text-xs uppercase tracking-wider text-[#A1A1AA] mb-4 font-medium">
-        Pre-roll stacking
-      </div>
-      <div className="space-y-3 text-sm text-[#A1A1AA] leading-relaxed" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
-        {stack.top && (
-          <div>
-            <span className="font-medium text-[#EDEDED]">Top (first third):</span> {stack.top} — energizing entry
-          </div>
-        )}
-        {stack.middle && (
-          <div>
-            <span className="font-medium text-[#EDEDED]">Middle:</span> {stack.middle} — balanced transition
-          </div>
-        )}
-        <div>
-          <span className="font-medium text-[#EDEDED]">Bottom (final third):</span> {stack.bottom} — calming finish
-        </div>
-      </div>
-    </div>
-  );
-}
 
 /**
  * Physical Stack Visualization Component (PRIMARY)
@@ -529,160 +455,6 @@ function ResolvedMetrics({
   );
 }
 
-/**
- * Resolution Rationale Component
- * Read-only explanation of why this composition was chosen
- * Collapsed by default, expandable on click
- * Lower contrast than resolved composition
- */
-function ResolutionRationale({ 
-  intent 
-}: {
-  intent: {
-    activationTarget: number;
-    cognitiveEndurance: number;
-    anxietySensitivity: number;
-  };
-}) {
-  const [isExpanded, setIsExpanded] = useState(false);
-  // Derive outcome alignment statements from intent
-  const getOutcomeAlignment = () => {
-    const alignments: string[] = [];
-    
-    if (intent.activationTarget > 0.6) {
-      alignments.push('Mental stimulation without overstimulation');
-    } else if (intent.activationTarget < 0.4) {
-      alignments.push('Calm relaxation without sedation');
-    } else {
-      alignments.push('Balanced energy curve');
-    }
-    
-    if (intent.anxietySensitivity < 0.4) {
-      alignments.push('Low anxiety risk profile');
-    } else if (intent.anxietySensitivity > 0.6) {
-      alignments.push('Anxiety sensitivity constraints applied');
-    }
-    
-    if (intent.cognitiveEndurance > 0.6) {
-      alignments.push('Suitable for extended cognitive tasks');
-    } else if (intent.cognitiveEndurance < 0.4) {
-      alignments.push('Optimized for shorter duration');
-    }
-    
-    if (intent.activationTarget > 0.5 && intent.anxietySensitivity < 0.5) {
-      alignments.push('Suitable for social alertness');
-    }
-    
-    return alignments;
-  };
-  
-  // Derive composition logic from intent
-  const getCompositionLogic = () => {
-    const logic: string[] = [];
-    
-    if (intent.activationTarget > 0.6) {
-      logic.push('Foundation strain establishes baseline mental clarity');
-    } else {
-      logic.push('Foundation strain provides stable base');
-    }
-    
-    if (intent.anxietySensitivity < 0.4) {
-      logic.push('Accent strain adds lift without increasing jitter');
-    } else {
-      logic.push('Modulator strain balances activation with anxiety mitigation');
-    }
-    
-    logic.push('Overall ratio minimizes sympathetic nervous system activation');
-    
-    return logic;
-  };
-  
-  const getUsageGuidance = () => {
-    const guidance: string[] = [];
-    
-    // Recommended pacing based on cognitive endurance
-    if (intent.cognitiveEndurance > 0.7) {
-      guidance.push('Recommended pacing: Gradual onset, extended duration');
-    } else if (intent.cognitiveEndurance < 0.4) {
-      guidance.push('Recommended pacing: Quick onset, shorter session');
-    } else {
-      guidance.push('Recommended pacing: Moderate onset, balanced duration');
-    }
-    
-    // When this blend is strongest
-    if (intent.activationTarget > 0.6 && intent.anxietySensitivity < 0.4) {
-      guidance.push('Peak window: 30-90 minutes after consumption');
-    } else if (intent.anxietySensitivity > 0.6) {
-      guidance.push('Peak window: Gradual onset, extended plateau');
-    } else {
-      guidance.push('Peak window: 45-120 minutes after consumption');
-    }
-    
-    // When to stop
-    if (intent.anxietySensitivity > 0.6) {
-      guidance.push('When to stop: If anxiety increases or cognitive clarity decreases');
-    } else if (intent.cognitiveEndurance < 0.4) {
-      guidance.push('When to stop: If intensity peaks or mental drift begins');
-    } else {
-      guidance.push('When to stop: If desired effect plateaus or intensity exceeds comfort');
-    }
-    
-    return guidance;
-  };
-
-  return (
-    <div className="mt-8 pt-6 border-t border-white/6">
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center justify-between text-left text-xs uppercase tracking-wider text-[#A1A1AA] hover:text-[#EDEDED] transition-colors font-medium"
-        style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
-      >
-        <span>Why this works</span>
-        <span className="text-[#A1A1AA]/50">{isExpanded ? '−' : '+'}</span>
-      </button>
-      
-      {isExpanded && (
-        <div className="mt-6 space-y-6 text-[#A1A1AA]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
-          {/* Outcome Alignment */}
-          <div>
-            <div className="text-xs text-[#A1A1AA] mb-2 font-medium">Outcome Alignment</div>
-            <div className="space-y-1.5">
-              {getOutcomeAlignment().map((alignment, idx) => (
-                <div key={idx} className="text-xs text-[#A1A1AA] leading-relaxed font-light">
-                  • {alignment}
-                </div>
-              ))}
-            </div>
-          </div>
-          
-          {/* Composition Logic */}
-          <div>
-            <div className="text-xs text-[#A1A1AA] mb-2 font-medium">Composition Logic</div>
-            <div className="space-y-1.5">
-              {getCompositionLogic().map((logic, idx) => (
-                <div key={idx} className="text-xs text-[#A1A1AA] leading-relaxed font-light">
-                  • {logic}
-                </div>
-              ))}
-            </div>
-          </div>
-          
-          {/* Usage Guidance */}
-          <div>
-            <div className="text-xs text-white/40 mb-2">Usage Guidance</div>
-            <div className="space-y-1.5">
-              {getUsageGuidance().map((guidance, idx) => (
-                <div key={idx} className="text-xs text-white/50 leading-relaxed">
-                  • {guidance}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
 
 /**
  * Invalid Resolution State Component
@@ -916,27 +688,20 @@ export default function ResolutionPanel({ blend, intent, isComputing }: Resoluti
   const [totalWeight, setTotalWeight] = useState(3.5);
 
   return (
-    <div className="pt-8 pb-8 mb-16">
-      {/* Resolved Composition - Visual anchor, no dividers above */}
-      <div className="mb-8">
-        <h2 className="text-xl font-semibold text-white mb-2">
-          GO Line — Resolved Composition
-        </h2>
-        <div className="text-xs text-white/40">
-          Deterministic blend based on current inventory
-        </div>
-      </div>
+    <div className="pt-8 pb-8">
+      {/* A. Blend Composition Table */}
+      <BlendCompositionTable cultivars={blend.cultivars} totalWeight={totalWeight} />
       
-      {/* A. Blend Summary (what + why) */}
-      {intent && <BlendSummary cultivars={blend.cultivars} intent={intent} />}
+      {/* B. Visual Blend Bar */}
+      <VisualBlendBar cultivars={blend.cultivars} totalWeight={totalWeight} />
       
-      {/* B. Mixing Instructions (how to combine) */}
-      <MixingInstructions />
+      {/* C. Pre-Roll Stack Visualization (vertical) */}
+      <PhysicalStackVisualization cultivars={blend.cultivars} stack={blend.stack} totalWeight={totalWeight} />
       
-      {/* C. Weight Breakdown (math-exact) */}
-      <WeightBreakdown cultivars={blend.cultivars} totalWeight={totalWeight} />
+      {/* D. Usage Instructions (micro copy only) */}
+      {intent && <UsageInstructions intent={intent} />}
       
-      {/* Weight input (optional, hidden by default - can be made visible if needed) */}
+      {/* Weight input */}
       <div className="mb-8 pt-6 border-t border-[rgba(255,255,255,0.06)]">
         <div className="text-xs uppercase tracking-wider text-[#A1A1AA] mb-2 font-medium">
           Total weight
@@ -954,20 +719,8 @@ export default function ResolutionPanel({ blend, intent, isComputing }: Resoluti
         <span className="ml-2 text-sm text-[#A1A1AA]">g</span>
       </div>
       
-      {/* D. Consumption Guidance (instructive, not advisory) */}
-      {intent && <ConsumptionGuidance intent={intent} />}
-      
-      {/* Pre-roll Stacking Instructions (if stack exists) */}
-      {blend.stack && <PreRollStacking stack={blend.stack} cultivars={blend.cultivars} />}
-      
-      {/* 1. PRIMARY: Physical Stack Visualization - Only renders if ResolutionPanel explicitly allows it */}
-      <PhysicalStackVisualization cultivars={blend.cultivars} stack={blend.stack} totalWeight={totalWeight} />
-      
-      {/* 3. Resolved Metrics - Read-only static bars */}
+      {/* Resolved Metrics - Read-only static bars */}
       {intent && <ResolvedMetrics intent={intent} />}
-      
-      {/* 4. Resolution Rationale - collapsed by default, lower contrast */}
-      {intent && <ResolutionRationale intent={intent} />}
     </div>
   );
 }
