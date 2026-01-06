@@ -361,7 +361,7 @@ export default function ExplorePage() {
           <ResolutionPanel
             blend={selectedOutcome.resolution}
             intent={{
-              activationTarget: intent.activationTarget,
+              activationTarget: intent.activation ?? 0.5,
               cognitiveEndurance: intent.cognitiveEndurance,
               anxietySensitivity: intent.anxietySensitivity,
             }}
