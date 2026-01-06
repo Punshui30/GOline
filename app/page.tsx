@@ -1234,10 +1234,10 @@ export default function GOLineCalculator() {
                 setNamedResolution(null);
                 setPhase('FREE');
               }}
-              className={`px-3 py-1.5 rounded-sm transition-colors ${
+              className={`px-3 py-1.5 transition-colors ${
                 inputMode === 'outcome'
-                  ? 'bg-white/10 text-white border border-white/20'
-                  : 'text-white/50 hover:text-white/70'
+                  ? 'bg-white/10 text-white border border-[#D4AF37]/30'
+                  : 'text-white/50 hover:text-white/70 border border-transparent'
               }`}
             >
               Describe desired outcome
@@ -1250,10 +1250,10 @@ export default function GOLineCalculator() {
                 setNamedResolution(null);
                 setPhase('FREE');
               }}
-              className={`px-3 py-1.5 rounded-sm transition-colors ${
+              className={`px-3 py-1.5 transition-colors ${
                 inputMode === 'reference'
-                  ? 'bg-white/10 text-white border border-white/20'
-                  : 'text-white/50 hover:text-white/70'
+                  ? 'bg-white/10 text-white border border-[#D4AF37]/30'
+                  : 'text-white/50 hover:text-white/70 border border-transparent'
               }`}
             >
               Compare to known product
@@ -1292,52 +1292,22 @@ export default function GOLineCalculator() {
                   <button
                     type="button"
                       onClick={startListening}
-                      className="p-2 text-white/60 hover:text-white transition-colors"
+                      className="px-2 py-1 text-xs text-white/50 hover:text-white/70 uppercase tracking-wider border border-white/10 hover:border-white/20 transition-colors"
                       title="Start listening"
                   >
-                    <svg
-                        className="w-5 h-5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
-                        />
-                      </svg>
+                    Voice
                     </button>
                   ) : (
                     <button
                       type="button"
                       onClick={stopListening}
-                      className="p-2 text-white/80 hover:text-white transition-colors"
+                      className="px-2 py-1 text-xs text-white/70 hover:text-white uppercase tracking-wider border border-white/20 hover:border-white/30 transition-colors"
                       title="Stop listening"
                     >
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M9 10h6v4H9z"
-                        />
-                    </svg>
-                  </button>
-                )}
-              </div>
+                      Stop
+                    </button>
+                  )}
+                </div>
               )}
             </div>
             

@@ -66,19 +66,19 @@ function BlendBars({ cultivars }: { cultivars: ResolvedCultivar[] }) {
           {/* Strain name - primary typography */}
           <div className="flex-1">
             <div className="text-xl font-semibold text-white tracking-tight">
-              {cultivar.name}
-            </div>
+                {cultivar.name}
+              </div>
             <div className="text-xs uppercase tracking-wider text-white/40 mt-0.5">
-              {cultivar.role === 'foundation' ? 'Foundation' : 
-               cultivar.role === 'modulator' ? 'Modulator' : 'Accent'}
+                {cultivar.role === 'foundation' ? 'Foundation' : 
+                 cultivar.role === 'modulator' ? 'Modulator' : 'Accent'}
+              </div>
             </div>
-          </div>
           {/* Percentage - bound to name, same row, same visual weight */}
           <div className="text-xl font-semibold text-white tabular-nums">
-            {cultivar.percentage}%
+              {cultivar.percentage}%
           </div>
-          {/* Visual bar - subtle */}
-          <div className="w-32 h-2 bg-white/5 overflow-hidden rounded-sm">
+          {/* Visual bar - subtle, square corners */}
+          <div className="w-32 h-2 bg-white/5 overflow-hidden">
             <div
               className="h-full bg-white/30"
               style={{ width: `${cultivar.percentage}%` }}
@@ -307,7 +307,7 @@ function StackedConsumptionView({ stack }: { stack?: ResolvedStack }) {
  */
 function ResolutionRationale({ 
   intent 
-}: { 
+}: {
   intent: {
     activationTarget: number;
     cognitiveEndurance: number;
@@ -559,7 +559,7 @@ function InvalidResolutionState({
         >
           [ Change inventory ]
         </button>
-      </div>
+          </div>
 
       {/* Resolution Rationale - PART 7: Bullet-only, factual */}
       <div className="mb-8">
@@ -573,7 +573,7 @@ function InvalidResolutionState({
           {getRationalePoints().map((point, idx) => (
             <div key={idx} className="text-xs text-white/50 leading-relaxed">
               • {point}
-            </div>
+          </div>
           ))}
         </div>
       </div>
