@@ -17,6 +17,7 @@ import ResolutionPanel, { type ResolvedBlend, type ResolvedCultivar, type Cultiv
 import { StrategicGuidance, ClarificationQuestion } from '@/lib/strategicGuidance';
 import { DEMO_MENU } from '@/data/demoMenu';
 import { translateGuidanceToIntent } from '@/lib/guidanceToIntent';
+import { ReferenceProfile, referenceProfileToIntent } from '@/lib/referenceProfile';
 
 type InteractionPhase = 'FREE' | 'GUIDED' | 'LOCKED';
 
