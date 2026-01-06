@@ -19,6 +19,7 @@ import { DEMO_MENU } from '@/data/demoMenu';
 import { translateGuidanceToIntent } from '@/lib/guidanceToIntent';
 import { convertToResolvedBlend } from '@/lib/convertToResolvedBlend';
 import { computeIntentConfidence, filterRedundantQuestions, shouldClarify } from '@/lib/intentConfidence';
+import { referenceProfileToIntent, type ReferenceProfile } from '@/lib/referenceProfile';
 
 type InteractionPhase = 'FREE' | 'GUIDED' | 'LOCKED';
 
@@ -535,6 +536,10 @@ interface Window {
 export default function GOLineCalculator() {
   // Phase 1 (FREE): User input
   const [userInput, setUserInput] = useState('');
+  
+  // Reference Profile Comparison (stateless, session-only)
+  const [inputMode, setInputMode] = useState<'outcome' | 'reference'>('outcome');
+  const [referenceProfile, setReferenceProfile] = useState<ReferenceProfile | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [llmFailed, setLlmFailed] = useState(false);
@@ -770,11 +775,6 @@ export default function GOLineCalculator() {
         console.error('Failed to stop recognition during analyze:', err);
       }
     }
-    
-    if (!userInput.trim()) {
-      setError('Please enter your desired outcome');
-      return;
-    }
 
     // RESOLUTION CONTRACT: Each Resolve action invalidates and replaces all prior results
     setIsProcessing(true);
@@ -787,6 +787,54 @@ export default function GOLineCalculator() {
     setNamedResolution(null); // Clear previous named resolution
     setLlmFailed(false);
     setPhase('FREE');
+    
+    // Reference Profile mode: Convert reference to intent and resolve directly
+    if (inputMode === 'reference' && referenceProfile) {
+      try {
+        setPhase('LOCKED');
+        
+        // Convert reference profile to OutcomeIntent
+        const referenceIntent = referenceProfileToIntent(referenceProfile);
+        setIntent(referenceIntent);
+        
+        console.debug('REFERENCE_PROFILE_INTENT', referenceIntent);
+        console.debug('RESOLUTION_ATTEMPTED', true);
+        
+        // Resolve using the same deterministic engine
+        const resolvedOutcome = resolveOutcome(referenceIntent);
+        setOutcome(resolvedOutcome);
+        
+        if (resolvedOutcome.failure) {
+          console.debug('RESOLUTION_FAILED_REASON', resolvedOutcome.failure.reason);
+          const blend = convertToResolvedBlend(
+            { primaryBlend: [], stackingOptions: [], confidenceScore: 0, tradeoffs: [], rationaleSummary: '', resolutionMode: 'BLENDED' },
+            resolvedOutcome
+          );
+          setResolvedBlend(blend);
+          setIsProcessing(false);
+          return;
+        }
+        
+        // Convert to named resolution
+        const named = resolveToNamedStrains(resolvedOutcome);
+        setNamedResolution(named);
+        const blend = convertToResolvedBlend(named, resolvedOutcome);
+        setResolvedBlend(blend);
+        setIsProcessing(false);
+      } catch (err) {
+        console.error('Reference profile resolution error:', err);
+        setError('Failed to resolve reference profile. Please check your input values.');
+        setIsProcessing(false);
+      }
+      return;
+    }
+    
+    // Normal outcome mode: Use LLM-based intent parsing
+    if (!userInput.trim()) {
+      setError('Please enter your desired outcome');
+      setIsProcessing(false);
+      return;
+    }
 
     try {
       // Call /api/intent with userInput directly
@@ -1175,11 +1223,50 @@ export default function GOLineCalculator() {
             </div>
           )}
 
+          {/* Input Mode Toggle */}
+          <div className="mb-6 flex gap-4 text-xs">
+            <button
+              onClick={() => {
+                setInputMode('outcome');
+                setReferenceProfile(null);
+                setUserInput('');
+                setResolvedBlend(null);
+                setNamedResolution(null);
+                setPhase('FREE');
+              }}
+              className={`px-3 py-1.5 rounded-sm transition-colors ${
+                inputMode === 'outcome'
+                  ? 'bg-white/10 text-white border border-white/20'
+                  : 'text-white/50 hover:text-white/70'
+              }`}
+            >
+              Describe desired outcome
+            </button>
+            <button
+              onClick={() => {
+                setInputMode('reference');
+                setUserInput('');
+                setResolvedBlend(null);
+                setNamedResolution(null);
+                setPhase('FREE');
+              }}
+              className={`px-3 py-1.5 rounded-sm transition-colors ${
+                inputMode === 'reference'
+                  ? 'bg-white/10 text-white border border-white/20'
+                  : 'text-white/50 hover:text-white/70'
+              }`}
+            >
+              Compare to known product
+            </button>
+          </div>
+
           {/* Input Section - De-emphasized, thought capture style */}
           <div className="mb-12">
             <div className="text-xs uppercase tracking-wider text-white/30 mb-2">
-              OUTCOME INPUT
+              {inputMode === 'outcome' ? 'OUTCOME INPUT' : 'REFERENCE PROFILE'}
             </div>
+            
+            {inputMode === 'outcome' ? (
               <div className="relative">
                 <textarea
                   id="outcome-input"
