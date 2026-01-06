@@ -1,0 +1,32 @@
+{
+  "id": "SNAP_CARD_ACCESS_FAILURE",
+  "name": "SNAP Card Access Failure",
+  "description": "User's SNAP/EBT card won't work at stores or ATMs",
+  "playbookId": "SNAP_CARD_ACCESS_FAILURE",
+  "factKeys": ["card_type", "where_failed"],
+  "questions": [
+    {
+      "id": "q1",
+      "text": "Where did your card not work?",
+      "type": "multiple_choice",
+      "options": ["At a store", "At an ATM", "Both"],
+      "required": true
+    }
+  ],
+  "crisisFlags": ["no_food"]
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

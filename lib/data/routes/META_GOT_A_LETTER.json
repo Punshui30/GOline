@@ -1,0 +1,30 @@
+{
+  "id": "META_GOT_A_LETTER",
+  "name": "Got a Letter",
+  "description": "User received a letter they don't understand",
+  "playbookId": "META_GOT_A_LETTER",
+  "factKeys": ["letter_type"],
+  "questions": [
+    {
+      "id": "q1",
+      "text": "What does the letter say you need to do?",
+      "type": "open",
+      "required": false
+    }
+  ]
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

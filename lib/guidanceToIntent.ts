@@ -17,7 +17,7 @@ import { OutcomeIntent } from './goOutcomeEngine';
  */
 export function translateGuidanceToIntent(
   guidance: StrategicGuidance,
-  clarifications?: Record<string, string | string[]>
+  clarifications?: Record<string, string>
 ): OutcomeIntent {
   // Helper: Map priority strings to numeric ranges
   const getActivationFromPriorities = (priorities: string[]): number => {
@@ -51,107 +51,110 @@ export function translateGuidanceToIntent(
     return 0.5;
   };
 
-  const getOvershootToleranceFromFlags = (flags: string[], tradeoffs: string[]): number => {
-    const overshootKeywords = ['overshoot', 'too much', 'overwhelming'];
-    const gentleKeywords = ['gentle', 'gradual', 'subtle'];
-    
-    const hasOvershootRisk = flags.some(f => overshootKeywords.some(k => f.toLowerCase().includes(k)));
-    const acceptsGentle = tradeoffs.some(t => gentleKeywords.some(k => t.toLowerCase().includes(k)));
-    
-    if (hasOvershootRisk) return 0.3;
-    if (acceptsGentle) return 0.4;
-    return 0.5;
-  };
-
   // Apply clarifications if provided
   let resolvedPriorities = [...guidance.dominantPriorities];
   let resolvedAvoidances = [...guidance.strictAvoidances];
-  let resolvedTradeoffs = [...guidance.acceptableTradeoffs];
 
   if (clarifications) {
     // Handle temporal clarification
-    if (clarifications.temporal && guidance.temporalProfile === 'single-phase') {
-      // If user clarified temporal intent, we may need to adjust
+    if (clarifications.temporal) {
       if (clarifications.temporal === 'Later' || clarifications.temporal === 'Both') {
-        // This would need multi-phase, but for now we'll adjust priorities
         resolvedPriorities.push('later phase focus');
       }
     }
 
-    // Handle tradeoff clarification (sensitivities - multi-select array)
+    // Handle tradeoff clarification
     if (clarifications.tradeoff) {
-      const sensitivities = Array.isArray(clarifications.tradeoff) 
-        ? clarifications.tradeoff 
-        : [clarifications.tradeoff];
-      
-      // Apply cumulative penalties/weights for all selected sensitivities
-      // Do NOT collapse, rank, or override - pass all through to resolver
-      sensitivities.forEach(sensitivity => {
-        if (sensitivity === 'Anxiety') {
-          resolvedAvoidances.push('anxiety');
-        } else if (sensitivity === 'Overstimulation') {
-          resolvedAvoidances.push('overstimulation');
-        } else if (sensitivity === 'Mental drift') {
-          resolvedAvoidances.push('mental drift');
-        } else if (sensitivity === 'energized') {
-          resolvedPriorities.push('energy');
-        }
-        // "None / Balanced" is mutually exclusive - if present, don't add other avoidances
-        // But we still process other sensitivities if they exist
-      });
+      if (clarifications.tradeoff.includes('energized') || clarifications.tradeoff.includes('energy')) {
+        resolvedPriorities.push('energy');
+      } else if (clarifications.tradeoff.includes('anxiety')) {
+        resolvedAvoidances.push('anxiety');
+      }
     }
 
     // Handle tolerance clarification
     if (clarifications.tolerance) {
-      if (clarifications.tolerance.includes('Gentle')) {
-        resolvedTradeoffs.push('gentle steady effect');
-      } else if (clarifications.tolerance.includes('Stronger')) {
-        resolvedPriorities.push('stronger peak');
+      if (clarifications.tolerance.includes('Gentle') || clarifications.tolerance.includes('gentle')) {
+        resolvedPriorities.push('endurance');
+      } else if (clarifications.tolerance.includes('Stronger') || clarifications.tolerance.includes('stronger')) {
+        resolvedPriorities.push('peak');
       }
     }
   }
 
   // Generate numeric constraints from strategic guidance
-  const baseIntent: OutcomeIntent = {
-    activationTarget: getActivationFromPriorities(resolvedPriorities),
-    anxietySensitivity: getAnxietySensitivityFromAvoidances(resolvedAvoidances),
-    cognitiveEndurance: getCognitiveEnduranceFromPriorities(resolvedPriorities),
-    overshootTolerance: getOvershootToleranceFromFlags(guidance.riskFlags, resolvedTradeoffs),
-    temporalProfile: guidance.temporalProfile,
+  const activation = getActivationFromPriorities(resolvedPriorities);
+  const anxietySensitivity = getAnxietySensitivityFromAvoidances(resolvedAvoidances);
+  const cognitiveEndurance = getCognitiveEnduranceFromPriorities(resolvedPriorities);
+  
+  // Determine avoidSedation from avoidances and priorities
+  const sedationKeywords = ['sedation', 'sleepy', 'drowsy', 'tired'];
+  const alertKeywords = ['alert', 'awake', 'focused', 'energizing'];
+  const hasSedationAvoidance = resolvedAvoidances.some(a => 
+    sedationKeywords.some(k => a.toLowerCase().includes(k))
+  );
+  const hasAlertPriority = resolvedPriorities.some(p => 
+    alertKeywords.some(k => p.toLowerCase().includes(k))
+  );
+  const avoidSedation = hasSedationAvoidance || hasAlertPriority;
+
+  // Expanded dimensions: physical relief, cognitive clarity, functional energy, temporal profile
+  const getPhysicalReliefFromPriorities = (priorities: string[]): number | undefined => {
+    const physicalKeywords = ['physical', 'relief', 'comfort', 'body', 'ache', 'pain', 'tension', 'soreness'];
+    const hasPhysical = priorities.some(p => physicalKeywords.some(k => p.toLowerCase().includes(k)));
+    if (hasPhysical) return 0.7; // Moderate-high physical relief preference
+    return undefined; // Not specified
   };
 
-  // Handle multi-phase if specified
-  if (guidance.temporalProfile === 'multi-phase') {
-    // For multi-phase, we generate separate intents for each phase
-    // In a full implementation, the LLM would specify phase-specific guidance
-    // For now, we create a balanced split
-    baseIntent.phases = [
-      {
-        phase: 'Primary / Early',
-        activationTarget: Math.min(1, baseIntent.activationTarget + 0.1),
-        anxietySensitivity: baseIntent.anxietySensitivity,
-        cognitiveEndurance: baseIntent.cognitiveEndurance,
-        overshootTolerance: baseIntent.overshootTolerance,
-      },
-      {
-        phase: 'Later / Wind-Down',
-        activationTarget: Math.max(0, baseIntent.activationTarget - 0.2),
-        anxietySensitivity: baseIntent.anxietySensitivity,
-        cognitiveEndurance: baseIntent.cognitiveEndurance,
-        overshootTolerance: baseIntent.overshootTolerance,
-      },
-    ];
-  }
+  const getCognitiveClarityFromPriorities = (priorities: string[]): number | undefined => {
+    const clarityKeywords = ['clarity', 'clear', 'focus', 'mental', 'sharp', 'alert', 'brain fog'];
+    const hasClarity = priorities.some(p => clarityKeywords.some(k => p.toLowerCase().includes(k)));
+    if (hasClarity) return 0.75; // High cognitive clarity preference
+    return undefined; // Not specified
+  };
 
-  return baseIntent;
+  const getFunctionalEnergyFromPriorities = (priorities: string[]): number | undefined => {
+    const functionalKeywords = ['functional', 'sustained', 'productive', 'work', 'task', 'endurance', 'steady'];
+    const intensityKeywords = ['peak', 'intense', 'strong', 'powerful', 'rush'];
+    const hasFunctional = priorities.some(p => functionalKeywords.some(k => p.toLowerCase().includes(k)));
+    const hasIntensity = priorities.some(p => intensityKeywords.some(k => p.toLowerCase().includes(k)));
+    if (hasFunctional && !hasIntensity) return 0.7; // Prefer functional energy
+    if (hasIntensity && !hasFunctional) return 0.3; // Prefer peak intensity
+    return undefined; // Not specified or balanced
+  };
+
+  const getTemporalFromGuidance = (guidance: StrategicGuidance): { onset?: number; duration?: number } => {
+    // Temporal profile from guidance (if multi-phase, prefer slower onset, longer duration)
+    if (guidance.temporalProfile === 'multi-phase') {
+      return { onset: 0.6, duration: 0.7 }; // Slower onset, longer duration for multi-phase
+    }
+    // Check priorities for temporal hints
+    const onsetKeywords = ['fast', 'quick', 'immediate', 'rapid'];
+    const durationKeywords = ['long', 'sustained', 'endurance', 'extended'];
+    const hasFastOnset = guidance.dominantPriorities.some(p => 
+      onsetKeywords.some(k => p.toLowerCase().includes(k))
+    );
+    const hasLongDuration = guidance.dominantPriorities.some(p => 
+      durationKeywords.some(k => p.toLowerCase().includes(k))
+    );
+    return {
+      onset: hasFastOnset ? 0.3 : undefined, // Faster onset preference
+      duration: hasLongDuration ? 0.7 : undefined, // Longer duration preference
+    };
+  };
+
+  const temporal = getTemporalFromGuidance(guidance);
+
+  return {
+    activation,
+    anxietySensitivity,
+    cognitiveEndurance,
+    avoidSedation,
+    physicalRelief: getPhysicalReliefFromPriorities(resolvedPriorities),
+    cognitiveClarity: getCognitiveClarityFromPriorities(resolvedPriorities),
+    functionalEnergy: getFunctionalEnergyFromPriorities(resolvedPriorities),
+    temporalOnset: temporal.onset,
+    temporalDuration: temporal.duration,
+  };
 }
-
-
-
-
-
-
-
-
-
 

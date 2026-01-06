@@ -1,145 +1,143 @@
 /**
- * GO Outcome Intelligence Engine (v3 · Retail-Aware · Blend-First)
+ * GO Outcome Engine
  * 
- * Constraint-based composition engine that resolves desired outcomes using
- * strategic blending as the default resolution approach, with single-cultivar
- * recommendations used only when demonstrably optimal.
+ * Deterministic outcome resolution system that selects optimal cultivar blends
+ * based on terpene profiles and structured intent parameters.
  * 
- * Core principles:
- * - Blending is the default strategy
- * - Single cultivar only when demonstrably optimal (rare)
- * - Explicit composition strategy selection (single_cultivar, homogeneous_blend, layered_stack)
- * - CBD/CBG for correction, not enhancement
- * - Three resolution tiers: Optimal, Balanced, Simplified
- * - Clear, real-world mixing instructions
+ * This engine implements:
+ * - Biphasic terpene scoring (optimal ranges, overshoot penalties)
+ * - Interaction dampening (non-additive stacking)
+ * - Distribution balance preferences
+ * - Quantitative ratio calculations
  */
 
-import { type CanonicalChemotype } from '@/data/canonicalChemotypes';
-import { getStrainInventoryAsChemotypes } from '@/lib/data/strainInventory';
-import { computeEffectVectors, type EffectVectors } from './terpeneEffectVectors';
+import { canonicalCultivars, type CanonicalCultivar } from '@/data/canonicalCultivars';
+import { analyzeBlendDoseZones } from '@/lib/outcomeBrain/biphasicModeling';
+import { analyzeSignalDensity, isIntentionalHighComplexity } from '@/lib/outcomeBrain/saturationAnalysis';
+import { predictTemporalProfile } from '@/lib/outcomeBrain/temporalPharmacokinetics';
+import { assessRiskProfile } from '@/lib/outcomeBrain/riskWeighting';
+import { evaluateConstraints } from '@/lib/outcomeBrain/constraintSatisfaction';
+import { generateOutcomeExplanation } from '@/lib/outcomeBrain/explainability';
 
-// Use STRAIN_INVENTORY as the ONLY candidate pool for resolution
-// No fallbacks, no demos, no hardcoded strains
-const ACTIVE_INVENTORY = getStrainInventoryAsChemotypes();
-
-// Validation: Fail explicitly if inventory is too small
-if (ACTIVE_INVENTORY.length < 10) {
-  throw new Error(`ACTIVE_INVENTORY must contain at least 10 strains. Found: ${ACTIVE_INVENTORY.length}`);
-}
-
-console.debug(`[GO_OUTCOME_ENGINE] Using ${ACTIVE_INVENTORY.length} strains from STRAIN_INVENTORY`);
-console.debug(`[GO_OUTCOME_ENGINE] INVENTORY_SIZE: ${ACTIVE_INVENTORY.length}`);
-
-/**
- * Outcome input constraints (directional, not goals)
- */
 export interface OutcomeIntent {
-  activationTarget: number; // 0-1: directional constraint
+  activation: number; // 0-1: desire for stimulation/energy
   anxietySensitivity: number; // 0-1: sensitivity to anxiety-inducing compounds
   cognitiveEndurance: number; // 0-1: need for sustained focus vs intensity
-  overshootTolerance: number; // 0-1: tolerance for terpene overshoot
-  temporalProfile?: "single-phase" | "multi-phase";
-  phases?: {
-    phase: "Top / Opening" | "Middle / Core" | "End / Landing" | "Primary / Early" | "Later / Wind-Down"; // Support both 2-phase and 3-phase models
-    activationTarget: number;
-    anxietySensitivity: number;
-    cognitiveEndurance: number;
-    overshootTolerance: number;
-  }[];
+  avoidSedation: boolean; // avoid sedating profiles
+  physicalRelief?: number; // 0-1: need for physical comfort/relief (optional, expanded dimension)
+  cognitiveClarity?: number; // 0-1: need for mental clarity/sharpness (optional, expanded dimension)
+  functionalEnergy?: number; // 0-1: need for functional energy vs intensity (optional, expanded dimension)
+  temporalOnset?: number; // 0-1: preference for faster onset (0) vs slower onset (1) (optional, expanded dimension)
+  temporalDuration?: number; // 0-1: preference for shorter duration (0) vs longer duration (1) (optional, expanded dimension)
+}
+
+export interface SelectedCultivar {
+  id: string;
+  displayName: string;
+}
+
+export interface OutcomeResult {
+  selectedCultivars: SelectedCultivar[];
+  ratios: number[]; // must sum to 100
+  confidenceScore: number; // 0-1
+  notes: string[]; // neutral, non-experiential notes
+  // Additive brain layers (optional, for explainability)
+  explanation?: {
+    primaryChemicalDrivers: Array<{ compound: string; percentage: number; contribution: string }>;
+    keyConstraintsSatisfied: string[];
+    risksAccepted: Array<{ risk: string; severity: 'low' | 'moderate' | 'high'; justification: string }>;
+    risksAvoided: string[];
+    outcomeClassification: 'focused' | 'balanced' | 'layered' | 'emergent' | 'complex';
+    complexityLevel: 'simple' | 'moderate' | 'high' | 'emergent';
+    explanation: string;
+  };
 }
 
 /**
- * Composition strategy selection (decided before cultivar selection)
- */
-export type CompositionStrategy = 'single_cultivar' | 'homogeneous_blend' | 'layered_stack';
-
-/**
- * Resolution type classification
- */
-export type ResolutionType = 'SINGLE_CULTIVAR' | 'CORRECTIVE_BLEND' | 'COMPOSITIONAL_BLEND';
-
-/**
- * Terpene profile parameters for biphasic response curves
+ * Terpene scoring parameters for biphasic response curves
  */
 interface TerpeneProfile {
   name: string;
-  baseOptimalMin: number;
-  baseOptimalMax: number;
-  basePenaltySlope: number;
-  activationWeight: number;
-  sedationWeight: number;
-  anxietyRiskWeight: number;
+  optimalMin: number; // minimum for productive range
+  optimalMax: number; // maximum for productive range
+  overshootPenaltySlope: number; // penalty per unit above optimalMax
+  activationWeight: number; // contribution to activation scoring
+  sedationWeight: number; // contribution to sedation scoring (negative for anti-sedation)
+  anxietyRiskWeight: number; // contribution to anxiety risk (positive = risk)
 }
 
+/**
+ * Reference terpene profiles with optimal ranges and interaction weights
+ */
 const TERPENE_PROFILES: TerpeneProfile[] = [
   {
     name: 'pinene',
-    baseOptimalMin: 0.10,
-    baseOptimalMax: 0.25,
-    basePenaltySlope: 3.0,
+    optimalMin: 0.10,
+    optimalMax: 0.25,
+    overshootPenaltySlope: 3.0,
     activationWeight: 0.25,
     sedationWeight: -0.15,
     anxietyRiskWeight: 0.10,
   },
   {
     name: 'limonene',
-    baseOptimalMin: 0.12,
-    baseOptimalMax: 0.28,
-    basePenaltySlope: 2.5,
+    optimalMin: 0.12,
+    optimalMax: 0.28,
+    overshootPenaltySlope: 2.5,
     activationWeight: 0.20,
     sedationWeight: -0.10,
     anxietyRiskWeight: 0.15,
   },
   {
     name: 'myrcene',
-    baseOptimalMin: 0.15,
-    baseOptimalMax: 0.30,
-    basePenaltySlope: 2.0,
+    optimalMin: 0.15,
+    optimalMax: 0.30,
+    overshootPenaltySlope: 2.0,
     activationWeight: -0.10,
     sedationWeight: 0.30,
     anxietyRiskWeight: -0.05,
   },
   {
     name: 'linalool',
-    baseOptimalMin: 0.08,
-    baseOptimalMax: 0.22,
-    basePenaltySlope: 3.5,
+    optimalMin: 0.08,
+    optimalMax: 0.22,
+    overshootPenaltySlope: 3.5,
     activationWeight: -0.15,
     sedationWeight: 0.25,
     anxietyRiskWeight: -0.20,
   },
   {
     name: 'caryophyllene',
-    baseOptimalMin: 0.12,
-    baseOptimalMax: 0.25,
-    basePenaltySlope: 2.0,
+    optimalMin: 0.12,
+    optimalMax: 0.25,
+    overshootPenaltySlope: 2.0,
     activationWeight: 0.05,
     sedationWeight: 0.05,
     anxietyRiskWeight: -0.15,
   },
   {
     name: 'humulene',
-    baseOptimalMin: 0.05,
-    baseOptimalMax: 0.15,
-    basePenaltySlope: 3.0,
+    optimalMin: 0.05,
+    optimalMax: 0.15,
+    overshootPenaltySlope: 3.0,
     activationWeight: -0.05,
     sedationWeight: 0.10,
     anxietyRiskWeight: -0.10,
   },
   {
     name: 'terpinolene',
-    baseOptimalMin: 0.02,
-    baseOptimalMax: 0.12,
-    basePenaltySlope: 4.0,
+    optimalMin: 0.02,
+    optimalMax: 0.12,
+    overshootPenaltySlope: 4.0,
     activationWeight: 0.15,
     sedationWeight: -0.05,
     anxietyRiskWeight: 0.20,
   },
   {
     name: 'ocimene',
-    baseOptimalMin: 0.01,
-    baseOptimalMax: 0.08,
-    basePenaltySlope: 4.0,
+    optimalMin: 0.01,
+    optimalMax: 0.08,
+    overshootPenaltySlope: 4.0,
     activationWeight: 0.10,
     sedationWeight: -0.05,
     anxietyRiskWeight: 0.10,
@@ -147,1549 +145,331 @@ const TERPENE_PROFILES: TerpeneProfile[] = [
 ];
 
 /**
- * Biphasic scoring function
+ * Compute biphasic penalty for a terpene value
+ * Exact implementation as specified: under-expressed → 0, productive window → 1, overshoot → penalized
  */
-function biphasicScore(
-  concentration: number,
+function biphasicPenalty(
+  value: number,
   optimalMin: number,
   optimalMax: number,
   penaltySlope: number
 ): number {
-  if (concentration < optimalMin) return 0;
-  if (concentration <= optimalMax) return 1;
-  return Math.max(0, 1 - (concentration - optimalMax) * penaltySlope);
-}
-
-function getAdjustedRanges(
-  profile: TerpeneProfile,
-  intent: OutcomeIntent
-): { optimalMin: number; optimalMax: number; penaltySlope: number } {
-  const optimalMaxAdjustment = intent.anxietySensitivity * 0.15;
-  const optimalMax = Math.max(
-    profile.baseOptimalMin + 0.05,
-    profile.baseOptimalMax - optimalMaxAdjustment
-  );
-  const penaltySlope = profile.basePenaltySlope * (1.5 - intent.overshootTolerance * 0.5);
-  return {
-    optimalMin: profile.baseOptimalMin,
-    optimalMax,
-    penaltySlope,
-  };
-}
-
-function computeInteractionPenalty(
-  terpeneA: string,
-  terpeneB: string,
-  concA: number,
-  concB: number,
-  totalLoad: number
-): number {
-  if (concA < 0.1 && concB < 0.1) return 0;
-  const ratio = Math.max(concA, concB) / (Math.min(concA, concB) + 0.01);
-  if (ratio > 5 && Math.min(concA, concB) > 0.05) {
-    return 0.05 * Math.min(1, ratio / 10);
-  }
-  if (totalLoad > 0.03 && concA > 0.2 && concB > 0.2) {
-    return 0.03;
-  }
-  return 0;
-}
-
-function computeBalanceScore(terpeneDistribution: { [key: string]: number }): number {
-  const values = Object.values(terpeneDistribution);
-  if (values.length === 0) return 0;
-  const mean = values.reduce((a, b) => a + b, 0) / values.length;
-  if (mean === 0) return 0;
-  const variance = values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / values.length;
-  const stdDev = Math.sqrt(variance);
-  const cv = stdDev / mean;
-  const maxTerpene = Math.max(...values);
-  const dominancePenalty = maxTerpene > 0.4 ? 0.15 : 0;
-  return Math.max(0, 1.0 - cv * 0.5 - dominancePenalty);
+  if (value < optimalMin) return 0;
+  if (value <= optimalMax) return 1;
+  return Math.max(0, 1 - (value - optimalMax) * penaltySlope);
 }
 
 /**
- * Check if chemotype is CBD/CBG dominant (used only for correction)
- */
-function isNonPsychoactive(chemotype: CanonicalChemotype): boolean {
-  const thc = chemotype.cannabinoids.THC || 0;
-  const cbd = chemotype.cannabinoids.CBD || 0;
-  const cbg = chemotype.cannabinoids.CBG || 0;
-  return thc < 8 && (cbd > 8 || cbg > 8);
-}
-
-/**
- * Score chemotype with cannabinoid awareness
+ * Score a cultivar against the outcome intent
  */
 function scoreCultivar(
-  chemotype: CanonicalChemotype,
+  cultivar: CanonicalCultivar,
   intent: OutcomeIntent
-): {
-  score: number;
-  terpeneScore: number;
-  intentAlignment: number;
-  interactionPenalty: number;
-  cannabinoidScore: number;
-} {
-  // Use deterministic effect vectors
-  const vectors = computeEffectVectors(chemotype);
+): number {
+  let activationScore = 0;
+  let sedationScore = 0;
+  let anxietyRiskScore = 0;
+  let overallTerpeneScore = 1.0;
   
-  // Map effect vectors to intent alignment
-  // Energy maps to activationTarget
-  const activationAlignment = 1.0 - Math.abs(vectors.energy - intent.activationTarget);
+  // Compute terpene-based scores with biphasic penalties
+  for (const terpeneProfile of TERPENE_PROFILES) {
+    const terpeneValue = cultivar.terpenePercentages[terpeneProfile.name] || 0;
+    
+    // Apply biphasic penalty
+    const penalty = biphasicPenalty(
+      terpeneValue,
+      terpeneProfile.optimalMin,
+      terpeneProfile.optimalMax,
+      terpeneProfile.overshootPenaltySlope
+    );
+    
+    // Multiply overall score by penalty (multiplicative dampening)
+    overallTerpeneScore *= (0.3 + 0.7 * penalty); // Soften penalty impact
+    
+    // Add weighted contributions
+    activationScore += terpeneValue * terpeneProfile.activationWeight;
+    sedationScore += terpeneValue * terpeneProfile.sedationWeight;
+    anxietyRiskScore += terpeneValue * terpeneProfile.anxietyRiskWeight;
+  }
   
-  // Anxiety risk maps to anxietySensitivity (inverse - lower risk is better)
-  const anxietyAlignment = 1.0 - (vectors.anxietyRisk * intent.anxietySensitivity);
+  // Normalize scores to 0-1 range (rough approximation)
+  activationScore = Math.max(0, Math.min(1, (activationScore + 1) / 2));
+  sedationScore = Math.max(0, Math.min(1, (sedationScore + 1) / 2));
+  anxietyRiskScore = Math.max(0, Math.min(1, (anxietyRiskScore + 1) / 2));
   
-  // Body relaxation maps to cognitiveEndurance (inverse - more body = less cognitive)
-  const enduranceAlignment = 1.0 - Math.abs(vectors.bodyRelaxation - (1 - intent.cognitiveEndurance));
+  // Compute alignment scores
+  const activationAlignment = 1.0 - Math.abs(activationScore - intent.activation);
+  const sedationAlignment = intent.avoidSedation 
+    ? (1.0 - sedationScore) // Prefer lower sedation
+    : 1.0; // No preference
+  const anxietyAlignment = 1.0 - (anxietyRiskScore * intent.anxietySensitivity);
   
-  // Clarity contributes to cognitive endurance alignment
-  const clarityAlignment = vectors.clarity * intent.cognitiveEndurance;
-  
+  // Combine scores with weighted importance
   const intentAlignment = (
     activationAlignment * 0.35 +
-    anxietyAlignment * 0.35 +
-    enduranceAlignment * 0.20 +
-    clarityAlignment * 0.10
-  );
-
-  // Terpene score based on overall vector health (all vectors in reasonable ranges)
-  const vectorHealth = (
-    (vectors.energy > 0 && vectors.energy < 1 ? 1.0 : 0.8) *
-    (vectors.clarity > 0 && vectors.clarity < 1 ? 1.0 : 0.8) *
-    (vectors.bodyRelaxation > 0 && vectors.bodyRelaxation < 1 ? 1.0 : 0.8) *
-    (vectors.anxietyRisk >= 0 && vectors.anxietyRisk < 1 ? 1.0 : 0.7)
+    sedationAlignment * 0.25 +
+    anxietyAlignment * 0.40
   );
   
-  const terpeneScore = vectorHealth;
-
-  // Cannabinoid scoring: penalize THC overshoot relative to anxiety sensitivity
-  const thc = chemotype.cannabinoids.THC || 0;
-  const cbd = chemotype.cannabinoids.CBD || 0;
-  const cbg = chemotype.cannabinoids.CBG || 0;
-  
-  // High THC with high anxiety sensitivity → penalty
-  const thcRisk = intent.anxietySensitivity > 0.5 && thc > 20 ? 
-    (thc - 20) / 20 * intent.anxietySensitivity : 0;
-  
-  // CBD/CBG reduce anxiety risk multiplicatively
-  const cannabinoidScore = 1.0 - thcRisk * (1 - Math.min((cbd + cbg) / 30, 0.5));
-
-  return {
-    score: terpeneScore * intentAlignment * cannabinoidScore,
-    terpeneScore,
-    intentAlignment,
-    interactionPenalty: 0, // No longer using interaction penalties with deterministic vectors
-    cannabinoidScore,
-  };
-}
-
-type BlendRole = "primary" | "corrective" | "supporting";
-
-interface BlendComponent {
-  cultivarId: string;
-  displayName: string;
-  role: BlendRole;
-  ratio: number;
-}
-
-interface ResolutionTier {
-  tierLabel: "Optimal" | "Balanced" | "Simplified";
-  compositionStrategy: CompositionStrategy;
-  resolutionType: ResolutionType;
-  composition: BlendComponent[];
-  compositionFit: number;
-  systemNotes: string[];
-  whyChosen: string[];
-  tradeoffs: string[];
-  instructions: string; // Real-world mixing instructions
-}
-
-export type ResolutionMode = "BLENDED" | "STACKED";
-
-interface StackedPhase {
-  phase: "Top / Opening" | "Middle / Core" | "End / Landing" | "Primary / Early" | "Later / Wind-Down"; // Support both 2-phase and 3-phase models
-  intentFocus: string;
-  composition: BlendComponent[];
-  compositionFit: number;
-  systemNotes: string[];
-  instructions: string; // Real-world mixing/timing instructions
-  purpose?: string; // User-friendly purpose description (e.g., "social lift, focus, creativity")
-  whatYoullFeel?: string; // User-friendly outcome description (e.g., "upbeat, clear, energized")
+  // Final score: terpene health × intent alignment
+  return overallTerpeneScore * intentAlignment;
 }
 
 /**
- * Resolution failure contract
- * Returned when resolver cannot produce a valid blend
+ * Compute distribution balance score (favor even distributions)
  */
-export type ResolutionFailure = {
-  status: 'invalid';
-  reason:
-    | 'INSUFFICIENT_DISTINCT_CULTIVARS'
-    | 'INVENTORY_TOO_NARROW'
-    | 'CONSTRAINT_CONFLICT'
-    | 'PERCENTAGE_INVALID'
-    | 'SYSTEM_ERROR';
-  details?: string;
-  excludedBy?: Array<{
-    cultivarId: string;
-    constraint: string;
-    numericValue: number;
-  }>;
-};
+function computeBalanceScore(cultivars: CanonicalCultivar[], ratios: number[]): number {
+  if (cultivars.length === 0) return 0;
+  
+  // Compute variance in terpene distribution across blend
+  const totalTerpenes: { [key: string]: number } = {};
+  
+  for (let i = 0; i < cultivars.length; i++) {
+    const cultivar = cultivars[i];
+    const ratio = ratios[i] / 100;
+    
+    for (const terpeneName of Object.keys(cultivar.terpenePercentages)) {
+      if (!totalTerpenes[terpeneName]) {
+        totalTerpenes[terpeneName] = 0;
+      }
+      totalTerpenes[terpeneName] += cultivar.terpenePercentages[terpeneName] * ratio;
+    }
+  }
+  
+  // Compute coefficient of variation (lower is more balanced)
+  const values = Object.values(totalTerpenes);
+  const mean = values.reduce((a, b) => a + b, 0) / values.length;
+  const variance = values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / values.length;
+  const stdDev = Math.sqrt(variance);
+  const cv = mean > 0 ? stdDev / mean : 1.0;
+  
+  // Convert to score (lower CV = higher score)
+  return Math.max(0, 1.0 - cv * 0.5);
+}
 
 /**
- * Formal output contract for GO Line deterministic engine
+ * Select optimal cultivar blend
  * 
- * This is the SINGLE SOURCE OF TRUTH for all recommendations.
- * No other path may generate recommendations.
+ * Variation logic: When multiple equivalent solutions exist (within score threshold),
+ * prefer cultivars not recently used and with different terpene profiles.
  */
-export interface OutcomeResult {
-  resolutionMode?: ResolutionMode;
-  tiers?: ResolutionTier[];
-  phases?: StackedPhase[];
-  refused?: boolean;
-  
-  // Formal contract fields (canonical schema)
-  confidenceScore?: number; // 0-1: How well the resolution matches intent
-  tradeoffs?: string[]; // Explicit tradeoffs made in this resolution
-  rationaleSummary?: string; // Human-readable explanation (non-secret methodology)
-  
-  // Failure state (mutually exclusive with tiers/phases)
-  failure?: ResolutionFailure;
-}
-
-/**
- * Validate blend composition according to PART 1 rules
- * Returns null if valid, ResolutionFailure if invalid
- */
-function validateBlendComposition(
-  composition: BlendComponent[],
-  isStacked: boolean = false
-): ResolutionFailure | null {
-  // Rule 1: Cultivar Uniqueness
-  const uniqueIds = new Set(composition.map(c => c.cultivarId));
-  const minRequired = isStacked ? 3 : 2;
-  
-  if (uniqueIds.size < minRequired) {
-    const excludedBy = composition.map(c => ({
-      cultivarId: c.cultivarId,
-      constraint: 'distinct_cultivar_requirement',
-      numericValue: uniqueIds.size,
-    }));
-    
-    return {
-      status: 'invalid',
-      reason: 'INSUFFICIENT_DISTINCT_CULTIVARS',
-      details: `Blend requires at least ${minRequired} distinct cultivars, found ${uniqueIds.size}`,
-      excludedBy,
-    };
-  }
-  
-  // Check for duplicate cultivars in different roles
-  const cultivarIdsByRole = new Map<string, Set<string>>();
-  for (const comp of composition) {
-    if (!cultivarIdsByRole.has(comp.role)) {
-      cultivarIdsByRole.set(comp.role, new Set());
-    }
-    cultivarIdsByRole.get(comp.role)!.add(comp.cultivarId);
-  }
-  
-  // Ensure no cultivar appears in multiple roles
-  const allCultivarIds = Array.from(uniqueIds);
-  for (const id of allCultivarIds) {
-    let roleCount = 0;
-    for (const roleSet of cultivarIdsByRole.values()) {
-      if (roleSet.has(id)) roleCount++;
-    }
-    if (roleCount > 1) {
-      return {
-        status: 'invalid',
-        reason: 'INSUFFICIENT_DISTINCT_CULTIVARS',
-        details: `Cultivar ${id} appears in multiple roles - invalid composition`,
-      };
-    }
-  }
-  
-  // Rule 2: Percentage Integrity
-  const totalPercentage = composition.reduce((sum, c) => sum + c.ratio, 0);
-  if (Math.abs(totalPercentage - 100) > 0.01) {
-    return {
-      status: 'invalid',
-      reason: 'PERCENTAGE_INVALID',
-      details: `Percentages sum to ${totalPercentage}%, must be exactly 100%`,
-    };
-  }
-  
-  // Each cultivar must be >= 5%
-  for (const comp of composition) {
-    if (comp.ratio < 5) {
-      return {
-        status: 'invalid',
-        reason: 'PERCENTAGE_INVALID',
-        details: `Cultivar ${comp.cultivarId} has ${comp.ratio}%, minimum is 5%`,
-      };
-    }
-    
-    // No single cultivar may exceed 85% unless explicitly configured
-    if (comp.ratio > 85 && composition.length > 1) {
-      return {
-        status: 'invalid',
-        reason: 'PERCENTAGE_INVALID',
-        details: `Cultivar ${comp.cultivarId} exceeds 85% in multi-cultivar blend`,
-      };
-    }
-  }
-  
-  return null; // Valid
-}
-
-function computeBlendMetrics(
-  components: Array<{ cultivar: CanonicalChemotype; ratio: number }>
-): {
-  terpeneDistribution: { [key: string]: number };
-  totalLoad: number;
-  balanceScore: number;
-  interactionPenalty: number;
-  avgTHC: number;
-  avgCBD: number;
-  avgCBG: number;
-} {
-  const terpeneDistribution: { [key: string]: number } = {};
-  let totalLoad = 0;
-  let interactionPenalty = 0;
-  let totalTHC = 0;
-  let totalCBD = 0;
-  let totalCBG = 0;
-  let totalRatio = 0;
-
-  for (const comp of components) {
-    const weight = comp.ratio / 100;
-    totalLoad += comp.cultivar.totalTerpeneLoad * weight;
-    totalTHC += (comp.cultivar.cannabinoids.THC || 0) * weight;
-    totalCBD += (comp.cultivar.cannabinoids.CBD || 0) * weight;
-    totalCBG += (comp.cultivar.cannabinoids.CBG || 0) * weight;
-    totalRatio += weight;
-
-    for (const [terpene, concentration] of Object.entries(comp.cultivar.terpenes)) {
-      if (!terpeneDistribution[terpene]) {
-        terpeneDistribution[terpene] = 0;
-      }
-      terpeneDistribution[terpene] += concentration * weight;
-    }
-  }
-
-  const terpeneNames = Object.keys(terpeneDistribution);
-  for (let i = 0; i < terpeneNames.length; i++) {
-    for (let j = i + 1; j < terpeneNames.length; j++) {
-      const penalty = computeInteractionPenalty(
-        terpeneNames[i],
-        terpeneNames[j],
-        terpeneDistribution[terpeneNames[i]],
-        terpeneDistribution[terpeneNames[j]],
-        totalLoad / 100
-      );
-      interactionPenalty += penalty;
-    }
-  }
-
-  const balanceScore = computeBalanceScore(terpeneDistribution);
-
-  return {
-    terpeneDistribution,
-    totalLoad,
-    balanceScore,
-    interactionPenalty,
-    avgTHC: totalRatio > 0 ? totalTHC / totalRatio : 0,
-    avgCBD: totalRatio > 0 ? totalCBD / totalRatio : 0,
-    avgCBG: totalRatio > 0 ? totalCBG / totalRatio : 0,
-  };
-}
-
-/**
- * Evaluate single chemotype resolution
- */
-function evaluateSingleCultivar(
-  chemotype: CanonicalChemotype,
+export function resolveOutcome(
   intent: OutcomeIntent,
-  scored: ReturnType<typeof scoreCultivar>
-): { compositionFit: number; notes: string[] } {
-  const metrics = computeBlendMetrics([{ cultivar: chemotype, ratio: 100 }]);
+  recentlyUsedCultivarIds: string[] = []
+): OutcomeResult {
+  // Score all cultivars
+  const scoredCultivars = canonicalCultivars.map(cultivar => ({
+    cultivar,
+    score: scoreCultivar(cultivar, intent),
+  }));
   
-  const compositionFit = Math.max(0, Math.min(1, (
-    scored.score * 0.6 +
-    metrics.balanceScore * 0.2 -
-    Math.min(scored.interactionPenalty, 0.2) * 0.1 +
-    scored.cannabinoidScore * 0.1
-  )));
-
-  const notes: string[] = [];
-  if (scored.intentAlignment > 0.75) {
-    notes.push('Single cultivar satisfies outcome constraints');
-  }
-  if (metrics.avgTHC > 20 && intent.anxietySensitivity > 0.5) {
-    notes.push('THC level within acceptable range for sensitivity');
-  }
-
-  return { compositionFit, notes };
-}
-
-/**
- * Generate corrective blend (primary + CBD/CBG to reduce overshoot)
- */
-function generateCorrectiveBlend(
-  primary: { cultivar: CanonicalChemotype; score: number },
-  intent: OutcomeIntent,
-  scoredCultivars: Array<{ cultivar: CanonicalChemotype; score: number }>
-): BlendComponent[] | null {
-  const cbdCbgCultivars = scoredCultivars.filter(sc => isNonPsychoactive(sc.cultivar));
-  if (cbdCbgCultivars.length === 0) return null;
-
-  const corrective = cbdCbgCultivars[0];
+  // Sort by score (descending)
+  scoredCultivars.sort((a, b) => b.score - a.score);
   
-  // CBD/CBG ratios: 5-25% depending on overshoot risk
-  const correctiveRatios = [5, 10, 15, 20, 25];
-  let bestBlend: BlendComponent[] | null = null;
-  let bestFit = -1;
-
-  for (const corrPct of correctiveRatios) {
-    if (corrPct > 25) continue;
-    const primaryPct = 100 - corrPct;
-    
-    const metrics = computeBlendMetrics([
-      { cultivar: primary.cultivar, ratio: primaryPct },
-      { cultivar: corrective.cultivar, ratio: corrPct },
-    ]);
-
-    const fit = Math.max(0, Math.min(1, (
-      primary.score * (primaryPct / 100) * 0.7 +
-      metrics.balanceScore * 0.2 -
-      metrics.interactionPenalty * 0.1
-    )));
-
-    if (fit > bestFit) {
-      bestFit = fit;
-      bestBlend = [
-        { cultivarId: primary.cultivar.id, displayName: primary.cultivar.displayName, role: 'primary', ratio: primaryPct },
-        { cultivarId: corrective.cultivar.id, displayName: corrective.cultivar.displayName, role: 'corrective', ratio: corrPct },
-      ];
-    }
-  }
-
-  return bestBlend;
-}
-
-/**
- * Generate compositional blend (multiple components for balance)
- */
-function generateCompositionalBlend(
-  scoredCultivars: Array<{ cultivar: CanonicalChemotype; score: number }>,
-  intent: OutcomeIntent
-): BlendComponent[] {
-  const primary = scoredCultivars[0];
-  const psychoactiveCultivars = scoredCultivars.filter(sc => !isNonPsychoactive(sc.cultivar));
+  // Variation logic: Define score threshold for "equivalent" solutions (within 5% of top score)
+  const topScore = scoredCultivars.length > 0 ? scoredCultivars[0].score : 0;
+  const equivalentThreshold = Math.max(0.05, topScore * 0.05); // At least 0.05 absolute, or 5% relative
   
-  let bestBlend: BlendComponent[] = [
-    { cultivarId: primary.cultivar.id, displayName: primary.cultivar.displayName, role: 'primary', ratio: 100 },
-  ];
-  let bestFit = -1;
-
-  // Try 2-component blend
-  if (psychoactiveCultivars.length >= 2) {
-    const supporting = psychoactiveCultivars[1];
-    const supportingRatios = [15, 20, 25, 30];
-    
-    for (const supPct of supportingRatios) {
-      if (supPct > 30) continue;
-      const primaryPct = 100 - supPct;
+  // Prefer anchor + modifier pattern: one anchor cultivar with 1-2 modifiers (10-25% each)
+  // Try different combinations to find optimal blend
+  let bestSelection: typeof scoredCultivars = [];
+  let bestRatios: number[] = [];
+  let bestScore = -1;
+  const candidateSelections: Array<{ selection: typeof scoredCultivars; ratios: number[]; score: number }> = [];
+  
+  // Strategy 1: Single anchor with one modifier (75-25, 80-20, 85-15, 90-10)
+  if (scoredCultivars.length >= 2) {
+    const anchor = scoredCultivars[0];
+    for (let i = 1; i < Math.min(4, scoredCultivars.length); i++) {
+      const modifier = scoredCultivars[i];
+      const modifierRatios = [15, 20, 25]; // Modifier percentages
       
-      const metrics = computeBlendMetrics([
-        { cultivar: primary.cultivar, ratio: primaryPct },
-        { cultivar: supporting.cultivar, ratio: supPct },
-      ]);
-
-      const fit = Math.max(0, Math.min(1, (
-        primary.score * (primaryPct / 100) + supporting.score * (supPct / 100)
-      ) * 0.6 + metrics.balanceScore * 0.3 - metrics.interactionPenalty * 0.1));
-
-      if (fit > bestFit) {
-        bestFit = fit;
-        bestBlend = [
-          { cultivarId: primary.cultivar.id, displayName: primary.cultivar.displayName, role: 'primary', ratio: primaryPct },
-          { cultivarId: supporting.cultivar.id, displayName: supporting.cultivar.displayName, role: 'supporting', ratio: supPct },
-        ];
-      }
-    }
-  }
-
-  // Try 3-component blend (only if overshoot tolerance allows)
-  if (psychoactiveCultivars.length >= 3 && intent.overshootTolerance > 0.6) {
-    const supporting = psychoactiveCultivars[1];
-    const accent = psychoactiveCultivars[2];
-    
-    for (const supPct of [20, 25]) {
-      for (const accPct of [5, 8, 10]) {
-        const primaryPct = 100 - supPct - accPct;
-        if (primaryPct < 60) continue;
+      for (const modPct of modifierRatios) {
+        const anchorPct = 100 - modPct;
+        const ratios = [anchorPct, modPct];
+        const selection = [anchor, modifier];
         
-        const metrics = computeBlendMetrics([
-          { cultivar: primary.cultivar, ratio: primaryPct },
-          { cultivar: supporting.cultivar, ratio: supPct },
-          { cultivar: accent.cultivar, ratio: accPct },
-        ]);
-
-        const fit = Math.max(0, Math.min(1, (
-          (primary.score * (primaryPct / 100) + 
-           supporting.score * (supPct / 100) + 
-           accent.score * (accPct / 100)) * 0.6 + 
-          metrics.balanceScore * 0.3 - 
-          metrics.interactionPenalty * 0.1
-        )));
-
-        if (fit > bestFit) {
-          bestFit = fit;
-          bestBlend = [
-            { cultivarId: primary.cultivar.id, displayName: primary.cultivar.displayName, role: 'primary', ratio: primaryPct },
-            { cultivarId: supporting.cultivar.id, displayName: supporting.cultivar.displayName, role: 'supporting', ratio: supPct },
-            { cultivarId: accent.cultivar.id, displayName: accent.cultivar.displayName, role: 'supporting', ratio: accPct },
-          ];
+        const balanceScore = computeBalanceScore(
+          selection.map(sc => sc.cultivar),
+          ratios
+        );
+        
+        const weightedScore = (anchor.score * anchorPct / 100) + (modifier.score * modPct / 100);
+        const combinedScore = weightedScore * 0.7 + balanceScore * 0.3;
+        
+        // Collect all candidate selections within equivalent threshold
+        if (combinedScore >= topScore - equivalentThreshold) {
+          candidateSelections.push({ selection, ratios, score: combinedScore });
+        }
+        
+        if (combinedScore > bestScore) {
+          bestScore = combinedScore;
+          bestSelection = selection;
+          bestRatios = ratios;
         }
       }
     }
   }
-
-  // Normalize ratios
-  const sum = bestBlend.reduce((s, c) => s + c.ratio, 0);
-  if (sum > 0 && sum !== 100) {
-    bestBlend = bestBlend.map(c => ({
-      ...c,
-      ratio: Math.round((c.ratio / sum) * 100),
-    }));
-    const newSum = bestBlend.reduce((s, c) => s + c.ratio, 0);
-    if (newSum !== 100) {
-      bestBlend[0].ratio += (100 - newSum);
-    }
-  }
-
-  return bestBlend;
-}
-
-/**
- * Detect when stacking is appropriate (PART 5.A)
- * Stacking should be considered when ANY of the following are true:
- * - User expresses multiple desired outcomes over time
- * - Desired outcome contains conflicting phases
- * - User wants multiple experiences in one session
- * - System detects that a single blend would require excessive compromise
- */
-function shouldUseStacking(intent: OutcomeIntent): boolean {
-  // Multi-phase intent explicitly requested
-  if (intent.temporalProfile === 'multi-phase' && intent.phases && intent.phases.length >= 2) {
-    return true;
-  }
   
-  // Check for conflicting single-phase goals that suggest stacking
-  // If activation is high early but sedation is desired later, stacking may be better
-  // This is detected at the strategic guidance level, so if we get here with single-phase,
-  // trust the guidance layer and default to blending
-  return false;
-}
-
-/**
- * Select composition strategy based on intent and temporal requirements
- * This decision happens BEFORE cultivar selection
- */
-function selectCompositionStrategy(intent: OutcomeIntent): CompositionStrategy {
-  // Enhanced stacking detection
-  if (shouldUseStacking(intent)) {
-    if (intent.phases && intent.phases.length >= 2) {
-      // Check if phases are sufficiently different to warrant stacking
-      const phase1 = intent.phases[0];
-      const phase2 = intent.phases[intent.phases.length - 1]; // Compare first and last
-      
-      const activationDiff = Math.abs(phase1.activationTarget - phase2.activationTarget);
-      const cognitiveDiff = Math.abs(phase1.cognitiveEndurance - phase2.cognitiveEndurance);
-      
-      // If phases are very different (e.g., energized now, calm later), use layered stack
-      if (activationDiff > 0.3 || cognitiveDiff > 0.3 || intent.phases.length > 2) {
-        return 'layered_stack';
-      }
-    }
-  }
-  
-  // Single-phase: prefer homogeneous_blend by default
-  // Single cultivar will only be chosen if demonstrably optimal (see generateTiers)
-  return 'homogeneous_blend';
-}
-
-/**
- * Generate real-world mixing instructions based on composition strategy and blend
- */
-function generateInstructions(
-  strategy: CompositionStrategy,
-  composition: BlendComponent[],
-  resolutionType: ResolutionType
-): string {
-  if (strategy === 'single_cultivar') {
-    return `Use ${composition[0].displayName} as-is. No blending required.`;
-  }
-  
-  if (strategy === 'homogeneous_blend') {
-    const ratios = composition.map(c => `${c.displayName} (${c.ratio}%)`).join(', ');
-    if (composition.length === 2) {
-      return `Mix ${composition[0].displayName} (${composition[0].ratio}%) and ${composition[1].displayName} (${composition[1].ratio}%) evenly throughout. Combine in a single container and use the blend uniformly.`;
-    } else if (composition.length === 3) {
-      return `Mix ${ratios} evenly throughout. Combine all three in a single container and use the blend uniformly.`;
-    } else {
-      return `Mix ${ratios} evenly throughout. Combine all components in a single container and use the blend uniformly.`;
-    }
-  }
-  
-  if (strategy === 'layered_stack') {
-    // Instructions for layered stacks are generated per-phase
-    // This is a fallback; normally handled in generateStackedResolution
-    const ratios = composition.map(c => `${c.displayName} (${c.ratio}%)`).join(', ');
-    return `Use ${ratios} as a layered composition. Follow phase-specific timing guidance.`;
-  }
-  
-  return `Mix ${composition.map(c => `${c.displayName} (${c.ratio}%)`).join(', ')} according to the composition strategy.`;
-}
-
-/**
- * Classify resolution type (for backward compatibility)
- */
-function classifyResolutionType(
-  blend: BlendComponent[],
-  primaryChemotype: CanonicalChemotype
-): ResolutionType {
-  if (blend.length === 1) return 'SINGLE_CULTIVAR';
-  
-  const hasCorrective = blend.some(c => 
-    c.role === 'corrective' || 
-    isNonPsychoactive(ACTIVE_INVENTORY.find(cv => cv.id === c.cultivarId)!)
-  );
-  
-  if (hasCorrective) return 'CORRECTIVE_BLEND';
-  return 'COMPOSITIONAL_BLEND';
-}
-
-/**
- * Generate resolution tiers (BLEND-FIRST)
- * 
- * Blending is the default strategy. Single cultivar is only chosen when:
- * - Single cultivar fit is exceptionally high (>0.85)
- * - Blends do not improve fit by at least 0.05
- * - Adding compounds would reduce outcome fidelity
- */
-function generateTiers(
-  scoredCultivars: Array<{ cultivar: CanonicalChemotype; score: number }>,
-  intent: OutcomeIntent
-): ResolutionTier[] {
-  const primary = scoredCultivars[0];
-  const primaryScored = scoreCultivar(primary.cultivar, intent);
-  const singleResult = evaluateSingleCultivar(primary.cultivar, intent, primaryScored);
-  
-  const tiers: ResolutionTier[] = [];
-  const strategy = selectCompositionStrategy(intent); // Strategy is homogeneous_blend for single-phase
-  
-  // BLEND-FIRST: Try blends first (Tier A: Optimal, Tier B: Balanced)
-  
-  // Tier A: Optimal (3-component blend or corrective blend)
-  const correctiveBlend = generateCorrectiveBlend(primary, intent, scoredCultivars);
-  const compositional3 = generateCompositionalBlend(scoredCultivars.slice(0, 4), intent);
-  
-  let optimalBlend = compositional3;
-  let optimalFit = 0;
-  let optimalResolutionType: ResolutionType = 'COMPOSITIONAL_BLEND';
-  
-  // Try 3-component compositional blend first
-  if (compositional3.length === 3) {
-    const metrics3 = computeBlendMetrics(
-      compositional3.map(c => ({
-        cultivar: ACTIVE_INVENTORY.find(cv => cv.id === c.cultivarId)!,
-        ratio: c.ratio,
-      }))
-    );
-    
-    optimalFit = Math.max(0, Math.min(1, (
-      compositional3.reduce((sum, c) => {
-        const sc = scoredCultivars.find(sc => sc.cultivar.id === c.cultivarId)!;
-        return sum + sc.score * (c.ratio / 100);
-      }, 0) * 0.6 + metrics3.balanceScore * 0.3 - metrics3.interactionPenalty * 0.1
-    )));
-    optimalBlend = compositional3;
-    optimalResolutionType = classifyResolutionType(compositional3, primary.cultivar);
-  }
-  
-  // Try corrective blend if it improves fit
-  if (correctiveBlend && correctiveBlend.length === 2) {
-    const metricsCorr = computeBlendMetrics(
-      correctiveBlend.map(c => ({
-        cultivar: ACTIVE_INVENTORY.find(cv => cv.id === c.cultivarId)!,
-        ratio: c.ratio,
-      }))
-    );
-    
-    const fitCorr = Math.max(0, Math.min(1, (
-      primaryScored.score * (correctiveBlend[0].ratio / 100) * 0.7 +
-      metricsCorr.balanceScore * 0.2 -
-      metricsCorr.interactionPenalty * 0.1
-    )));
-    
-    if (fitCorr > optimalFit && primaryScored.cannabinoidScore < 0.85) {
-      optimalFit = fitCorr;
-      optimalBlend = correctiveBlend;
-      optimalResolutionType = classifyResolutionType(correctiveBlend, primary.cultivar);
-    }
-  }
-
-  // Add Optimal tier if blend improves over single cultivar or is acceptable
-  if (optimalFit > 0.4 && optimalBlend.length > 1) {
-    // Validate blend before adding
-    const validationError = validateBlendComposition(optimalBlend, false);
-    if (validationError) {
-      // Skip invalid blend - don't add to tiers
-    } else {
-      const isCorrective = optimalBlend.some(c => c.role === 'corrective');
-      tiers.push({
-        tierLabel: 'Optimal',
-        compositionStrategy: strategy,
-        resolutionType: optimalResolutionType,
-        composition: optimalBlend,
-        compositionFit: optimalFit,
-        systemNotes: [
-          optimalBlend.length > 2 ? 
-            'Multi-component blend for precise chemical control' :
-            'Corrective blend to reduce overshoot risk',
-          'Highest precision with additional components',
-        ],
-        whyChosen: [
-          isCorrective 
-            ? 'Corrective component reduces THC overshoot and anxiety risk while preserving terpene intent.'
-            : 'Multiple components allow precise terpene ratio control for optimal outcome alignment.',
-          'Highest chemical precision achievable within safety constraints.',
-        ],
-        tradeoffs: [
-          'Increased component count adds complexity.',
-          optimalBlend.length > 2 
-            ? 'More components may introduce subtle interaction effects.'
-            : 'Sedation constrained to avoid early-phase penalties.',
-        ],
-        instructions: generateInstructions(strategy, optimalBlend, optimalResolutionType),
-      });
-    }
-  }
-
-  // Tier B: Balanced (2-component blend)
-  const compositional2 = generateCompositionalBlend(scoredCultivars.slice(0, 3), intent);
-  if (compositional2.length === 2) {
-    const metrics2 = computeBlendMetrics(
-      compositional2.map(c => ({
-        cultivar: ACTIVE_INVENTORY.find(cv => cv.id === c.cultivarId)!,
-        ratio: c.ratio,
-      }))
-    );
-    
-    const fit2 = Math.max(0, Math.min(1, (
-      primaryScored.score * (compositional2[0].ratio / 100) +
-      scoredCultivars.find(sc => sc.cultivar.id === compositional2[1].cultivarId)!.score * (compositional2[1].ratio / 100)
-    ) * 0.6 + metrics2.balanceScore * 0.3 - metrics2.interactionPenalty * 0.1));
-    
-    const resolutionType2 = classifyResolutionType(compositional2, primary.cultivar);
-    
-    // Add Balanced tier if it's reasonable (fit > 0.35) and not worse than single by more than 0.1
-    if (fit2 > 0.35 && fit2 >= singleResult.compositionFit - 0.1) {
-      // Validate blend before adding
-      const validationError = validateBlendComposition(compositional2, false);
-      if (validationError) {
-        // Skip invalid blend - don't add to tiers
-      } else {
-        tiers.push({
-          tierLabel: 'Balanced',
-          compositionStrategy: strategy,
-          resolutionType: resolutionType2,
-          composition: compositional2,
-          compositionFit: fit2,
-          systemNotes: [
-            'Two-component blend for improved balance',
-            'Moderate precision with fewer components',
-          ],
-          whyChosen: [
-            'Two-component blend provides better terpene balance than a single profile.',
-            'Moderate complexity while improving chemical precision.',
-          ],
-          tradeoffs: [
-            'Lower precision than optimal tier with more components.',
-            'Fewer components means less fine-grained control.',
-          ],
-          instructions: generateInstructions(strategy, compositional2, resolutionType2),
-        });
-      }
-    }
-  }
-
-  // Tier C: Simplified (single cultivar) - ONLY if demonstrably optimal
-  // Single cultivar is rare and must be justified:
-  // - Exceptionally high fit (>0.85)
-  // - Blends don't improve significantly (or single is actually better)
-  const singleBlend: BlendComponent[] = [{
-    cultivarId: primary.cultivar.id,
-    displayName: primary.cultivar.displayName,
-    role: 'primary',
-    ratio: 100,
-  }];
-  
-  const singleNotes = [
-    'Single cultivar resolution',
-    ...singleResult.notes,
-  ];
-  
-  // Single cultivar only if:
-  // 1. Fit is exceptionally high (>0.85), OR
-  // 2. Fit is very good (>0.75) AND no blends improved it by at least 0.05
-  const bestBlendFit = tiers.length > 0 ? Math.max(...tiers.map(t => t.compositionFit)) : 0;
-  const singleIsOptimal = singleResult.compositionFit > 0.85 || 
-                          (singleResult.compositionFit > 0.75 && singleResult.compositionFit >= bestBlendFit - 0.02);
-  
-  if (singleIsOptimal && singleResult.compositionFit > 0.35) {
-    tiers.push({
-      tierLabel: 'Simplified',
-      compositionStrategy: 'single_cultivar',
-      resolutionType: 'SINGLE_CULTIVAR',
-      composition: singleBlend,
-      compositionFit: singleResult.compositionFit,
-      systemNotes: singleNotes,
-      whyChosen: [
-        'A single chemotype profile cleanly satisfies all outcome constraints.',
-        'Adding compounds would not improve fidelity and may introduce unnecessary complexity.',
-      ],
-      tradeoffs: [
-        'Single cultivar offers less precision than multi-component blends.',
-        'Cannot fine-tune specific terpene ratios as precisely as blends.',
-      ],
-      instructions: generateInstructions('single_cultivar', singleBlend, 'SINGLE_CULTIVAR'),
-    });
-  }
-
-  // Sort tiers by fit (descending) - blends first, single last if present
-  tiers.sort((a, b) => {
-    // If both are blends or both are single, sort by fit
-    if ((a.compositionStrategy !== 'single_cultivar') === (b.compositionStrategy !== 'single_cultivar')) {
-      return b.compositionFit - a.compositionFit;
-    }
-    // Blends come before single cultivar
-    if (a.compositionStrategy !== 'single_cultivar') return -1;
-    return 1;
-  });
-
-  return tiers;
-}
-
-/**
- * Attempt unified blended solution for multi-phase intent
- * Returns null if penalties increase or tradeoffs required
- */
-function attemptUnifiedBlended(
-  phase1: OutcomeIntent,
-  phase2: OutcomeIntent,
-  scoredCultivars: Array<{ cultivar: CanonicalChemotype; score: number; terpeneScore: number; intentAlignment: number; interactionPenalty: number; cannabinoidScore: number }>
-): { blend: BlendComponent[]; fit: number; earlyPenalty: number; latePenalty: number } | null {
-  // Score cultivars for both phases
-  const phase1Scored = scoredCultivars.map(sc => ({
-    ...sc,
-    phase1Score: scoreCultivar(sc.cultivar, phase1).score,
-  }));
-  const phase2Scored = scoredCultivars.map(sc => ({
-    ...sc,
-    phase2Score: scoreCultivar(sc.cultivar, phase2).score,
-  }));
-
-  // Find cultivars that work well for both
-  const combinedScored = phase1Scored.map(p1 => {
-    const p2 = phase2Scored.find(p => p.cultivar.id === p1.cultivar.id)!;
-    const combinedScore = (p1.phase1Score * 0.5 + p2.phase2Score * 0.5);
-    return { ...p1, combinedScore, phase2Score: p2.phase2Score };
-  });
-
-  combinedScored.sort((a, b) => b.combinedScore - a.combinedScore);
-  const primary = combinedScored[0];
-
-  // Try single cultivar
-  const singleCultivar = scoreCultivar(primary.cultivar, phase1);
-  const singleCultivar2 = scoreCultivar(primary.cultivar, phase2);
-  
-  const earlyPenalty = 1.0 - singleCultivar.score;
-  const latePenalty = 1.0 - singleCultivar2.score;
-
-  // If single cultivar works well for both, it's acceptable
-  if (earlyPenalty < 0.15 && latePenalty < 0.15) {
-    return {
-      blend: [{
-        cultivarId: primary.cultivar.id,
-        displayName: primary.cultivar.displayName,
-        role: 'primary',
-        ratio: 100,
-      }],
-      fit: (singleCultivar.score + singleCultivar2.score) / 2,
-      earlyPenalty,
-      latePenalty,
-    };
-  }
-
-  // Try 2-component blend
-  if (combinedScored.length >= 2) {
-    const supporting = combinedScored[1];
-    const blend = generateCompositionalBlend(
-      combinedScored.slice(0, 3).map(sc => ({ cultivar: sc.cultivar, score: sc.combinedScore })),
-      { ...phase1, activationTarget: (phase1.activationTarget + phase2.activationTarget) / 2 }
-    );
-
-    if (blend.length === 2) {
-      const metrics = computeBlendMetrics(
-        blend.map(c => ({
-          cultivar: ACTIVE_INVENTORY.find(cv => cv.id === c.cultivarId)!,
-          ratio: c.ratio,
-        }))
-      );
-
-      // Score blend against both phases using weighted scores
-      const blendComponents = blend.map(c => {
-        const sc1 = phase1Scored.find(sc => sc.cultivar.id === c.cultivarId)!;
-        const sc2 = phase2Scored.find(sc => sc.cultivar.id === c.cultivarId)!;
-        return {
-          phase1Score: sc1.phase1Score,
-          phase2Score: sc2.phase2Score,
-          ratio: c.ratio,
-        };
-      });
-
-      const fit1 = blendComponents.reduce((sum, comp) => 
-        sum + comp.phase1Score * (comp.ratio / 100), 0);
-      const fit2 = blendComponents.reduce((sum, comp) => 
-        sum + comp.phase2Score * (comp.ratio / 100), 0);
-
-      const combinedFit = (fit1 + fit2) / 2;
-      const newEarlyPenalty = 1.0 - fit1;
-      const newLatePenalty = 1.0 - fit2;
-
-      // Check if penalties increased
-      if (newEarlyPenalty > earlyPenalty + 0.05 || newLatePenalty > latePenalty + 0.05) {
-        return null; // Penalties increased, reject unified
-      }
-
-      return {
-        blend,
-        fit: combinedFit,
-        earlyPenalty: newEarlyPenalty,
-        latePenalty: newLatePenalty,
-      };
-    }
-  }
-
-  return null;
-}
-
-/**
- * Generate stacked resolution for multi-phase intent (layered_stack strategy)
- * 
- * PART 5.C & 5.D: Each phase has its own terpene vector and CBD rules are applied:
- * - CBD may appear only in later phases
- * - CBD should be heavier in the end/landing phase
- * - CBD omitted entirely in early phases if activation is desired
- * - CBD rarely dominates opening phase unless calm onset is explicitly desired
- * 
- * Supports both 2-phase (Primary/Early, Later/Wind-Down) and 3-phase (Top/Opening, Middle/Core, End/Landing) models
- */
-function generateStackedResolution(
-  phase1: OutcomeIntent,
-  phase2: OutcomeIntent,
-  phase3?: OutcomeIntent
-): StackedPhase[] {
-  const phases: StackedPhase[] = [];
-  const is3Phase = phase3 !== undefined;
-
-  // Helper: Filter out CBD from composition for early phases (unless calm onset desired)
-  const filterCBDForEarlyPhase = (composition: BlendComponent[], intent: OutcomeIntent): BlendComponent[] => {
-    // CBD allowed in opening phase ONLY if calm onset is desired (activation < 0.4)
-    if (intent.activationTarget >= 0.4) {
-      return composition.filter(comp => {
-        const chemotype = ACTIVE_INVENTORY.find(cv => cv.id === comp.cultivarId);
-        if (!chemotype) {
-          throw new Error(`Cultivar ${comp.cultivarId} not found in STRAIN_INVENTORY`);
-        }
-        return !chemotype || !isNonPsychoactive(chemotype);
-      });
-    }
-    return composition;
-  };
-
-  // Helper: Enhance end phase with CBD if needed
-  const enhanceEndPhaseWithCBD = (composition: BlendComponent[], intent: OutcomeIntent): BlendComponent[] => {
-    // If end phase needs calming and doesn't already have CBD, consider adding it
-    if (intent.activationTarget < 0.5) {
-      const hasCBD = composition.some(comp => {
-        const chemotype = ACTIVE_INVENTORY.find(cv => cv.id === comp.cultivarId);
-        if (!chemotype) {
-          throw new Error(`Cultivar ${comp.cultivarId} not found in STRAIN_INVENTORY`);
-        }
-        return chemotype && isNonPsychoactive(chemotype);
-      });
-      
-      // If no CBD and calming is desired, try to add it (but don't force if composition is already good)
-      if (!hasCBD) {
-        // Find CBD cultivar
-        const cbdCultivar = ACTIVE_INVENTORY.find(cv => isNonPsychoactive(cv));
-        if (!cbdCultivar) {
-          throw new Error('No CBD cultivar found in STRAIN_INVENTORY');
-        }
-        if (cbdCultivar) {
-          // Add CBD as 15-25% of end phase
-          const newComposition = [...composition];
-          const cbdRatio = Math.min(25, 100 - newComposition.reduce((sum, c) => sum + c.ratio, 0));
-          if (cbdRatio > 0) {
-            // Reduce other components proportionally
-            const otherTotal = newComposition.reduce((sum, c) => sum + c.ratio, 0);
-            const scaleFactor = (100 - cbdRatio) / otherTotal;
-            newComposition.forEach(c => c.ratio = Math.round(c.ratio * scaleFactor));
-            newComposition.push({
-              cultivarId: cbdCultivar.id,
-              displayName: cbdCultivar.displayName || 'CBD Flower',
-              role: 'corrective',
-              ratio: cbdRatio,
-            });
-            return newComposition;
+  // Strategy 2: Single anchor with two modifiers (75-15-10, 70-20-10, 65-20-15)
+  if (scoredCultivars.length >= 3) {
+    const anchor = scoredCultivars[0];
+    for (let i = 1; i < Math.min(4, scoredCultivars.length); i++) {
+      for (let j = i + 1; j < Math.min(5, scoredCultivars.length); j++) {
+        const mod1 = scoredCultivars[i];
+        const mod2 = scoredCultivars[j];
+        const twoModCombos = [[15, 10], [20, 10], [20, 15], [15, 15]];
+        
+        for (const [mod1Pct, mod2Pct] of twoModCombos) {
+          const anchorPct = 100 - mod1Pct - mod2Pct;
+          if (anchorPct < 60) continue; // Anchor must be at least 60%
+          
+          const ratios = [anchorPct, mod1Pct, mod2Pct];
+          const selection = [anchor, mod1, mod2];
+          
+          const balanceScore = computeBalanceScore(
+            selection.map(sc => sc.cultivar),
+            ratios
+          );
+          
+          const weightedScore = 
+            (anchor.score * anchorPct / 100) +
+            (mod1.score * mod1Pct / 100) +
+            (mod2.score * mod2Pct / 100);
+          const combinedScore = weightedScore * 0.7 + balanceScore * 0.3;
+          
+          // Collect all candidate selections within equivalent threshold
+          if (combinedScore >= topScore - equivalentThreshold) {
+            candidateSelections.push({ selection, ratios, score: combinedScore });
+          }
+          
+          if (combinedScore > bestScore) {
+            bestScore = combinedScore;
+            bestSelection = selection;
+            bestRatios = ratios;
           }
         }
       }
     }
-    return composition;
-  };
-
-  // Helper: Generate purpose and whatYoullFeel descriptions
-  const generatePurpose = (intent: OutcomeIntent, phaseType: string): string => {
-    if (phaseType === 'Top / Opening' || phaseType === 'Primary / Early') {
-      if (intent.activationTarget > 0.6) return 'social lift, focus, creativity';
-      if (intent.activationTarget < 0.4) return 'calm onset, gentle start';
-      return 'balanced activation';
-    }
-    if (phaseType === 'Middle / Core') {
-      if (intent.activationTarget > 0.6) return 'sustained energy, peak experience';
-      if (intent.activationTarget < 0.4) return 'relaxed balance, steady calm';
-      return 'main outcome delivery';
-    }
-    if (phaseType === 'End / Landing' || phaseType === 'Later / Wind-Down') {
-      if (intent.activationTarget < 0.4) return 'calm, relief, sleep, closure';
-      return 'smooth wind-down, gentle transition';
-    }
-    return 'optimized for this phase';
-  };
-
-  const generateWhatYoullFeel = (intent: OutcomeIntent, phaseType: string): string => {
-    if (phaseType === 'Top / Opening' || phaseType === 'Primary / Early') {
-      if (intent.activationTarget > 0.6) return 'upbeat, clear, energized';
-      if (intent.activationTarget < 0.4) return 'gentle, calm, relaxed';
-      return 'balanced, alert';
-    }
-    if (phaseType === 'Middle / Core') {
-      if (intent.activationTarget > 0.6) return 'peak energy, focused, engaged';
-      if (intent.activationTarget < 0.4) return 'balanced, relaxed, steady';
-      return 'sustained, aligned with goals';
-    }
-    if (phaseType === 'End / Landing' || phaseType === 'Later / Wind-Down') {
-      if (intent.activationTarget < 0.4) return 'smooth calm, no crash, easy wind-down';
-      return 'gentle transition, balanced ending';
-    }
-    return 'aligned with this phase\'s goals';
-  };
-
-  // Phase 1: Opening/Top (or Primary/Early for 2-phase)
-  // Ensure single-phase to avoid recursion
-  const phase1SinglePhase: OutcomeIntent = {
-    ...phase1,
-    temporalProfile: 'single-phase',
-    phases: undefined,
-  };
-  const phase1Result = resolveOutcome(phase1SinglePhase);
-  if (phase1Result.tiers && phase1Result.tiers.length > 0) {
-    const bestPhase1 = phase1Result.tiers[0];
-    let phase1Composition = [...bestPhase1.composition];
-    
-    // PART 5.D: Apply CBD rules - filter CBD from early phases unless calm onset desired
-    phase1Composition = filterCBDForEarlyPhase(phase1Composition, phase1);
-    
-    // Normalize ratios after filtering
-    const phase1Total = phase1Composition.reduce((sum, c) => sum + c.ratio, 0);
-    if (phase1Total > 0) {
-      phase1Composition.forEach(c => c.ratio = Math.round((c.ratio / phase1Total) * 100));
-    }
-    
-    const phase1PhaseLabel = is3Phase ? 'Top / Opening' : 'Primary / Early';
-    const phase1IntentFocus = phase1.activationTarget > 0.6 ? 'alert / social / active' : 
-                              phase1.activationTarget < 0.4 ? 'relaxed / calm' : 'balanced';
-    
-    const phase1Instructions = phase1Composition.length === 1
-      ? `Use ${phase1Composition[0].displayName} for the ${phase1PhaseLabel.toLowerCase()} phase. Start with this composition.`
-      : `Mix ${phase1Composition.map(c => `${c.displayName} (${c.ratio}%)`).join(', ')} for the ${phase1PhaseLabel.toLowerCase()} phase. Combine and use first.`;
-    
-    phases.push({
-      phase: phase1PhaseLabel as any,
-      intentFocus: phase1IntentFocus,
-      composition: phase1Composition,
-      compositionFit: bestPhase1.compositionFit,
-      systemNotes: bestPhase1.systemNotes,
-      instructions: phase1Instructions,
-      purpose: generatePurpose(phase1, phase1PhaseLabel),
-      whatYoullFeel: generateWhatYoullFeel(phase1, phase1PhaseLabel),
+  }
+  
+  // Fallback: If no good anchor+modifier found, use top 2 with balanced ratios
+  if (bestSelection.length === 0 && scoredCultivars.length >= 2) {
+    bestSelection = scoredCultivars.slice(0, 2);
+    bestRatios = [70, 30]; // Prefer slight anchor preference even in fallback
+  }
+  
+  // Variation logic: If multiple equivalent solutions exist, prefer ones not recently used
+  if (candidateSelections.length > 1 && recentlyUsedCultivarIds.length > 0) {
+    // Score candidates by: (1) score, (2) avoid recently used cultivars
+    const scoredCandidates = candidateSelections.map(candidate => {
+      const cultivarIds = candidate.selection.map(sc => sc.cultivar.id);
+      const recentlyUsedCount = cultivarIds.filter(id => recentlyUsedCultivarIds.includes(id)).length;
+      const variationBonus = (candidate.selection.length - recentlyUsedCount) / candidate.selection.length;
+      // Prefer higher score, but bonus for variation (up to 10% boost)
+      const adjustedScore = candidate.score * (1.0 + variationBonus * 0.1);
+      return { ...candidate, adjustedScore };
     });
-  }
-
-  // Phase 2: Core/Middle (or Later/Wind-Down for 2-phase)
-  // Ensure single-phase to avoid recursion
-  const phase2SinglePhase: OutcomeIntent = {
-    ...phase2,
-    temporalProfile: 'single-phase',
-    phases: undefined,
-  };
-  const phase2Result = resolveOutcome(phase2SinglePhase);
-  if (phase2Result.tiers && phase2Result.tiers.length > 0) {
-    const bestPhase2 = phase2Result.tiers[0];
-    let phase2Composition = [...bestPhase2.composition];
     
-    // CBD allowed in middle/core phase but not required
-    // Only filter if activation is high (activation > 0.6)
-    if (phase2.activationTarget > 0.6) {
-      phase2Composition = filterCBDForEarlyPhase(phase2Composition, phase2);
-      const phase2Total = phase2Composition.reduce((sum, c) => sum + c.ratio, 0);
-      if (phase2Total > 0) {
-        phase2Composition.forEach(c => c.ratio = Math.round((c.ratio / phase2Total) * 100));
-      }
-    }
+    // Sort by adjusted score (descending)
+    scoredCandidates.sort((a, b) => b.adjustedScore - a.adjustedScore);
     
-    const phase2PhaseLabel = is3Phase ? 'Middle / Core' : 'Later / Wind-Down';
-    const phase2IntentFocus = phase2.activationTarget < 0.4 ? 
-                              (is3Phase ? 'relaxed balance' : 'relaxation / recovery') :
-                              phase2.activationTarget > 0.6 ? 'sustained energy' : 
-                              (is3Phase ? 'main outcome delivery' : 'balanced transition');
-    
-    const phase2Instructions = phase2Composition.length === 1
-      ? `Use ${phase2Composition[0].displayName} for the ${phase2PhaseLabel.toLowerCase()} phase. ${is3Phase ? 'Continue with this after the opening phase.' : 'Transition to this after the early phase.'}`
-      : `Mix ${phase2Composition.map(c => `${c.displayName} (${c.ratio}%)`).join(', ')} for the ${phase2PhaseLabel.toLowerCase()} phase. ${is3Phase ? 'Use after the opening phase.' : 'Use after the early phase composition.'}`;
-    
-    phases.push({
-      phase: phase2PhaseLabel as any,
-      intentFocus: phase2IntentFocus,
-      composition: phase2Composition,
-      compositionFit: bestPhase2.compositionFit,
-      systemNotes: bestPhase2.systemNotes,
-      instructions: phase2Instructions,
-      purpose: generatePurpose(phase2, phase2PhaseLabel),
-      whatYoullFeel: generateWhatYoullFeel(phase2, phase2PhaseLabel),
-    });
-  }
-
-  // Phase 3: End/Landing (only for 3-phase)
-  if (phase3 && is3Phase) {
-    // Ensure single-phase to avoid recursion
-    const phase3SinglePhase: OutcomeIntent = {
-      ...phase3,
-      temporalProfile: 'single-phase',
-      phases: undefined,
-    };
-    const phase3Result = resolveOutcome(phase3SinglePhase);
-    if (phase3Result.tiers && phase3Result.tiers.length > 0) {
-      const bestPhase3 = phase3Result.tiers[0];
-      let phase3Composition = [...bestPhase3.composition];
-      
-      // PART 5.D: Enhance end phase with CBD (heavier in end phase)
-      phase3Composition = enhanceEndPhaseWithCBD(phase3Composition, phase3);
-      
-      const phase3IntentFocus = phase3.activationTarget < 0.4 ? 'calm / relief / closure' :
-                                phase3.activationTarget > 0.6 ? 'sustained energy' : 'balanced wind-down';
-      
-      const phase3Instructions = phase3Composition.length === 1
-        ? `Use ${phase3Composition[0].displayName} for the end/landing phase. Transition to this for the final phase.`
-        : `Mix ${phase3Composition.map(c => `${c.displayName} (${c.ratio}%)`).join(', ')} for the end/landing phase. Use for the final phase of your experience.`;
-      
-      phases.push({
-        phase: 'End / Landing',
-        intentFocus: phase3IntentFocus,
-        composition: phase3Composition,
-        compositionFit: bestPhase3.compositionFit,
-        systemNotes: bestPhase3.systemNotes,
-        instructions: phase3Instructions,
-        purpose: generatePurpose(phase3, 'End / Landing'),
-        whatYoullFeel: generateWhatYoullFeel(phase3, 'End / Landing'),
-      });
+    // Use the best adjusted score candidate (only if it's within equivalent threshold)
+    const bestCandidate = scoredCandidates[0];
+    if (bestCandidate.score >= bestScore - equivalentThreshold && bestCandidate.adjustedScore > bestScore) {
+      // Prefer variation when scores are equivalent (within threshold)
+      bestSelection = bestCandidate.selection;
+      bestRatios = bestCandidate.ratios;
+      bestScore = bestCandidate.score;
     }
   }
-
-  return phases;
-}
-
-/**
- * Resolve outcome with tiered resolutions or stacked phases
- * Throws if intent is invalid or missing
- */
-export function resolveOutcome(intent: OutcomeIntent): OutcomeResult {
-  // Validate intent - refuse to execute if invalid
-  if (!intent || typeof intent !== 'object') {
-    throw new Error('Invalid intent: intent object is required');
+  
+  const topCultivars = bestSelection;
+  
+  // Ensure ratios sum to 100 (normalize and round)
+  const sum = bestRatios.reduce((a, b) => a + b, 0);
+  if (sum > 0) {
+    bestRatios = bestRatios.map(r => Math.round((r / sum) * 100));
+    // Fix rounding errors
+    const newSum = bestRatios.reduce((a, b) => a + b, 0);
+    if (newSum !== 100) {
+      bestRatios[0] += (100 - newSum);
+    }
+  } else {
+    // Final fallback: equal ratios (should not happen)
+    bestRatios = new Array(topCultivars.length).fill(Math.floor(100 / topCultivars.length));
+    bestRatios[0] += 100 - bestRatios.reduce((a, b) => a + b, 0);
   }
-
-  const requiredFields: (keyof OutcomeIntent)[] = ['activationTarget', 'anxietySensitivity', 'cognitiveEndurance', 'overshootTolerance'];
-  for (const field of requiredFields) {
-    if (typeof intent[field] !== 'number') {
-      throw new Error(`Invalid intent: ${field} must be a number`);
-    }
-    if (intent[field] < 0 || intent[field] > 1) {
-      throw new Error(`Invalid intent: ${field} must be between 0 and 1`);
-    }
-  }
-
-  // Validate temporal profile if present
-  if (intent.temporalProfile && intent.temporalProfile !== 'single-phase' && intent.temporalProfile !== 'multi-phase') {
-    throw new Error('Invalid intent: temporalProfile must be "single-phase" or "multi-phase"');
-  }
-
-  // Validate phases if multi-phase (supports 2-phase and 3-phase models)
-  if (intent.temporalProfile === 'multi-phase') {
-    if (!intent.phases || !Array.isArray(intent.phases) || intent.phases.length < 2 || intent.phases.length > 3) {
-      throw new Error('Invalid intent: multi-phase requires 2 or 3 phases');
-    }
-    const validPhaseLabels = ['Top / Opening', 'Middle / Core', 'End / Landing', 'Primary / Early', 'Later / Wind-Down'];
-    for (const phase of intent.phases) {
-      if (!phase.phase || !validPhaseLabels.includes(phase.phase)) {
-        throw new Error(`Invalid intent: phase.phase must be one of: ${validPhaseLabels.join(', ')}`);
-      }
-      for (const field of requiredFields) {
-        if (typeof (phase as any)[field] !== 'number' || (phase as any)[field] < 0 || (phase as any)[field] > 1) {
-          throw new Error(`Invalid intent: phase.${field} must be a number between 0 and 1`);
-        }
-      }
-    }
-  }
-
-  // Handle multi-phase intent (supports 2-phase and 3-phase models)
-  if (intent.temporalProfile === 'multi-phase' && intent.phases && intent.phases.length >= 2) {
-    const phase1 = intent.phases[0];
-    const phase2 = intent.phases[1];
-    const phase3 = intent.phases.length === 3 ? intent.phases[2] : undefined;
-
-    // Attempt unified blended solution
-    const clampedIntent1: OutcomeIntent = {
-      activationTarget: Math.max(0, Math.min(1, phase1.activationTarget)),
-      anxietySensitivity: Math.max(0, Math.min(1, phase1.anxietySensitivity)),
-      cognitiveEndurance: Math.max(0, Math.min(1, phase1.cognitiveEndurance)),
-      overshootTolerance: Math.max(0, Math.min(1, phase1.overshootTolerance)),
-    };
-    const clampedIntent2: OutcomeIntent = {
-      activationTarget: Math.max(0, Math.min(1, phase2.activationTarget)),
-      anxietySensitivity: Math.max(0, Math.min(1, phase2.anxietySensitivity)),
-      cognitiveEndurance: Math.max(0, Math.min(1, phase2.cognitiveEndurance)),
-      overshootTolerance: Math.max(0, Math.min(1, phase2.overshootTolerance)),
-    };
-
-    // Filter eligible cultivars
-    const totalCultivars = ACTIVE_INVENTORY.length;
-    const eligibleCultivars = ACTIVE_INVENTORY.filter(
-      cv => !isNonPsychoactive(cv) || cv.id.includes('cbd') || cv.id.includes('cbg')
-    );
-    
-    // STEP 2: NON-NEGOTIABLE LOGGING
-    console.debug('INVENTORY_TOTAL', totalCultivars);
-    console.debug('INVENTORY_ELIGIBLE', eligibleCultivars.length);
-    
-    // Verify inventory meets requirements
-    if (process.env.NODE_ENV === 'development') {
-      if (totalCultivars !== 40) {
-        console.warn(`[INVENTORY] Expected 40 cultivars, found ${totalCultivars}`);
-      }
-      if (eligibleCultivars.length < 3) {
-        console.warn(`[INVENTORY] Only ${eligibleCultivars.length} eligible cultivars - may cause resolution failures`);
-      }
-    }
-    
-    // PART 3: Log active constraints and eligible cultivars (dev-only)
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[RESOLVER] Active constraints →', {
-        activationTarget: clampedIntent1.activationTarget,
-        anxietySensitivity: clampedIntent1.anxietySensitivity,
-        cognitiveEndurance: clampedIntent1.cognitiveEndurance,
-        overshootTolerance: clampedIntent1.overshootTolerance,
-      });
-      console.log(`[RESOLVER] Eligible cultivars after filtering → ${eligibleCultivars.length}`);
-    }
-
-    const scoredCultivars = eligibleCultivars.map(cultivar => {
-      const scored = scoreCultivar(cultivar, clampedIntent1);
-      return { cultivar, ...scored };
-    });
-
-    scoredCultivars.sort((a, b) => b.score - a.score);
-
-    const unified = attemptUnifiedBlended(clampedIntent1, clampedIntent2, scoredCultivars);
-
-    if (unified && unified.earlyPenalty < 0.2 && unified.latePenalty < 0.2) {
-      // Unified blended solution acceptable (homogeneous blend strategy)
-      const unifiedResolutionType = unified.blend.length === 1 ? 'SINGLE_CULTIVAR' : 
-                         unified.blend.some(c => {
-                           const cv = ACTIVE_INVENTORY.find(cv => cv.id === c.cultivarId);
-                           return cv ? isNonPsychoactive(cv) : false;
-                         }) ? 
-                         'CORRECTIVE_BLEND' : 'COMPOSITIONAL_BLEND';
-      
-      // Log final selected strains (dev-only)
-      if (process.env.NODE_ENV === 'development') {
-        const finalStrains = unified.blend.map(c => {
-          const cv = ACTIVE_INVENTORY.find(cv => cv.id === c.cultivarId);
-          return cv ? cv.displayName : c.cultivarId;
-        });
-        console.debug('FINAL_SELECTED_STRAINS', finalStrains);
-        console.debug('FINAL_STRAIN_COUNT', finalStrains.length);
-      }
-      
-      return {
-        resolutionMode: 'BLENDED',
-        tiers: [{
-          tierLabel: 'Optimal',
-          compositionStrategy: unified.blend.length === 1 ? 'single_cultivar' : 'homogeneous_blend',
-          resolutionType: unifiedResolutionType,
-          composition: unified.blend,
-          compositionFit: unified.fit,
-          systemNotes: [
-            'A single composition was able to support both phases without introducing early sedation or instability.',
-            'Unified blend optimized for both early and later phases.',
-          ],
-          whyChosen: [
-            'Single blend satisfies both early and later phase requirements without introducing penalties.',
-            'Unified composition avoids the complexity of stacked resolutions.',
-          ],
-          tradeoffs: [
-            'Requires finding a balance point that works for both temporal phases.',
-            'May be less optimal than separate compositions for each phase.',
-          ],
-          instructions: generateInstructions(
-            unified.blend.length === 1 ? 'single_cultivar' : 'homogeneous_blend',
-            unified.blend,
-            unifiedResolutionType
-          ),
-        }],
-        refused: false,
-      };
-    } else {
-      // Stacked resolution required (3-phase support)
-      const clampedIntent3 = phase3 ? {
-        activationTarget: Math.max(0, Math.min(1, phase3.activationTarget)),
-        anxietySensitivity: Math.max(0, Math.min(1, phase3.anxietySensitivity)),
-        cognitiveEndurance: Math.max(0, Math.min(1, phase3.cognitiveEndurance)),
-        overshootTolerance: Math.max(0, Math.min(1, phase3.overshootTolerance)),
-      } : undefined;
-      
-      const phases = generateStackedResolution(clampedIntent1, clampedIntent2, clampedIntent3);
-      
-      // Validate all phases
-      const validPhases = phases.filter(phase => {
-        const validationError = validateBlendComposition(phase.composition, true);
-        return validationError === null;
-      });
-      
-      // Log final selected strains for stacked resolution (dev-only)
-      if (validPhases.length > 0 && process.env.NODE_ENV === 'development') {
-        const allStrains = validPhases.flatMap(phase => 
-          phase.composition.map(c => {
-            const cv = ACTIVE_INVENTORY.find(cv => cv.id === c.cultivarId);
-            return cv ? cv.displayName : c.cultivarId;
-          })
-        );
-        const uniqueStrains = [...new Set(allStrains)];
-        console.debug('FINAL_SELECTED_STRAINS', uniqueStrains);
-        console.debug('FINAL_STRAIN_COUNT', uniqueStrains.length);
-      }
-      
-      // Add explanation to first phase about why stacking was chosen
-      if (validPhases.length > 0) {
-        const is3Phase = validPhases.length === 3;
-        validPhases[0].systemNotes.unshift(
-          is3Phase 
-            ? 'Your goal includes multiple phases: opening, core, and landing.'
-            : 'Your goal included both an active phase and a later wind-down phase.',
-          'Combining these into a single blend would require compromises that increase early-phase risk.',
-          'Separating them allows each phase to be optimized safely.'
-        );
-      }
-      
-      // PART 7: Ensure phases never collapse - if we're stacking, we MUST return stacked mode
-      // Never silently collapse stacked into blended
-      const minRequiredPhases = phase3 ? 3 : 2;
-      
-      if (validPhases.length < minRequiredPhases) {
-        return {
-          resolutionMode: 'STACKED',
-          phases: [],
-          refused: true,
-          tiers: undefined,
-          failure: {
-            status: 'invalid',
-            reason: 'INSUFFICIENT_DISTINCT_CULTIVARS',
-            details: `Stacked resolution requires ${minRequiredPhases} valid phases, but only ${validPhases.length} passed validation.`,
-          },
-        };
-      }
-      
-      return {
-        resolutionMode: 'STACKED',
-        phases: validPhases,
-        refused: false,
-        tiers: undefined, // Explicitly undefined to ensure UI shows stacked mode
-      };
-    }
-  }
-
-  // Single-phase intent: standard resolution
-  const clampedIntent: OutcomeIntent = {
-    activationTarget: Math.max(0, Math.min(1, intent.activationTarget)),
-    anxietySensitivity: Math.max(0, Math.min(1, intent.anxietySensitivity)),
-    cognitiveEndurance: Math.max(0, Math.min(1, intent.cognitiveEndurance)),
-    overshootTolerance: Math.max(0, Math.min(1, intent.overshootTolerance)),
-    temporalProfile: intent.temporalProfile || 'single-phase',
-  };
-
-  // PART 3: Log active constraints (dev-only)
-  if (process.env.NODE_ENV === 'development') {
-    console.log('[RESOLVER] Active constraints →', {
-      activationTarget: clampedIntent.activationTarget,
-      anxietySensitivity: clampedIntent.anxietySensitivity,
-      cognitiveEndurance: clampedIntent.cognitiveEndurance,
-      overshootTolerance: clampedIntent.overshootTolerance,
-    });
-  }
-
-  // Filter eligible cultivars from STRAIN_INVENTORY ONLY
-  const totalCultivars = ACTIVE_INVENTORY.length;
-  const eligibleCultivars = ACTIVE_INVENTORY.filter(
-    cv => !isNonPsychoactive(cv) || cv.id.includes('cbd') || cv.id.includes('cbg')
+  
+  // Compute confidence score (weighted by ratios)
+  const weightedScore = topCultivars.reduce((sum, sc, i) => 
+    sum + sc.score * (bestRatios[i] / 100), 0
   );
+  const confidenceScore = Math.max(0, Math.min(1, weightedScore));
   
-  // STEP 2: NON-NEGOTIABLE LOGGING
-  console.debug('INVENTORY_TOTAL', totalCultivars);
-  console.debug('INVENTORY_ELIGIBLE', eligibleCultivars.length);
-  
-  // Validation: Fail explicitly if inventory is too small
-  if (totalCultivars < 10) {
-    throw new Error(`STRAIN_INVENTORY must contain at least 10 strains. Found: ${totalCultivars}`);
+  // Generate neutral notes (existing logic preserved)
+  const notes: string[] = [];
+  if (confidenceScore < 0.6) {
+    notes.push('Lower confidence outcome; consider refining intent parameters');
+  }
+  if (topCultivars.length === 2 && bestRatios[0] > 70) {
+    notes.push('Blend dominated by single cultivar profile');
+  }
+  if (topCultivars.every(sc => sc.score < 0.5)) {
+    notes.push('No cultivars strongly match intent profile');
   }
   
-  // Verify inventory meets requirements
-  if (process.env.NODE_ENV === 'development') {
-    if (eligibleCultivars.length < 3) {
-      console.warn(`[INVENTORY] Only ${eligibleCultivars.length} eligible cultivars - may cause resolution failures`);
-    }
-  }
+  // ADDITIVE BRAIN LAYERS (computed but not required for core functionality)
+  // All existing logic above remains unchanged
+  let explanation: OutcomeResult['explanation'] | undefined;
   
-  // PART 3: Log eligible cultivars count (dev-only)
-  if (process.env.NODE_ENV === 'development') {
-    console.log(`[RESOLVER] Eligible cultivars after filtering → ${eligibleCultivars.length}`);
-  }
-
-  const scoredCultivars = eligibleCultivars.map(chemotype => {
-    const scored = scoreCultivar(chemotype, clampedIntent);
-    return { cultivar: chemotype, ...scored };
-  });
-
-  scoredCultivars.sort((a, b) => b.score - a.score);
-
-  // SECTION 5: Resolution Tolerance & Fallback
-  // Attempt resolution with tolerance (80-85% satisfaction)
-  const TOLERANCE_THRESHOLD = 0.80;
-  
-  // Log resolution attempt path
-  if (process.env.NODE_ENV === 'development') {
-    console.debug('RESOLUTION_ATTEMPTED', true);
-    console.debug('RESOLUTION_PATH', 'BLENDED');
-    console.debug('TOLERANCE_THRESHOLD', TOLERANCE_THRESHOLD);
-  }
-
-  const tiers = generateTiers(scoredCultivars, clampedIntent);
-
-  if (tiers.length === 0) {
-    // Fallback ladder: Try stacked blend
-    if (process.env.NODE_ENV === 'development') {
-      console.debug('FALLBACK_PATH', 'STACKED_ATTEMPT');
-    }
+  try {
+    // Run brain layers on the selected blend
+    const selectedCultivarsList = topCultivars.map(sc => sc.cultivar);
     
-    const excludedBy = eligibleCultivars.map(cv => ({
-      cultivarId: cv.id,
-      constraint: 'inventory_too_narrow',
-      numericValue: eligibleCultivars.length,
-    }));
+    // 1. Biphasic & hormetic modeling
+    const doseAnalysis = analyzeBlendDoseZones(selectedCultivarsList, bestRatios);
     
-    return {
-      resolutionMode: 'BLENDED',
-      tiers: [],
-      refused: true,
-      failure: {
-        status: 'invalid',
-        reason: 'INVENTORY_TOO_NARROW',
-        details: 'Unable to generate valid blend from available cultivars. Inventory may be too narrow or constraints too restrictive.',
-        excludedBy,
-      },
-    };
-  }
-
-  // Validate all tiers before returning
-  const validTiers = tiers.filter(tier => {
-    const validationError = validateBlendComposition(tier.composition, false);
-    return validationError === null;
-  });
-
-  // Log final selected strains (dev-only)
-  if (validTiers.length > 0 && process.env.NODE_ENV === 'development') {
-    const finalStrains = validTiers[0].composition.map(c => {
-      const cv = ACTIVE_INVENTORY.find(cv => cv.id === c.cultivarId);
-      return cv ? cv.displayName : c.cultivarId;
-    });
-    console.debug('FINAL_SELECTED_STRAINS', finalStrains);
-    console.debug('FINAL_STRAIN_COUNT', finalStrains.length);
-  }
-
-  if (validTiers.length === 0) {
-    // Log failure reason
-    if (process.env.NODE_ENV === 'development') {
-      console.debug('RESOLUTION_FAILED_REASON', 'INSUFFICIENT_DISTINCT_CULTIVARS');
-      console.debug('FALLBACK_PATH', 'NONE - all attempts failed');
-    }
+    // 2. Signal density & saturation analysis
+    const saturationAnalysis = analyzeSignalDensity(selectedCultivarsList, bestRatios, doseAnalysis);
     
-    const excludedBy = tiers.flatMap(tier => 
-      tier.composition.map(c => ({
-        cultivarId: c.cultivarId,
-        constraint: 'validation_failed',
-        numericValue: tier.composition.length,
-      }))
+    // 3. Temporal pharmacokinetic reasoning
+    const temporalProfile = predictTemporalProfile(selectedCultivarsList, bestRatios, doseAnalysis, intent);
+    
+    // 4. Risk assessment
+    const riskAssessment = assessRiskProfile(doseAnalysis, saturationAnalysis, intent);
+    
+    // 5. Constraint evaluation
+    const constraintEvaluation = evaluateConstraints(intent, doseAnalysis, saturationAnalysis, riskAssessment);
+    
+    // 6. High complexity detection
+    const isHighComplexity = isIntentionalHighComplexity(saturationAnalysis, doseAnalysis, intent);
+    
+    // 7. Generate explanation
+    explanation = generateOutcomeExplanation(
+      doseAnalysis,
+      saturationAnalysis,
+      riskAssessment,
+      temporalProfile,
+      constraintEvaluation,
+      isHighComplexity
     );
-    
-    return {
-      resolutionMode: 'BLENDED',
-      tiers: [],
-      refused: true,
-      failure: {
-        status: 'invalid',
-        reason: 'INSUFFICIENT_DISTINCT_CULTIVARS',
-        details: 'All generated blends failed validation - insufficient distinct cultivars or invalid composition.',
-        excludedBy,
-      },
-    };
+  } catch (error) {
+    // Brain layers are additive - if they fail, system still works
+    // Error is silently ignored to preserve existing behavior
+    console.warn('Brain layer computation failed (non-critical):', error);
   }
   
-  // Log successful resolution
-  if (process.env.NODE_ENV === 'development') {
-    console.debug('RESOLUTION_SUCCEEDED', true);
-    console.debug('RESOLUTION_TIERS', validTiers.length);
-  }
-
+  // Return result (existing structure preserved, explanation added optionally)
   return {
-    resolutionMode: 'BLENDED',
-    tiers: validTiers,
-    refused: false,
+    selectedCultivars: topCultivars.map(sc => ({
+      id: sc.cultivar.id,
+      displayName: sc.cultivar.displayName,
+    })),
+    ratios: bestRatios,
+    confidenceScore,
+    notes: notes.length > 0 ? notes : ['Blend selected based on terpene profile alignment'],
+    explanation, // Optional additive data
   };
 }
+

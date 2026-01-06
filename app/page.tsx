@@ -17,9 +17,6 @@ import ResolutionPanel, { type ResolvedBlend, type ResolvedCultivar, type Cultiv
 import { StrategicGuidance, ClarificationQuestion } from '@/lib/strategicGuidance';
 import { DEMO_MENU } from '@/data/demoMenu';
 import { translateGuidanceToIntent } from '@/lib/guidanceToIntent';
-import { convertToResolvedBlend } from '@/lib/convertToResolvedBlend';
-import { computeIntentConfidence, filterRedundantQuestions, shouldClarify } from '@/lib/intentConfidence';
-import { referenceProfileToIntent, type ReferenceProfile } from '@/lib/referenceProfile';
 
 type InteractionPhase = 'FREE' | 'GUIDED' | 'LOCKED';
 
@@ -51,203 +48,14 @@ interface ResolutionTier {
 
 interface OutcomeResult {
   resolutionMode?: "BLENDED" | "STACKED";
+  resolution?: ResolvedBlend;
+  namedResolution?: NamedResolutionResult;
+  intent?: OutcomeIntent;
   tiers?: ResolutionTier[];
-  phases?: Array<{
-    phase: "Top / Opening" | "Middle / Core" | "End / Landing" | "Primary / Early" | "Later / Wind-Down";
-    intentFocus: string;
-    composition: BlendComponent[];
-    compositionFit: number;
-    systemNotes: string[];
-    instructions: string;
-    purpose?: string;
-    whatYoullFeel?: string;
-  }>;
-  refused?: boolean;
+  error?: string;
 }
 
-// Helper functions for qualitative display
-function valueToQualitative(value: number): string {
-  if (value < 0.2) return 'Low';
-  if (value < 0.4) return 'Moderate';
-  if (value < 0.6) return 'Moderate–High';
-  if (value < 0.8) return 'High';
-  return 'Very High';
-}
-
-function getCompositionFitLabel(score: number): { label: string; explanation: string } {
-  if (score >= 0.8) {
-    return { 
-      label: 'Strong', 
-      explanation: 'Strong fit under current constraints.' 
-    };
-  } else if (score >= 0.6) {
-    return { 
-      label: 'Moderate', 
-      explanation: 'Moderate fit; tradeoffs required.' 
-    };
-  } else if (score >= 0.4) {
-    return { 
-      label: 'Conservative', 
-      explanation: 'Conservative fit due to conflicting goals.' 
-    };
-  } else {
-    return { 
-      label: 'Low', 
-      explanation: 'Low fit; chemistry limited by constraints.' 
-    };
-  }
-}
-
-function roleToLabel(role: "primary" | "corrective" | "supporting"): string {
-  if (role === 'primary') return 'Primary Base';
-  if (role === 'corrective') return 'Corrective';
-  return 'Supporting';
-}
-
-function getTierDescription(tier: ResolutionTier): string {
-  const componentCount = tier.composition.length;
-  if (tier.tierLabel === 'Optimal') {
-    return `Closest chemical match to your goal (${componentCount} ${componentCount === 1 ? 'component' : 'components'})`;
-  } else if (tier.tierLabel === 'Balanced') {
-    return `Strong alignment with fewer adjustments (${componentCount} ${componentCount === 1 ? 'component' : 'components'})`;
-  } else {
-    return `Directionally aligned with minimal complexity (${componentCount} ${componentCount === 1 ? 'component' : 'components'})`;
-  }
-}
-
-function getResolutionTypeLabel(type: ResolutionType): string {
-  if (type === 'SINGLE_CULTIVAR') return 'Single Cultivar';
-  if (type === 'CORRECTIVE_BLEND') return 'Corrective Blend';
-  return 'Compositional Blend';
-}
-
-/**
- * Outcome Dimensions - Fixed, stable set used internally by the engine
- * Each dimension maps to a subtle accent color
- */
-type OutcomeDimension = 'energy' | 'clarity' | 'calm' | 'sedation' | 'mood_lift';
-
-interface DimensionWeights {
-  energy: number;      // 0-1: activation/energizing
-  clarity: number;     // 0-1: cognitive clarity/focus
-  calm: number;        // 0-1: relaxation/tension release
-  sedation: number;    // 0-1: sleep-inducing/deep relaxation
-  mood_lift: number;   // 0-1: mood elevation/social ease
-}
-
-/**
- * Compute dimensional weights from OutcomeIntent
- * Outcomes are vectors (weighted combinations), not categories
- */
-function computeDimensionWeights(intent: OutcomeIntent | null): DimensionWeights {
-  if (!intent) {
-    return { energy: 0, clarity: 0, calm: 0, sedation: 0, mood_lift: 0 };
-  }
-
-  // Energy: directly from activationTarget
-  const energy = intent.activationTarget;
-
-  // Clarity: from cognitiveEndurance (sustained focus)
-  const clarity = intent.cognitiveEndurance;
-
-  // Calm: inverse of activation when low, enhanced by low anxiety sensitivity
-  const calm = (1 - intent.activationTarget) * (1 - intent.anxietySensitivity * 0.5);
-
-  // Sedation: inverse of activation + low cognitive endurance
-  const sedation = (1 - intent.activationTarget) * (1 - intent.cognitiveEndurance);
-
-  // Mood lift: moderate activation + low anxiety sensitivity (social ease)
-  const moodLiftBase = intent.activationTarget > 0.4 && intent.activationTarget < 0.7 ? intent.activationTarget : 0;
-  const mood_lift = moodLiftBase * (1 - intent.anxietySensitivity);
-
-  return {
-    energy: Math.max(0, Math.min(1, energy)),
-    clarity: Math.max(0, Math.min(1, clarity)),
-    calm: Math.max(0, Math.min(1, calm)),
-    sedation: Math.max(0, Math.min(1, sedation)),
-    mood_lift: Math.max(0, Math.min(1, mood_lift)),
-  };
-}
-
-/**
- * Compute blended accent color from dimensional weights
- * Returns CSS color string representing the dimensional blend
- */
-function computeDimensionColor(weights: DimensionWeights): string {
-  // Dimension colors (subtle, informational accents)
-  const colors: Record<OutcomeDimension, string> = {
-    energy: '212, 175, 55',      // warm gold
-    clarity: '180, 200, 220',    // cool blue-white
-    calm: '160, 180, 160',       // muted green
-    sedation: '140, 120, 180',   // muted purple
-    mood_lift: '200, 160, 120',  // warm peach
-  };
-
-  // Weighted blend (normalize to prevent oversaturation)
-  let r = 0, g = 0, b = 0;
-  let totalWeight = 0;
-
-  Object.entries(weights).forEach(([dim, weight]) => {
-    if (weight > 0.1) { // Only include dimensions above threshold
-      const [cr, cg, cb] = colors[dim as OutcomeDimension].split(',').map(Number);
-      r += cr * weight;
-      g += cg * weight;
-      b += cb * weight;
-      totalWeight += weight;
-    }
-  });
-
-  if (totalWeight === 0) {
-    return '255, 255, 255'; // Neutral fallback
-  }
-
-  // Normalize and reduce saturation for restraint
-  r = Math.round(r / totalWeight * 0.6); // Reduce intensity
-  g = Math.round(g / totalWeight * 0.6);
-  b = Math.round(b / totalWeight * 0.6);
-
-  return `${r}, ${g}, ${b}`;
-}
-
-/**
- * Compute dimensional emphasis for outcome icons
- * Maps outcome icon regions to dimensional combinations
- */
-function computeOutcomeIconEmphasis(
-  weights: DimensionWeights
-): { relax: number; study: number; move: number; sleep: number } {
-  // RELAX: calm + low energy
-  const relax = weights.calm * (1 - weights.energy * 0.5);
-
-  // STUDY: clarity + moderate energy + low sedation
-  const study = weights.clarity * (weights.energy > 0.4 && weights.energy < 0.7 ? 1 : 0.5) * (1 - weights.sedation);
-
-  // MOVE: energy + mood_lift
-  const move = weights.energy * (0.7 + weights.mood_lift * 0.3);
-
-  // SLEEP: sedation + calm
-  const sleep = weights.sedation * (0.7 + weights.calm * 0.3);
-
-  return {
-    relax: Math.max(0, Math.min(1, relax)),
-    study: Math.max(0, Math.min(1, study)),
-    move: Math.max(0, Math.min(1, move)),
-    sleep: Math.max(0, Math.min(1, sleep)),
-  };
-}
-
-// Blend Visualization Component
-function BlendVisualization({ composition }: { composition: BlendComponent[] }) {
-  if (composition.length === 1) {
-    return (
-      <div className="py-4">
-        <div className="h-12 bg-white/5 border border-white/10 rounded-sm flex items-center justify-center">
-          <span className="text-white/80 text-sm font-light">{composition[0].displayName}</span>
-        </div>
-      </div>
-    );
-  }
-
+export default function Home() {
   return (
     <div className="py-4">
       <div className="flex gap-1 h-12 items-stretch">
@@ -1591,4 +1399,3 @@ export default function GOLineCalculator() {
     </main>
   );
 }
-

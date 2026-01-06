@@ -1,0 +1,44 @@
+<svg width="360" height="140" viewBox="0 0 360 140" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="GO Guided Outcomes monogram">
+  <defs>
+    <filter id="softGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="1.2" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <style>
+    :root { --stroke:#EDEDED; --w:6; --ease:cubic-bezier(.2,.9,.2,1); }
+    .s { fill:none; stroke:var(--stroke); stroke-width:var(--w); stroke-linecap:round; stroke-linejoin:round; filter:url(#softGlow); }
+    .part {
+      opacity: 0;
+      transform-box: fill-box;
+      transform-origin: 50% 50%;
+      animation: in 900ms var(--ease) forwards;
+    }
+    .p1 { transform: translateX(-18px) scale(0.98); animation-delay: 120ms; }
+    .p2 { transform: translateY(-10px) scale(0.98); animation-delay: 220ms; }
+    .p3 { transform: translateX(18px)  scale(0.98); animation-delay: 340ms; }
+    @keyframes in {
+      0%   { opacity:0; }
+      70%  { opacity:1; }
+      100% { opacity:1; transform: translateX(0) translateY(0) scale(1); }
+    }
+    .wipe {
+      stroke-dasharray: 520;
+      stroke-dashoffset: 520;
+      animation: wipe 950ms var(--ease) forwards;
+      animation-delay: 520ms;
+    }
+    @keyframes wipe { to { stroke-dashoffset: 0; } }
+    @media (prefers-reduced-motion: reduce) {
+      .part, .wipe { animation: none !important; opacity: 1 !important; stroke-dashoffset: 0 !important; }
+    }
+  </style>
+  <rect x="0" y="0" width="360" height="140" fill="transparent"/>
+  <g transform="translate(44,18)">
+    <path class="s part p1" d="M70 20 A45 45 0 1 0 70 110" />
+    <path class="s part p2" d="M70 66 H98" />
+    <circle class="s part p3" cx="190" cy="66" r="45"/>
+    <path class="s wipe" d="M70 20 A45 45 0 1 0 70 110 M70 66 H98" />
+    <circle class="s wipe" cx="190" cy="66" r="45"/>
+  </g>
+</svg>

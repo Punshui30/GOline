@@ -1,0 +1,67 @@
+.root {
+  position: relative;
+  display: inline-block;
+  line-height: 1;
+  font-size: var(--go-size, 4.5rem);
+  /* Keep it crisp and premium */
+  text-rendering: geometricPrecision;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.overlay {
+  pointer-events: none;
+}
+
+.layer {
+  position: absolute;
+  inset: 0;
+  display: inline-block;
+  white-space: nowrap;
+
+  opacity: 0;
+  transform: translateY(10px) scale(0.985);
+  filter: blur(0.2px);
+
+  /* Each layer runs the same animation, offset by --i */
+  animation-name: goFadeJump;
+  animation-duration: var(--go-loop, 6s);
+  animation-timing-function: cubic-bezier(0.2, 0.9, 0.2, 1);
+  animation-iteration-count: infinite;
+  animation-delay: calc((var(--go-loop, 6s) / var(--go-count, 6)) * var(--i));
+}
+
+@keyframes goFadeJump {
+  /* 0–10%: come in */
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+  10% {
+    opacity: 1;
+    transform: translateY(0px) scale(1);
+  }
+
+  /* 10–70%: dwell */
+  70% {
+    opacity: 1;
+    transform: translateY(0px) scale(1);
+  }
+
+  /* 70–100%: exit */
+  100% {
+    opacity: 0;
+    transform: translateY(-10px) scale(1.01);
+  }
+}
+
+
+
+
+
+
+
+
+
+
+

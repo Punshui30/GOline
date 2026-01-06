@@ -1,15 +1,18 @@
 /**
  * Next.js API Route: Intent Parser
  * 
- * OpenAI API endpoint for strategic guidance generation.
+ * Ollama-first, fully local inference endpoint.
+ * No fallbacks. No mocks. No cloud LLMs.
+ * 
  * Returns StrategicGuidance JSON for client-side processing.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { StrategicGuidance } from '@/lib/strategicGuidance';
-import OpenAI from 'openai';
 
 const SYSTEM_PROMPT = `You are a strategic reasoning system for a constrained outcome-composition engine.
+
+MACHINE-TO-MACHINE CONTRACT: You must output ONLY valid JSON. No explanatory text, no markdown, no commentary, no conversational responses. If you do not follow this format exactly, the response will be rejected.
 
 Your role is to analyze user intent and provide strategic guidance that shapes how the deterministic engine explores the solution space.
 
@@ -22,7 +25,6 @@ YOU MUST:
 - Suggest resolution strategies (hypotheses, not decisions)
 - Flag risk zones
 - Identify when clarification is needed
-- Output valid JSON only
 - Avoid experiential language
 - Avoid cannabis folklore
 - Avoid terpene claims
@@ -36,56 +38,34 @@ YOU MUST NEVER:
 - Override safety rules
 
 STRATEGIC ANALYSIS:
-1. Determine dominant priorities (energy, calm, clarity, endurance, social, focus, etc.)
+1. Determine dominant priorities (energy, calm, clarity, endurance, social, focus, physical relief, cognitive clarity, functional energy, etc.)
 2. Identify strict avoidances (anxiety, early sedation, volatility, etc.)
 3. Identify acceptable tradeoffs (lower peak intensity, slower onset, etc.)
 4. Suggest resolution strategies: "single_cultivar", "corrective_blend", "compositional_blend", "stacked_preferred", "cbd_cbg_dampening"
 5. Flag risk zones: "terpene_overshoot_sensitive", "thc_anxiety_sensitive", "conflicting_goals", "timing_conflicts"
 6. Determine temporal structure: "single-phase" or "multi-phase"
+7. Identify expanded outcome dimensions: physical relief, cognitive clarity, functional energy vs intensity, temporal profile (onset/duration)
 
-CLARIFICATION DETECTION (HARD GATE - NO HEURISTICS):
-The client-side system computes an Intent Confidence Score (0-1) based on:
-- Coverage of required axes (energy, intensity, anxiety, duration)
-- Absence of contradictions
-- Strength of language indicators
-
-A hard threshold of 0.75 is enforced:
-- If confidence >= 0.75: NO questions asked, proceed directly to resolution
-- If confidence < 0.75: Questions may be asked, but only if not redundant
-
-REDUNDANT QUESTION FILTERING:
-The client filters out questions that restate already-expressed preferences:
-- If energy confidence >= 0.6: DO NOT ask energy vs calm questions
-- If intensity confidence >= 0.6: DO NOT ask intensity preference questions
-- If duration confidence >= 0.6: DO NOT ask temporal questions
-- If overall confidence >= 0.7: DO NOT ask priority questions
-
-YOUR ROLE:
-You may suggest clarification questions, but they will be filtered by the client based on confidence scores.
-Only suggest questions for axes where confidence is genuinely low (< 0.6).
-
-Examples of FORBIDDEN questions (will be filtered):
-- User says "chatty, creative, for four hours" → DO NOT suggest "Relaxation or energy?" (energy confidence will be high)
-- User says "calm but alert" → DO NOT suggest "Do you want calm or alert?" (contradicts user input)
-- User provides specific duration → DO NOT suggest temporal questions (duration confidence will be high)
-
-Only suggest questions when:
-- Multiple valid interpretations exist for a LOW-CONFIDENCE axis
-- Critical constraint is genuinely missing
-- User input is truly ambiguous for that specific axis
-
-Questions must be:
+CLARIFICATION DETECTION:
+If you detect ambiguity, add clarification questions. Questions must be:
 - Neutral and optional (never force binary trade-offs)
 - Include "none", "balanced", "unsure", or "neither" as valid options
 - Prefer sensitivity checks, avoidance checks, or confirmation checks
 - Never assume a trade-off exists before asking
-- Never contradict user's stated intent
 
-Examples of GOOD clarification questions (only for low-confidence axes):
+Examples of GOOD clarification questions:
 - Temporal: "Is this mostly about how you feel at the start, later, or both?" → ["Start", "Later", "Both", "Unsure"]
 - Sensitivity: "Are there any effects you're especially sensitive to, or should I assume a balanced approach?" → ["Overstimulation", "Mental drift", "Anxiety", "None / Balanced"]
+- Social: "In social settings, do you generally have more issues with overstimulation, losing conversational flow, both, or neither?" → ["Overstimulation", "Losing flow", "Both", "Neither"]
+- Tolerance: "Do you prefer a gentle, steady effect, a stronger peak, or are you unsure?" → ["Gentle & steady", "Stronger peak", "Unsure"]
 
-Output schema (JSON only):
+Examples of BAD clarification questions (DO NOT USE):
+- "Which matters more: X or Y?" (forces trade-off)
+- "Do you want A or B?" (binary choice without escape)
+- Any question without a "none/balanced/unsure" option when appropriate
+
+REQUIRED OUTPUT FORMAT:
+You must return ONLY a JSON object matching this exact schema. All keys are required. Use empty arrays [] if a field has no values.
 
 {
   "temporalProfile": "single-phase" | "multi-phase",
@@ -103,7 +83,17 @@ Output schema (JSON only):
   ]
 }
 
-Do not include any other text.`;
+RULES:
+- Output JSON only
+- No extra text before or after the JSON
+- No markdown code blocks (no \`\`\`json)
+- No explanations
+- No commentary
+- Do not omit any keys
+- Use empty arrays [] if no values exist for array fields
+- clarificationNeeded is optional (may be omitted if empty, or use [])
+
+If you do not follow this format exactly, the response will be rejected.`;
 
 /**
  * Extract JSON from LLM response (handles markdown code blocks, extra text)
@@ -200,7 +190,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { text } = body;
+    const { text, baselineCalibration } = body;
 
     if (!text || typeof text !== 'string') {
       return NextResponse.json(
@@ -213,49 +203,75 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate OpenAI API key exists
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      throw new Error('OPENAI_API_KEY environment variable is required but not set');
+    // Ollama configuration
+    const ollamaBaseUrl = process.env.OLLAMA_BASE_URL || 'http://127.0.0.1:11434';
+    const ollamaModel = process.env.OLLAMA_MODEL || 'llama3.2:3b';
+
+    console.log('[API/INTENT] Using Ollama:', { baseUrl: ollamaBaseUrl, model: ollamaModel });
+
+    // Build prompt for Ollama (system prompt + baseline calibration + user input)
+    let promptText = SYSTEM_PROMPT;
+    
+    // Include baseline calibration as contextual bias if provided
+    if (baselineCalibration) {
+      const calibrationContext = [];
+      if (baselineCalibration.thcTolerance) {
+        calibrationContext.push(`User's THC tolerance: ${baselineCalibration.thcTolerance}`);
+      }
+      if (baselineCalibration.anxietySensitivity) {
+        calibrationContext.push(`User's anxiety sensitivity: ${baselineCalibration.anxietySensitivity}`);
+      }
+      if (baselineCalibration.experienceLevel) {
+        calibrationContext.push(`User's experience level: ${baselineCalibration.experienceLevel}`);
+      }
+      if (calibrationContext.length > 0) {
+        promptText += `\n\nBaseline calibration (use as contextual bias, not hard constraints):\n${calibrationContext.join('\n')}`;
+      }
     }
+    
+    promptText += `\n\nUser input: ${text}\n\nRespond with JSON only:`;
 
-    // Initialize OpenAI client
-    const openai = new OpenAI({
-      apiKey: apiKey,
-    });
-
-    // Call OpenAI API
+    // Call Ollama using /api/generate endpoint
     let responseText: string | null = null;
     try {
-      // DO NOT CHANGE MODEL — gpt-3.5-turbo is deprecated and will 404
-      const completion = await openai.chat.completions.create({
-        model: 'gpt-4.1-mini',
-        temperature: 0.4,
-        messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
-          { role: 'user', content: text },
-        ],
-      });
+      const ollamaRes = await fetch(
+        `${ollamaBaseUrl}/api/generate`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: ollamaModel,
+            prompt: promptText,
+            stream: false,
+          }),
+        }
+      );
 
-      responseText = completion.choices[0]?.message?.content || null;
-
-      if (!responseText) {
-        throw new Error('Empty response from OpenAI');
+      if (!ollamaRes.ok) {
+        const text = await ollamaRes.text();
+        throw new Error(`Ollama API error: ${ollamaRes.status} ${text}`);
       }
 
-      console.log('[API/INTENT] OpenAI response received, length:', responseText.length);
-    } catch (openaiError: any) {
-      console.error('[API/INTENT] OpenAI error', {
-        message: openaiError?.message,
-        stack: openaiError?.stack,
+      const data = await ollamaRes.json();
+      responseText = data.response || null;
+
+      if (!responseText) {
+        throw new Error('Empty response from Ollama');
+      }
+
+      console.log('[API/INTENT] Ollama response received, length:', responseText.length);
+    } catch (ollamaError: any) {
+      console.error('[API/INTENT] Ollama error', {
+        message: ollamaError?.message,
+        stack: ollamaError?.stack,
       });
       
       return NextResponse.json(
         {
           ok: false,
           error: 'LLM_UNAVAILABLE',
-          message: 'Unable to interpret intent at this time. OpenAI request failed.',
-          debug: process.env.NODE_ENV === 'development' ? String(openaiError) : undefined,
+          message: 'Unable to interpret intent at this time. Ollama request failed.',
+          debug: process.env.NODE_ENV === 'development' ? String(ollamaError) : undefined,
         },
         { status: 500 }
       );

@@ -1,0 +1,147 @@
+/* GO Line Case Study - Page-scoped styles */
+
+.container {
+  max-width: 1100px;
+  width: min(1100px, calc(100% - 48px));
+  margin: 0 auto;
+}
+
+@media (max-width: 768px) {
+  .container {
+    width: calc(100% - 32px);
+  }
+}
+
+.section {
+  padding: 56px 0;
+}
+
+@media (max-width: 768px) {
+  .section {
+    padding: 40px 0;
+  }
+}
+
+.heroSection {
+  padding: 80px 0 56px;
+  text-align: center;
+}
+
+@media (max-width: 768px) {
+  .heroSection {
+    padding: 60px 0 40px;
+  }
+}
+
+.heading1 {
+  margin-bottom: 16px;
+}
+
+.heading2 {
+  margin-top: 56px;
+  margin-bottom: 16px;
+}
+
+.heading2First {
+  margin-top: 0;
+  margin-bottom: 16px;
+}
+
+.bodyText {
+  margin-bottom: 0;
+  line-height: 1.7;
+}
+
+.bodyTextContainer {
+  max-width: 600px;
+}
+
+.paragraph {
+  margin-bottom: 14px;
+}
+
+.paragraph:last-child {
+  margin-bottom: 0;
+}
+
+.mediaBlock {
+  width: 100%;
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
+.mediaBlock img,
+.mediaBlock :global(img) {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+}
+
+.caption {
+  max-width: 600px;
+  font-size: 14px;
+  margin-top: 10px;
+  opacity: 0.75;
+  line-height: 1.6;
+}
+
+.placeholder {
+  width: 100%;
+  aspect-ratio: 3/2;
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.placeholderText {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.outcomeGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 32px;
+  margin-top: 20px;
+}
+
+@media (max-width: 1024px) {
+  .outcomeGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .outcomeGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.visualIdentityGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 48px;
+  margin-top: 20px;
+}
+
+@media (max-width: 768px) {
+  .visualIdentityGrid {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+}
+
+.visualIdentityColumn {
+  max-width: 100%;
+}
+
+.reflectionContainer {
+  text-align: center;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
