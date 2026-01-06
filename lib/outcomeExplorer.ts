@@ -81,11 +81,8 @@ function evaluateOutcome(
       };
     }
     
-    // Check if we have valid tiers or phases
-    const bestTier = result.tiers?.[0];
-    const bestPhase = result.phases?.[0];
-    
-    if (!bestTier && !bestPhase) {
+    // Check if we have valid selectedCultivars
+    if (!result.selectedCultivars || result.selectedCultivars.length === 0) {
       return {
         outcome,
         status: 'not_achievable',
@@ -93,20 +90,9 @@ function evaluateOutcome(
       };
     }
     
-    // Get composition from best tier or phase
-    const composition = bestTier?.composition || bestPhase?.composition || [];
-    
-    if (composition.length === 0) {
-      return {
-        outcome,
-        status: 'not_achievable',
-        reason: 'No valid composition found',
-      };
-    }
-    
-    // Validate that all cultivars in composition are in inventory
+    // Validate that all cultivars in result are in inventory
     const inventoryIds = new Set(inventory.map(c => c.id));
-    const compositionIds = composition.map(c => c.cultivarId).filter(Boolean);
+    const compositionIds = result.selectedCultivars.map(c => c.id).filter(Boolean);
     
     if (compositionIds.length === 0) {
       return {

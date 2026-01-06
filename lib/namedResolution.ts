@@ -284,7 +284,7 @@ export function resolveToNamedStrains(outcome: OutcomeResult): NamedResolutionRe
       
       // Fail if no strains mapped for this phase
       if (namedStrains.length === 0) {
-        const failedIds = phase.composition.map(c => c.cultivarId).join(', ');
+        const failedIds = phase.composition.map((c: any) => c.cultivarId).join(', ');
         const availableIds = STRAIN_LIBRARY.map(s => s.id).join(', ');
         throw new Error(
           `Failed to map chemotypes to named strains (STACKED mode, phase: ${phase.phase}).\n` +
@@ -327,9 +327,9 @@ export function resolveToNamedStrains(outcome: OutcomeResult): NamedResolutionRe
     
     // Build stack structure from stacked phases
     const stack: { bottom: string; middle?: string; top?: string } = {
-      bottom: stackedPhases.find(p => p.phase.includes('End') || p.phase.includes('Landing'))?.strains[0]?.strainName || stackedPhases[stackedPhases.length - 1]?.strains[0]?.strainName || '',
-      middle: stackedPhases.find(p => p.phase.includes('Middle') || p.phase.includes('Core'))?.strains[0]?.strainName,
-      top: stackedPhases.find(p => p.phase.includes('Top') || p.phase.includes('Opening'))?.strains[0]?.strainName,
+      bottom: stackedPhases.find((p: any) => p.phase.includes('End') || p.phase.includes('Landing'))?.strains[0]?.strainName || stackedPhases[stackedPhases.length - 1]?.strains[0]?.strainName || '',
+      middle: stackedPhases.find((p: any) => p.phase.includes('Middle') || p.phase.includes('Core'))?.strains[0]?.strainName,
+      top: stackedPhases.find((p: any) => p.phase.includes('Top') || p.phase.includes('Opening'))?.strains[0]?.strainName,
     };
     
     return {
