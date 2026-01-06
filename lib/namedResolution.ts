@@ -1,13 +1,13 @@
 /**
  * Named Resolution Layer
  * 
- * Maps abstract chemotype outputs to actual named strains from inventory.
+ * Maps abstract chemotype outputs to actual named strains from STRAIN_LIBRARY.
  * This is a MANDATORY layer - every resolution MUST produce named recommendations.
+ * Uses deterministic, index-based mapping - NO heuristic matching, NO fallbacks.
  */
 
 import { OutcomeResult } from './goOutcomeEngine';
-import { DEMO_MENU, type DemoStrain } from '@/data/demoMenu';
-import { canonicalChemotypes, type CanonicalChemotype } from '@/data/canonicalChemotypes';
+import { STRAIN_LIBRARY, mapCultivarIdToStrain, type Strain } from './strainLibrary';
 
 /**
  * Named strain component (maps abstract chemotype to inventory strain)
@@ -75,63 +75,31 @@ export interface NamedResolutionResult {
 }
 
 /**
- * Map canonical chemotype to demo menu strain
- * Uses heuristic matching based on chemotype characteristics
+ * Map cultivarId to Strain from STRAIN_LIBRARY
+ * Deterministic, index-based mapping - NO heuristic matching, NO fallbacks
  */
-function mapChemotypeToStrain(chemotype: CanonicalChemotype): DemoStrain | null {
-  const chemotypeId = chemotype.id.toLowerCase();
-  const displayName = chemotype.displayName.toLowerCase();
-  
-  // Direct ID matching (if chemotype IDs match demo menu IDs)
-  const directMatch = DEMO_MENU.find(strain => 
-    strain.id.toLowerCase() === chemotypeId ||
-    chemotypeId.includes(strain.id.toLowerCase()) ||
-    strain.id.toLowerCase().includes(chemotypeId.replace('chemo_', '').replace('_', '-'))
-  );
-  
-  if (directMatch) return directMatch;
-  
-  // Heuristic matching based on chemotype characteristics
-  // Match by terpene profile and cannabinoid content
-  
-  // High pinene + limonene → sativa-leaning
-  const hasHighPinene = (chemotype.terpenes.pinene || 0) > 0.2;
-  const hasHighLimonene = (chemotype.terpenes.limonene || 0) > 0.2;
-  const hasHighMyrcene = (chemotype.terpenes.myrcene || 0) > 0.25;
-  const hasHighLinalool = (chemotype.terpenes.linalool || 0) > 0.15;
-  const thcLevel = chemotype.cannabinoids.THC || 0;
-  const cbdLevel = chemotype.cannabinoids.CBD || 0;
-  
-  // Match to demo menu based on characteristics
-  if (hasHighPinene && hasHighLimonene && thcLevel > 18) {
-    // Sativa-leaning energizing profile
-    return DEMO_MENU.find(s => s.name === "Jack Herer") || 
-           DEMO_MENU.find(s => s.name === "Sour Diesel") ||
-           DEMO_MENU.find(s => s.name === "Green Crack") ||
-           null;
+function mapCultivarIdToStrainName(cultivarId: string): Strain | null {
+  // Log the mapping attempt for debugging
+  if (process.env.NODE_ENV === 'development') {
+    console.debug(`[NAMED_RESOLUTION] Attempting to map cultivarId: "${cultivarId}"`);
+    console.debug(`[NAMED_RESOLUTION] STRAIN_LIBRARY has ${STRAIN_LIBRARY.length} strains`);
+    console.debug(`[NAMED_RESOLUTION] Available IDs (first 5): ${STRAIN_LIBRARY.slice(0, 5).map(s => s.id).join(', ')}`);
   }
   
-  if (hasHighMyrcene && thcLevel > 18 && !hasHighPinene) {
-    // Indica-leaning sedating profile
-    return DEMO_MENU.find(s => s.name === "Bubba Kush") ||
-           DEMO_MENU.find(s => s.name === "Granddaddy Purple") ||
-           DEMO_MENU.find(s => s.name === "Northern Lights") ||
-           null;
+  // Use deterministic mapping function from strainLibrary
+  const strain = mapCultivarIdToStrain(cultivarId);
+  
+  if (!strain) {
+    console.error(`[NAMED_RESOLUTION] Failed to map cultivarId "${cultivarId}" to STRAIN_LIBRARY`);
+    console.error(`[NAMED_RESOLUTION] Available strain IDs: ${STRAIN_LIBRARY.map(s => s.id).join(', ')}`);
+    return null;
   }
   
-  if (hasHighLinalool || (cbdLevel > 5 && thcLevel < 20)) {
-    // Calming/functional profile
-    return DEMO_MENU.find(s => s.name === "Cannatonic") ||
-           DEMO_MENU.find(s => s.name === "Harlequin") ||
-           DEMO_MENU.find(s => s.name === "ACDC") ||
-           null;
+  if (process.env.NODE_ENV === 'development') {
+    console.debug(`[NAMED_RESOLUTION] Successfully mapped "${cultivarId}" to "${strain.name}"`);
   }
   
-  // Balanced hybrid profile
-  return DEMO_MENU.find(s => s.name === "Gelato") ||
-         DEMO_MENU.find(s => s.name === "Blue Dream") ||
-         DEMO_MENU.find(s => s.name === "Wedding Cake") ||
-         null;
+  return strain;
 }
 
 /**
@@ -239,16 +207,17 @@ function generateStackingPlan(blend: NamedStrainComponent[]): StackingPlan {
 
 /**
  * Convert abstract BlendComponent to NamedStrainComponent
+ * Uses STRAIN_LIBRARY exclusively - deterministic mapping by cultivarId
  */
 function convertToNamedComponent(
-  component: { cultivarId: string; displayName: string; role: "primary" | "corrective" | "supporting"; ratio: number },
-  chemotypes: CanonicalChemotype[]
+  component: { cultivarId: string; displayName: string; role: "primary" | "corrective" | "supporting"; ratio: number }
 ): NamedStrainComponent | null {
-  const chemotype = chemotypes.find(c => c.id === component.cultivarId);
-  if (!chemotype) return null;
-  
-  const strain = mapChemotypeToStrain(chemotype);
-  if (!strain) return null;
+  // Map cultivarId directly to STRAIN_LIBRARY (deterministic, index-based)
+  const strain = mapCultivarIdToStrainName(component.cultivarId);
+  if (!strain) {
+    console.error(`[NAMED_RESOLUTION] Cannot map cultivarId "${component.cultivarId}" - skipping component`);
+    return null;
+  }
   
   return {
     strainName: strain.name,
@@ -281,7 +250,7 @@ export function resolveToNamedStrains(outcome: OutcomeResult): NamedResolutionRe
       const namedStrains: NamedStrainComponent[] = [];
       
       for (const component of phase.composition) {
-        const named = convertToNamedComponent(component, canonicalChemotypes);
+        const named = convertToNamedComponent(component);
         if (named) {
           namedStrains.push(named);
         }
@@ -334,18 +303,38 @@ export function resolveToNamedStrains(outcome: OutcomeResult): NamedResolutionRe
     throw new Error('OutcomeResult must have at least one tier with composition');
   }
   
-  // Convert abstract components to named strains
+  // Convert abstract components to named strains using STRAIN_LIBRARY
   const namedStrains: NamedStrainComponent[] = [];
+  
+  // Log all components being mapped
+  if (process.env.NODE_ENV === 'development') {
+    console.debug(`[NAMED_RESOLUTION] Mapping ${bestTier.composition.length} components:`);
+    bestTier.composition.forEach((c, idx) => {
+      console.debug(`  [${idx}] cultivarId: "${c.cultivarId}", displayName: "${c.displayName}"`);
+    });
+  }
+  
   for (const component of bestTier.composition) {
-    const named = convertToNamedComponent(component, canonicalChemotypes);
+    const named = convertToNamedComponent(component);
     if (named) {
       namedStrains.push(named);
+    } else {
+      // Log which component failed to map with full context
+      console.error(`[NAMED_RESOLUTION] Failed to map component: cultivarId="${component.cultivarId}", displayName="${component.displayName}"`);
+      console.error(`[NAMED_RESOLUTION] STRAIN_LIBRARY IDs: ${STRAIN_LIBRARY.map(s => s.id).join(', ')}`);
     }
   }
   
-  // Ensure we have at least one named strain
+  // Ensure we have at least one named strain - fail explicitly if mapping fails
   if (namedStrains.length === 0) {
-    throw new Error('Failed to map chemotypes to named strains - no valid mapping found');
+    const failedIds = bestTier.composition.map(c => c.cultivarId).join(', ');
+    const availableIds = STRAIN_LIBRARY.map(s => s.id).join(', ');
+    throw new Error(
+      `Failed to map chemotypes to named strains.\n` +
+      `  CultivarIds from resolver: ${failedIds}\n` +
+      `  STRAIN_LIBRARY size: ${STRAIN_LIBRARY.length}\n` +
+      `  Available IDs: ${availableIds}`
+    );
   }
   
   // Normalize percentages to sum to 100

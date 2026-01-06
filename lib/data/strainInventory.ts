@@ -264,8 +264,12 @@ export function getStrainInventoryAsChemotypes(): CanonicalChemotype[] {
     const sedationRisk: "low" | "medium" | "high" = (myrcene + linalool) > 0.7 ? "high" :
                                                      (myrcene + linalool) > 0.4 ? "medium" : "low";
 
+    // Use deterministic ID format that matches STRAIN_LIBRARY
+    // Convert name to kebab-case to match library IDs (e.g., "Blue Dream" -> "blue-dream")
+    const deterministicId = strain.name.toLowerCase().replace(/\s+/g, '-');
+    
     return {
-      id: `strain-${strain.name.toLowerCase().replace(/\s+/g, '-')}`,
+      id: deterministicId, // Matches STRAIN_LIBRARY.id format
       displayName: strain.name,
       description: `${strain.name} - ${strain.thc}% THC, ${strain.cbd}% CBD`,
       cannabinoids: {
