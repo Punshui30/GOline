@@ -156,8 +156,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           ok: false,
-          error: 'LLM_UNAVAILABLE',
-          message: 'Unable to process conversation at this time.',
+          error: 'OPENAI_REQUEST_FAILED',
+          message: 'OpenAI request failed. Unable to process conversation.',
           debug: process.env.NODE_ENV === 'development' ? String(openaiError) : undefined,
         },
         { status: 500 }

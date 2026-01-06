@@ -1,13 +1,13 @@
 /**
  * Next.js API Route: Intent Parser
  * 
- * Ollama-first, fully local inference endpoint.
- * No fallbacks. No mocks. No cloud LLMs.
+ * OpenAI-only endpoint. No fallbacks. No Ollama. No mocks.
  * 
  * Returns StrategicGuidance JSON for client-side processing.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import OpenAI from 'openai';
 import { StrategicGuidance } from '@/lib/strategicGuidance';
 
 const SYSTEM_PROMPT = `You are a strategic reasoning system for a constrained outcome-composition engine.
@@ -188,6 +188,19 @@ export async function POST(request: NextRequest) {
     });
   }
 
+  // Check for OpenAI API key - fail hard if missing
+  if (!process.env.OPENAI_API_KEY) {
+    console.error('[API/INTENT] OPENAI_API_KEY missing');
+    return NextResponse.json(
+      {
+        ok: false,
+        error: 'OPENAI_API_KEY_MISSING',
+        message: 'OpenAI API key is not configured',
+      },
+      { status: 500 }
+    );
+  }
+
   try {
     const body = await request.json();
     const { text, baselineCalibration } = body;
@@ -203,14 +216,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Ollama configuration
-    const ollamaBaseUrl = process.env.OLLAMA_BASE_URL || 'http://127.0.0.1:11434';
-    const ollamaModel = process.env.OLLAMA_MODEL || 'llama3.2:3b';
+    // Initialize OpenAI client
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
 
-    console.log('[API/INTENT] Using Ollama:', { baseUrl: ollamaBaseUrl, model: ollamaModel });
-
-    // Build prompt for Ollama (system prompt + baseline calibration + user input)
-    let promptText = SYSTEM_PROMPT;
+    // Build messages for OpenAI
+    const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
+      { role: 'system', content: SYSTEM_PROMPT },
+    ];
     
     // Include baseline calibration as contextual bias if provided
     if (baselineCalibration) {
@@ -225,53 +239,44 @@ export async function POST(request: NextRequest) {
         calibrationContext.push(`User's experience level: ${baselineCalibration.experienceLevel}`);
       }
       if (calibrationContext.length > 0) {
-        promptText += `\n\nBaseline calibration (use as contextual bias, not hard constraints):\n${calibrationContext.join('\n')}`;
+        messages.push({
+          role: 'system',
+          content: `Baseline calibration (use as contextual bias, not hard constraints):\n${calibrationContext.join('\n')}`,
+        });
       }
     }
     
-    promptText += `\n\nUser input: ${text}\n\nRespond with JSON only:`;
+    messages.push({ role: 'user', content: text });
 
-    // Call Ollama using /api/generate endpoint
+    // Call OpenAI
     let responseText: string | null = null;
     try {
-      const ollamaRes = await fetch(
-        `${ollamaBaseUrl}/api/generate`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            model: ollamaModel,
-            prompt: promptText,
-            stream: false,
-          }),
-        }
-      );
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: messages,
+        temperature: 0.3,
+        max_tokens: 1000,
+      });
 
-      if (!ollamaRes.ok) {
-        const text = await ollamaRes.text();
-        throw new Error(`Ollama API error: ${ollamaRes.status} ${text}`);
-      }
-
-      const data = await ollamaRes.json();
-      responseText = data.response || null;
+      responseText = completion.choices[0]?.message?.content || null;
 
       if (!responseText) {
-        throw new Error('Empty response from Ollama');
+        throw new Error('Empty response from OpenAI');
       }
 
-      console.log('[API/INTENT] Ollama response received, length:', responseText.length);
-    } catch (ollamaError: any) {
-      console.error('[API/INTENT] Ollama error', {
-        message: ollamaError?.message,
-        stack: ollamaError?.stack,
+      console.log('[API/INTENT] OpenAI response received, length:', responseText.length);
+    } catch (openaiError: any) {
+      console.error('[API/INTENT] OpenAI error', {
+        message: openaiError?.message,
+        stack: openaiError?.stack,
       });
       
       return NextResponse.json(
         {
           ok: false,
-          error: 'LLM_UNAVAILABLE',
-          message: 'Unable to interpret intent at this time. Ollama request failed.',
-          debug: process.env.NODE_ENV === 'development' ? String(ollamaError) : undefined,
+          error: 'OPENAI_REQUEST_FAILED',
+          message: 'OpenAI request failed. Unable to interpret intent.',
+          debug: process.env.NODE_ENV === 'development' ? String(openaiError) : undefined,
         },
         { status: 500 }
       );
@@ -292,7 +297,7 @@ export async function POST(request: NextRequest) {
         {
           ok: false,
           error: 'INVALID_RESPONSE',
-          message: 'LLM response could not be parsed as JSON',
+          message: 'OpenAI response could not be parsed as JSON',
           debug: process.env.NODE_ENV === 'development' ? String(parseError) : undefined,
         },
         { status: 500 }
@@ -313,7 +318,7 @@ export async function POST(request: NextRequest) {
         {
           ok: false,
           error: 'INVALID_GUIDANCE',
-          message: 'LLM response did not match expected schema',
+          message: 'OpenAI response did not match expected schema',
           debug: process.env.NODE_ENV === 'development' ? String(validationError) : undefined,
         },
         { status: 500 }
@@ -350,4 +355,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

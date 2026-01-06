@@ -222,7 +222,7 @@ export default function GOLineCalculator() {
       }
     } catch (err: any) {
       console.error('Intent analysis error:', err);
-      setError(err.message || 'Unable to analyze intent. Please ensure Ollama is running.');
+      setError(err.message || 'Unable to analyze intent. AI service unavailable.');
     } finally {
       setIsProcessing(false);
       inputRef.current?.focus();

@@ -1,8 +1,9 @@
 /**
  * LLM adapter layer - Two-step pipeline: normalize → route
+ * OpenAI-only implementation
  */
 
-import { OllamaClient } from './ollama';
+import OpenAI from 'openai';
 import {
   NormalizerResultSchema,
   NormalizerResultSchemaType,
@@ -18,10 +19,29 @@ import {
 import { ConversationContext } from '../flow/types';
 
 export class LLMAdapter {
-  private client: OllamaClient;
+  private openai: OpenAI;
 
   constructor() {
-    this.client = new OllamaClient();
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error('OPENAI_API_KEY environment variable is required');
+    }
+    this.openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+  }
+
+  /**
+   * Generate text using OpenAI
+   */
+  private async generate(prompt: string): Promise<string> {
+    const completion = await this.openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.3,
+      max_tokens: 1000,
+    });
+
+    return completion.choices[0]?.message?.content || '';
   }
 
   /**
@@ -29,7 +49,7 @@ export class LLMAdapter {
    */
   async normalize(userText: string): Promise<NormalizerResultSchemaType> {
     const prompt = getNormalizerPrompt(userText);
-    const response = await this.client.generate(prompt);
+    const response = await this.generate(prompt);
 
     const jsonStr = this.extractJSON(response);
     
@@ -44,7 +64,7 @@ export class LLMAdapter {
         response,
         '{"normalized_text": "string", "signals": ["string"], "questions_needed": ["string"]}'
       );
-      const repairResponse = await this.client.generate(repairPrompt);
+      const repairResponse = await this.generate(repairPrompt);
       const repairJsonStr = this.extractJSON(repairResponse);
       
       try {
@@ -75,7 +95,7 @@ export class LLMAdapter {
       : '';
 
     const prompt = getRouterPrompt(normalizedText, signals, contextStr);
-    const response = await this.client.generate(prompt);
+    const response = await this.generate(prompt);
 
     const jsonStr = this.extractJSON(response);
 
@@ -90,7 +110,7 @@ export class LLMAdapter {
         response,
         '{"confidence": 0.0-1.0, "candidate_routes": [{"id": "string", "score": 0.0-1.0}], "extracted_facts": {}, "crisis_flags": ["string"], "rationale_short": "string"}'
       );
-      const repairResponse = await this.client.generate(repairPrompt);
+      const repairResponse = await this.generate(repairPrompt);
       const repairJsonStr = this.extractJSON(repairResponse);
       
       try {
@@ -130,7 +150,7 @@ export class LLMAdapter {
    */
   async clarify(userText: string, clarificationNeeded: string): Promise<string> {
     const prompt = getClarifyPrompt(userText, clarificationNeeded);
-    const response = await this.client.generate(prompt);
+    const response = await this.generate(prompt);
     return response.trim().replace(/^["']|["']$/g, ''); // Remove quotes if present
   }
 
@@ -157,4 +177,3 @@ export class LLMAdapter {
     return jsonStr;
   }
 }
-
