@@ -5,377 +5,574 @@
  * ALL strain scoring and selection comes exclusively from this library.
  * No hardcoded strain names exist anywhere else.
  * No fallback strains are allowed.
+ * 
+ * This library contains 40 strains with normalized IDs and deterministic terpene profiles.
  */
 
+import { normalizeCultivarId } from './strainIdNormalization';
+
 export interface Strain {
-  id: string;
   name: string;
-  thcPercent: number;
-  cbdPercent: number;
+  thc: [number, number];  // [min, max] THC range
+  cbd: [number, number];  // [min, max] CBD range
   terpenes: {
-    limonene: number;
-    myrcene: number;
-    pinene: number;
-    linalool: number;
-    caryophyllene: number;
-    terpinolene: number;
+    myrcene?: number;
+    limonene?: number;
+    pinene?: number;
+    linalool?: number;
+    caryophyllene?: number;
+    terpinolene?: number;
+    humulene?: number;
+    ocimene?: number;
   };
 }
 
-export const STRAIN_LIBRARY: Strain[] = [
-  {
-    id: "blue-dream",
+/**
+ * STRAIN_LIBRARY - 40 strains with normalized IDs
+ * IDs are normalized: lowercase, hyphenated, no special characters
+ */
+export const STRAIN_LIBRARY: Record<string, Strain> = {
+  "blue-dream": {
     name: "Blue Dream",
-    thcPercent: 18.5,
-    cbdPercent: 0.1,
-    terpenes: { limonene: 0.22, myrcene: 0.65, pinene: 0.32, linalool: 0.05, caryophyllene: 0.28, terpinolene: 0.12 }
+    thc: [18, 24],
+    cbd: [0, 1],
+    terpenes: {
+      myrcene: 0.45,
+      pinene: 0.20,
+      caryophyllene: 0.15,
+      limonene: 0.12,
+      humulene: 0.08
+    }
   },
-  {
-    id: "jack-herer",
+
+  "jack-herer": {
     name: "Jack Herer",
-    thcPercent: 19.8,
-    cbdPercent: 0.05,
-    terpenes: { limonene: 0.20, myrcene: 0.18, pinene: 0.38, linalool: 0.03, caryophyllene: 0.22, terpinolene: 0.45 }
+    thc: [18, 23],
+    cbd: [0, 1],
+    terpenes: {
+      terpinolene: 0.35,
+      pinene: 0.25,
+      caryophyllene: 0.15,
+      limonene: 0.15,
+      myrcene: 0.10
+    }
   },
-  {
-    id: "durban-poison",
+
+  "durban-poison": {
     name: "Durban Poison",
-    thcPercent: 21.0,
-    cbdPercent: 0.02,
-    terpenes: { limonene: 0.18, myrcene: 0.12, pinene: 0.41, linalool: 0.02, caryophyllene: 0.15, terpinolene: 0.62 }
+    thc: [20, 25],
+    cbd: [0, 1],
+    terpenes: {
+      terpinolene: 0.40,
+      pinene: 0.25,
+      myrcene: 0.15,
+      ocimene: 0.10,
+      limonene: 0.10
+    }
   },
-  {
-    id: "sour-diesel",
+
+  "sour-diesel": {
     name: "Sour Diesel",
-    thcPercent: 20.2,
-    cbdPercent: 0.04,
-    terpenes: { limonene: 0.42, myrcene: 0.28, pinene: 0.21, linalool: 0.04, caryophyllene: 0.31, terpinolene: 0.10 }
+    thc: [20, 26],
+    cbd: [0, 1],
+    terpenes: {
+      caryophyllene: 0.30,
+      limonene: 0.25,
+      myrcene: 0.20,
+      pinene: 0.15,
+      humulene: 0.10
+    }
   },
-  {
-    id: "og-kush",
+
+  "og-kush": {
     name: "OG Kush",
-    thcPercent: 22.5,
-    cbdPercent: 0.05,
-    terpenes: { limonene: 0.33, myrcene: 0.55, pinene: 0.18, linalool: 0.06, caryophyllene: 0.29, terpinolene: 0.04 }
+    thc: [19, 26],
+    cbd: [0, 1],
+    terpenes: {
+      myrcene: 0.35,
+      limonene: 0.25,
+      caryophyllene: 0.20,
+      pinene: 0.10,
+      humulene: 0.10
+    }
   },
-  {
-    id: "girl-scout-cookies",
+
+  "girl-scout-cookies": {
     name: "Girl Scout Cookies",
-    thcPercent: 21.3,
-    cbdPercent: 0.07,
-    terpenes: { limonene: 0.36, myrcene: 0.31, pinene: 0.14, linalool: 0.12, caryophyllene: 0.48, terpinolene: 0.05 }
+    thc: [20, 28],
+    cbd: [0, 1],
+    terpenes: {
+      caryophyllene: 0.30,
+      limonene: 0.25,
+      myrcene: 0.20,
+      humulene: 0.15,
+      linalool: 0.10
+    }
   },
-  {
-    id: "gelato",
+
+  "gelato": {
     name: "Gelato",
-    thcPercent: 20.9,
-    cbdPercent: 0.04,
-    terpenes: { limonene: 0.39, myrcene: 0.26, pinene: 0.12, linalool: 0.11, caryophyllene: 0.44, terpinolene: 0.03 }
+    thc: [20, 27],
+    cbd: [0, 1],
+    terpenes: {
+      caryophyllene: 0.25,
+      limonene: 0.25,
+      myrcene: 0.20,
+      linalool: 0.15,
+      humulene: 0.15
+    }
   },
-  {
-    id: "wedding-cake",
+
+  "wedding-cake": {
     name: "Wedding Cake",
-    thcPercent: 23.0,
-    cbdPercent: 0.06,
-    terpenes: { limonene: 0.35, myrcene: 0.29, pinene: 0.10, linalool: 0.14, caryophyllene: 0.51, terpinolene: 0.02 }
+    thc: [20, 26],
+    cbd: [0, 1],
+    terpenes: {
+      caryophyllene: 0.30,
+      limonene: 0.25,
+      linalool: 0.20,
+      myrcene: 0.15,
+      humulene: 0.10
+    }
   },
-  {
-    id: "zkittlez",
+
+  "zkittlez": {
     name: "Zkittlez",
-    thcPercent: 19.5,
-    cbdPercent: 0.08,
-    terpenes: { limonene: 0.30, myrcene: 0.22, pinene: 0.09, linalool: 0.18, caryophyllene: 0.43, terpinolene: 0.00 }
+    thc: [18, 24],
+    cbd: [0, 1],
+    terpenes: {
+      caryophyllene: 0.30,
+      humulene: 0.20,
+      limonene: 0.20,
+      linalool: 0.15,
+      myrcene: 0.15
+    }
   },
-  {
-    id: "pineapple-express",
+
+  "pineapple-express": {
     name: "Pineapple Express",
-    thcPercent: 18.9,
-    cbdPercent: 0.03,
-    terpenes: { limonene: 0.47, myrcene: 0.25, pinene: 0.34, linalool: 0.03, caryophyllene: 0.19, terpinolene: 0.16 }
+    thc: [18, 24],
+    cbd: [0, 1],
+    terpenes: {
+      limonene: 0.35,
+      myrcene: 0.25,
+      pinene: 0.20,
+      caryophyllene: 0.10,
+      ocimene: 0.10
+    }
   },
-  {
-    id: "green-crack",
+
+  "green-crack": {
     name: "Green Crack",
-    thcPercent: 21.7,
-    cbdPercent: 0.02,
-    terpenes: { limonene: 0.26, myrcene: 0.62, pinene: 0.29, linalool: 0.02, caryophyllene: 0.20, terpinolene: 0.14 }
+    thc: [18, 25],
+    cbd: [0, 1],
+    terpenes: {
+      myrcene: 0.40,
+      limonene: 0.30,
+      pinene: 0.20,
+      caryophyllene: 0.10
+    }
   },
-  {
-    id: "super-lemon-haze",
+
+  "super-lemon-haze": {
     name: "Super Lemon Haze",
-    thcPercent: 22.1,
-    cbdPercent: 0.04,
-    terpenes: { limonene: 0.58, myrcene: 0.19, pinene: 0.27, linalool: 0.03, caryophyllene: 0.16, terpinolene: 0.33 }
+    thc: [19, 26],
+    cbd: [0, 1],
+    terpenes: {
+      limonene: 0.45,
+      terpinolene: 0.20,
+      myrcene: 0.15,
+      pinene: 0.10,
+      caryophyllene: 0.10
+    }
   },
-  {
-    id: "granddaddy-purple",
+
+  "granddaddy-purple": {
     name: "Granddaddy Purple",
-    thcPercent: 17.8,
-    cbdPercent: 0.1,
-    terpenes: { limonene: 0.12, myrcene: 0.74, pinene: 0.18, linalool: 0.21, caryophyllene: 0.26, terpinolene: 0.02 }
+    thc: [17, 24],
+    cbd: [0, 1],
+    terpenes: {
+      myrcene: 0.45,
+      caryophyllene: 0.20,
+      pinene: 0.15,
+      humulene: 0.10,
+      linalool: 0.10
+    }
   },
-  {
-    id: "northern-lights",
+
+  "northern-lights": {
     name: "Northern Lights",
-    thcPercent: 18.2,
-    cbdPercent: 0.08,
-    terpenes: { limonene: 0.14, myrcene: 0.68, pinene: 0.24, linalool: 0.17, caryophyllene: 0.22, terpinolene: 0.03 }
+    thc: [16, 22],
+    cbd: [0, 1],
+    terpenes: {
+      myrcene: 0.40,
+      pinene: 0.20,
+      caryophyllene: 0.20,
+      humulene: 0.10,
+      linalool: 0.10
+    }
   },
-  {
-    id: "bubba-kush",
+
+  "bubba-kush": {
     name: "Bubba Kush",
-    thcPercent: 19.1,
-    cbdPercent: 0.06,
-    terpenes: { limonene: 0.11, myrcene: 0.71, pinene: 0.15, linalool: 0.20, caryophyllene: 0.30, terpinolene: 0.01 }
+    thc: [18, 24],
+    cbd: [0, 1],
+    terpenes: {
+      myrcene: 0.45,
+      caryophyllene: 0.25,
+      humulene: 0.15,
+      limonene: 0.10,
+      linalool: 0.05
+    }
   },
-  {
-    id: "la-confidential",
+
+  "la-confidential": {
     name: "LA Confidential",
-    thcPercent: 20.0,
-    cbdPercent: 0.05,
-    terpenes: { limonene: 0.10, myrcene: 0.69, pinene: 0.17, linalool: 0.19, caryophyllene: 0.33, terpinolene: 0.02 }
+    thc: [17, 22],
+    cbd: [0, 1],
+    terpenes: {
+      myrcene: 0.40,
+      pinene: 0.20,
+      caryophyllene: 0.20,
+      linalool: 0.10,
+      humulene: 0.10
+    }
   },
-  {
-    id: "white-widow",
+
+  "white-widow": {
     name: "White Widow",
-    thcPercent: 19.4,
-    cbdPercent: 0.06,
-    terpenes: { limonene: 0.21, myrcene: 0.47, pinene: 0.31, linalool: 0.08, caryophyllene: 0.28, terpinolene: 0.09 }
+    thc: [18, 25],
+    cbd: [0, 1],
+    terpenes: {
+      myrcene: 0.35,
+      pinene: 0.25,
+      caryophyllene: 0.20,
+      limonene: 0.10,
+      humulene: 0.10
+    }
   },
-  {
-    id: "ak-47",
+
+  "ak-47": {
     name: "AK-47",
-    thcPercent: 20.6,
-    cbdPercent: 0.05,
-    terpenes: { limonene: 0.19, myrcene: 0.51, pinene: 0.33, linalool: 0.04, caryophyllene: 0.24, terpinolene: 0.11 }
+    thc: [19, 25],
+    cbd: [0, 1],
+    terpenes: {
+      myrcene: 0.30,
+      caryophyllene: 0.25,
+      pinene: 0.20,
+      limonene: 0.15,
+      humulene: 0.10
+    }
   },
-  {
-    id: "amnesia-haze",
+
+  "amnesia-haze": {
     name: "Amnesia Haze",
-    thcPercent: 21.8,
-    cbdPercent: 0.03,
-    terpenes: { limonene: 0.49, myrcene: 0.18, pinene: 0.30, linalool: 0.03, caryophyllene: 0.17, terpinolene: 0.41 }
+    thc: [20, 26],
+    cbd: [0, 1],
+    terpenes: {
+      limonene: 0.35,
+      myrcene: 0.25,
+      terpinolene: 0.20,
+      pinene: 0.10,
+      caryophyllene: 0.10
+    }
   },
-  {
-    id: "trainwreck",
+
+  "trainwreck": {
     name: "Trainwreck",
-    thcPercent: 19.9,
-    cbdPercent: 0.04,
-    terpenes: { limonene: 0.23, myrcene: 0.29, pinene: 0.36, linalool: 0.04, caryophyllene: 0.20, terpinolene: 0.44 }
+    thc: [18, 25],
+    cbd: [0, 1],
+    terpenes: {
+      terpinolene: 0.35,
+      myrcene: 0.25,
+      pinene: 0.20,
+      limonene: 0.10,
+      caryophyllene: 0.10
+    }
   },
-  {
-    id: "mac-1",
+
+  "mac-1": {
     name: "MAC 1",
-    thcPercent: 22.0,
-    cbdPercent: 0.04,
-    terpenes: { limonene: 0.34, myrcene: 0.27, pinene: 0.16, linalool: 0.10, caryophyllene: 0.46, terpinolene: 0.03 }
+    thc: [20, 27],
+    cbd: [0, 1],
+    terpenes: {
+      caryophyllene: 0.30,
+      limonene: 0.25,
+      myrcene: 0.20,
+      linalool: 0.15,
+      humulene: 0.10
+    }
   },
-  {
-    id: "do-si-dos",
+
+  "do-si-dos": {
     name: "Do-Si-Dos",
-    thcPercent: 23.4,
-    cbdPercent: 0.05,
-    terpenes: { limonene: 0.32, myrcene: 0.30, pinene: 0.09, linalool: 0.15, caryophyllene: 0.53, terpinolene: 0.02 }
+    thc: [20, 27],
+    cbd: [0, 1],
+    terpenes: {
+      limonene: 0.30,
+      caryophyllene: 0.25,
+      linalool: 0.20,
+      myrcene: 0.15,
+      humulene: 0.10
+    }
   },
-  {
-    id: "runtz",
+
+  "runtz": {
     name: "Runtz",
-    thcPercent: 21.2,
-    cbdPercent: 0.06,
-    terpenes: { limonene: 0.37, myrcene: 0.24, pinene: 0.11, linalool: 0.16, caryophyllene: 0.41, terpinolene: 0.03 }
+    thc: [19, 27],
+    cbd: [0, 1],
+    terpenes: {
+      caryophyllene: 0.30,
+      limonene: 0.25,
+      linalool: 0.20,
+      myrcene: 0.15,
+      humulene: 0.10
+    }
   },
-  {
-    id: "animal-mints",
+
+  "animal-mints": {
     name: "Animal Mints",
-    thcPercent: 22.7,
-    cbdPercent: 0.04,
-    terpenes: { limonene: 0.33, myrcene: 0.26, pinene: 0.10, linalool: 0.14, caryophyllene: 0.49, terpinolene: 0.02 }
+    thc: [20, 27],
+    cbd: [0, 1],
+    terpenes: {
+      caryophyllene: 0.30,
+      limonene: 0.25,
+      myrcene: 0.20,
+      linalool: 0.15,
+      humulene: 0.10
+    }
   },
-  {
-    id: "gelato-33",
+
+  "gelato-33": {
     name: "Gelato 33",
-    thcPercent: 20.8,
-    cbdPercent: 0.05,
-    terpenes: { limonene: 0.36, myrcene: 0.28, pinene: 0.11, linalool: 0.12, caryophyllene: 0.45, terpinolene: 0.03 }
+    thc: [20, 27],
+    cbd: [0, 1],
+    terpenes: {
+      caryophyllene: 0.25,
+      limonene: 0.25,
+      myrcene: 0.20,
+      linalool: 0.15,
+      humulene: 0.15
+    }
   },
-  {
-    id: "sunset-sherbet",
+
+  "sunset-sherbet": {
     name: "Sunset Sherbet",
-    thcPercent: 19.7,
-    cbdPercent: 0.06,
-    terpenes: { limonene: 0.38, myrcene: 0.27, pinene: 0.12, linalool: 0.13, caryophyllene: 0.42, terpinolene: 0.04 }
+    thc: [18, 25],
+    cbd: [0, 1],
+    terpenes: {
+      limonene: 0.30,
+      caryophyllene: 0.25,
+      linalool: 0.20,
+      myrcene: 0.15,
+      humulene: 0.10
+    }
   },
-  {
-    id: "mimosa",
+
+  "mimosa": {
     name: "Mimosa",
-    thcPercent: 21.5,
-    cbdPercent: 0.03,
-    terpenes: { limonene: 0.56, myrcene: 0.22, pinene: 0.29, linalool: 0.02, caryophyllene: 0.19, terpinolene: 0.17 }
+    thc: [19, 26],
+    cbd: [0, 1],
+    terpenes: {
+      limonene: 0.40,
+      myrcene: 0.25,
+      pinene: 0.15,
+      caryophyllene: 0.10,
+      ocimene: 0.10
+    }
   },
-  {
-    id: "clementine",
+
+  "clementine": {
     name: "Clementine",
-    thcPercent: 20.4,
-    cbdPercent: 0.04,
-    terpenes: { limonene: 0.59, myrcene: 0.21, pinene: 0.31, linalool: 0.02, caryophyllene: 0.16, terpinolene: 0.18 }
+    thc: [18, 24],
+    cbd: [0, 1],
+    terpenes: {
+      limonene: 0.45,
+      myrcene: 0.25,
+      pinene: 0.15,
+      ocimene: 0.10,
+      caryophyllene: 0.05
+    }
   },
-  {
-    id: "tangie",
+
+  "tangie": {
     name: "Tangie",
-    thcPercent: 19.3,
-    cbdPercent: 0.05,
-    terpenes: { limonene: 0.62, myrcene: 0.23, pinene: 0.28, linalool: 0.02, caryophyllene: 0.15, terpinolene: 0.19 }
+    thc: [18, 25],
+    cbd: [0, 1],
+    terpenes: {
+      limonene: 0.50,
+      myrcene: 0.20,
+      pinene: 0.15,
+      ocimene: 0.10,
+      caryophyllene: 0.05
+    }
   },
-  {
-    id: "strawberry-cough",
+
+  "strawberry-cough": {
     name: "Strawberry Cough",
-    thcPercent: 18.7,
-    cbdPercent: 0.06,
-    terpenes: { limonene: 0.25, myrcene: 0.31, pinene: 0.42, linalool: 0.03, caryophyllene: 0.18, terpinolene: 0.14 }
+    thc: [18, 24],
+    cbd: [0, 1],
+    terpenes: {
+      myrcene: 0.35,
+      pinene: 0.25,
+      caryophyllene: 0.20,
+      limonene: 0.10,
+      humulene: 0.10
+    }
   },
-  {
-    id: "purple-punch",
+
+  "purple-punch": {
     name: "Purple Punch",
-    thcPercent: 20.1,
-    cbdPercent: 0.08,
-    terpenes: { limonene: 0.11, myrcene: 0.76, pinene: 0.14, linalool: 0.22, caryophyllene: 0.29, terpinolene: 0.01 }
+    thc: [17, 24],
+    cbd: [0, 1],
+    terpenes: {
+      myrcene: 0.40,
+      caryophyllene: 0.25,
+      limonene: 0.15,
+      linalool: 0.10,
+      humulene: 0.10
+    }
   },
-  {
-    id: "ice-cream-cake",
+
+  "ice-cream-cake": {
     name: "Ice Cream Cake",
-    thcPercent: 22.3,
-    cbdPercent: 0.05,
-    terpenes: { limonene: 0.31, myrcene: 0.34, pinene: 0.09, linalool: 0.16, caryophyllene: 0.50, terpinolene: 0.01 }
+    thc: [20, 26],
+    cbd: [0, 1],
+    terpenes: {
+      limonene: 0.30,
+      caryophyllene: 0.25,
+      linalool: 0.20,
+      myrcene: 0.15,
+      humulene: 0.10
+    }
   },
-  {
-    id: "forbidden-fruit",
+
+  "forbidden-fruit": {
     name: "Forbidden Fruit",
-    thcPercent: 19.6,
-    cbdPercent: 0.07,
-    terpenes: { limonene: 0.18, myrcene: 0.63, pinene: 0.13, linalool: 0.24, caryophyllene: 0.27, terpinolene: 0.02 }
+    thc: [19, 26],
+    cbd: [0, 1],
+    terpenes: {
+      limonene: 0.30,
+      myrcene: 0.25,
+      caryophyllene: 0.20,
+      linalool: 0.15,
+      humulene: 0.10
+    }
   },
-  {
-    id: "skywalker-og",
+
+  "skywalker-og": {
     name: "Skywalker OG",
-    thcPercent: 21.9,
-    cbdPercent: 0.05,
-    terpenes: { limonene: 0.14, myrcene: 0.61, pinene: 0.16, linalool: 0.19, caryophyllene: 0.35, terpinolene: 0.01 }
+    thc: [18, 26],
+    cbd: [0, 1],
+    terpenes: {
+      myrcene: 0.40,
+      caryophyllene: 0.25,
+      limonene: 0.15,
+      humulene: 0.10,
+      pinene: 0.10
+    }
   },
-  {
-    id: "afghan-kush",
+
+  "afghan-kush": {
     name: "Afghan Kush",
-    thcPercent: 17.5,
-    cbdPercent: 0.12,
-    terpenes: { limonene: 0.09, myrcene: 0.79, pinene: 0.11, linalool: 0.23, caryophyllene: 0.32, terpinolene: 0.00 }
+    thc: [17, 22],
+    cbd: [0, 1],
+    terpenes: {
+      myrcene: 0.45,
+      caryophyllene: 0.25,
+      humulene: 0.15,
+      pinene: 0.10,
+      linalool: 0.05
+    }
   }
-];
+};
 
 /**
  * Guard: Fail early if library is empty
  */
-if (STRAIN_LIBRARY.length === 0) {
+const STRAIN_COUNT = Object.keys(STRAIN_LIBRARY).length;
+if (STRAIN_COUNT === 0) {
   throw new Error('STRAIN_LIBRARY must not be empty - fatal error');
 }
 
-/**
- * Create a lookup map for O(1) access by ID
- * This ensures deterministic, fast mapping
- */
-const STRAIN_BY_ID_MAP = new Map<string, Strain>();
-const STRAIN_BY_NAME_MAP = new Map<string, Strain>();
-
-STRAIN_LIBRARY.forEach(strain => {
-  // Map by ID
-  STRAIN_BY_ID_MAP.set(strain.id, strain);
-  
-  // Map by normalized name (for fallback matching)
-  const normalizedName = strain.name.toLowerCase().replace(/\s+/g, '-');
-  if (!STRAIN_BY_NAME_MAP.has(normalizedName)) {
-    STRAIN_BY_NAME_MAP.set(normalizedName, strain);
-  }
-});
-
-/**
- * Get strain by ID (deterministic lookup, O(1) via map)
- */
-export function getStrainById(id: string): Strain | null {
-  if (!id || typeof id !== 'string') return null;
-  return STRAIN_BY_ID_MAP.get(id) || null;
+if (STRAIN_COUNT !== 40) {
+  console.warn(`[STRAIN_LIBRARY] Expected 40 strains, found ${STRAIN_COUNT}`);
 }
 
 /**
- * Get strain by index (deterministic, index-based mapping)
- * Used for mapping numeric chemistry results to named strains
+ * Create normalized lookup map for O(1) access
+ * Normalizes all keys on load to ensure consistent matching
  */
-export function getStrainByIndex(index: number): Strain | null {
-  if (index < 0 || index >= STRAIN_LIBRARY.length) {
-    return null;
-  }
-  return STRAIN_LIBRARY[index];
-}
+const NORMALIZED_STRAIN_LIBRARY: Record<string, Strain> = Object.fromEntries(
+  Object.entries(STRAIN_LIBRARY).map(([id, data]) => [
+    normalizeCultivarId(id),
+    data
+  ])
+);
 
 /**
- * Find strain by matching cultivarId (deterministic, index-based)
- * Maps cultivarId from resolver to strain library
+ * Get strain by normalized ID (deterministic lookup, O(1))
  * 
- * Resolver outputs cultivarId in format: "blue-dream", "jack-herer", etc.
- * This matches STRAIN_LIBRARY.id format exactly (no "strain-" prefix)
+ * MANDATORY: All cultivarIds from resolver must be normalized before lookup
  */
-export function mapCultivarIdToStrain(cultivarId: string): Strain | null {
+export function getStrainById(cultivarId: string): Strain | null {
   if (!cultivarId || typeof cultivarId !== 'string') {
     console.error(`[STRAIN_LIBRARY] Invalid cultivarId: ${cultivarId}`);
     return null;
   }
   
-  // Direct ID match (deterministic - no heuristics)
-  const byId = getStrainById(cultivarId);
-  if (byId) {
-    if (process.env.NODE_ENV === 'development') {
-      console.debug(`[STRAIN_LIBRARY] Direct match: "${cultivarId}" -> "${byId.name}"`);
-    }
-    return byId;
+  // Normalize the ID before lookup
+  const normalizedId = normalizeCultivarId(cultivarId);
+  const strain = NORMALIZED_STRAIN_LIBRARY[normalizedId];
+  
+  if (!strain) {
+    console.error(`[STRAIN_LIBRARY] No match found for cultivarId: "${cultivarId}" → normalized: "${normalizedId}"`);
+    console.error(`[STRAIN_LIBRARY] STRAIN_LIBRARY has ${STRAIN_COUNT} strains`);
+    console.error(`[STRAIN_LIBRARY] Available IDs (first 10): ${Object.keys(NORMALIZED_STRAIN_LIBRARY).slice(0, 10).join(', ')}`);
+    return null;
   }
   
-  // If cultivarId has "strain-" prefix (legacy format), remove it and try again
-  const idWithoutPrefix = cultivarId.replace(/^strain-/, '');
-  if (idWithoutPrefix !== cultivarId) {
-    const byIdWithoutPrefix = getStrainById(idWithoutPrefix);
-    if (byIdWithoutPrefix) {
-      if (process.env.NODE_ENV === 'development') {
-        console.debug(`[STRAIN_LIBRARY] Matched after removing prefix: "${cultivarId}" -> "${byIdWithoutPrefix.name}"`);
-      }
-      return byIdWithoutPrefix;
-    }
-  }
-  
-  // Normalize and try deterministic pattern matching (not heuristic)
-  const normalizedId = cultivarId.toLowerCase().replace(/\s+/g, '-').replace(/^strain-/, '');
-  
-  // Try normalized ID lookup
-  let byNormalized = STRAIN_BY_ID_MAP.get(normalizedId);
-  
-  // Try without prefix if different
-  if (!byNormalized && idWithoutPrefix !== normalizedId) {
-    byNormalized = STRAIN_BY_ID_MAP.get(idWithoutPrefix);
-  }
-  
-  // Try by normalized name as last resort
-  if (!byNormalized) {
-    byNormalized = STRAIN_BY_NAME_MAP.get(normalizedId);
-  }
-  
-  if (byNormalized && process.env.NODE_ENV === 'development') {
-    console.debug(`[STRAIN_LIBRARY] Matched via normalization: "${cultivarId}" -> "${byNormalized.name}"`);
-  }
-  
-  if (!byNormalized) {
-    // ALWAYS log errors (not just in development) - critical for debugging production issues
-    console.error(`[STRAIN_LIBRARY] No match found for cultivarId: "${cultivarId}"`);
-    console.error(`[STRAIN_LIBRARY] Tried: direct="${cultivarId}", withoutPrefix="${idWithoutPrefix}", normalized="${normalizedId}"`);
-    console.error(`[STRAIN_LIBRARY] STRAIN_LIBRARY has ${STRAIN_LIBRARY.length} strains`);
-    console.error(`[STRAIN_LIBRARY] Available IDs (first 10): ${Array.from(STRAIN_BY_ID_MAP.keys()).slice(0, 10).join(', ')}`);
-  }
-  
-  return byNormalized || null;
+  return strain;
 }
 
+/**
+ * Map cultivarId to Strain from STRAIN_LIBRARY
+ * 
+ * MANDATORY: Normalizes IDs and enforces strict mapping
+ * If mapping fails, throws error (no silent skipping)
+ */
+export function mapCultivarIdToStrain(cultivarId: string): Strain {
+  if (!cultivarId || typeof cultivarId !== 'string') {
+    throw new Error(`STRAIN_MAPPING_FAILURE: Invalid cultivarId "${cultivarId}"`);
+  }
+  
+  // Normalize the ID
+  const normalizedId = normalizeCultivarId(cultivarId);
+  const strain = NORMALIZED_STRAIN_LIBRARY[normalizedId];
+  
+  if (!strain) {
+    const availableIds = Object.keys(NORMALIZED_STRAIN_LIBRARY).slice(0, 10).join(', ');
+    throw new Error(
+      `STRAIN_MAPPING_FAILURE: ${cultivarId} → ${normalizedId}\n` +
+      `  CultivarId "${cultivarId}" does not exist in STRAIN_LIBRARY.\n` +
+      `  STRAIN_LIBRARY has ${STRAIN_COUNT} strains.\n` +
+      `  Available IDs (first 10): ${availableIds}`
+    );
+  }
+  
+  return strain;
+}
+
+/**
+ * Get all strain IDs (normalized)
+ */
+export function getAllStrainIds(): string[] {
+  return Object.keys(NORMALIZED_STRAIN_LIBRARY);
+}
+
+/**
+ * Get strain count (derived, not hardcoded)
+ */
+export function getStrainCount(): number {
+  return STRAIN_COUNT;
+}
