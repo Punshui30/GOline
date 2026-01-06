@@ -213,7 +213,7 @@ function PhysicalStackVisualization({ cultivars, stack }: { cultivars: ResolvedC
             return (
               <div
                 key={`${layer.name}-${idx}`}
-                className={`w-full ${getRoleColor(layer.role)} ${getRoleBorder(layer.role)} border-2 rounded-t-sm flex-shrink-0`}
+                className={`w-full ${getRoleColor(layer.role)} ${getRoleBorder(layer.role)} border-2 flex-shrink-0`}
                 style={{ 
                   height: `${Math.max(heightPx, minHeightPx)}px`,
                 }}
@@ -256,7 +256,7 @@ function StackedConsumptionView({ stack }: { stack?: ResolvedStack }) {
       
       <div className="space-y-4">
         {stack.top && (
-          <div className="p-5 bg-white/5 border border-white/10 rounded-sm">
+          <div className="p-5 bg-white/5 border border-white/10">
             <div className="text-xs uppercase tracking-wider text-white/40 mb-2">
               Top Layer
             </div>
@@ -270,7 +270,7 @@ function StackedConsumptionView({ stack }: { stack?: ResolvedStack }) {
         )}
         
         {stack.middle && (
-          <div className="p-5 bg-white/5 border border-white/10 rounded-sm">
+          <div className="p-5 bg-white/5 border border-white/10">
             <div className="text-xs uppercase tracking-wider text-white/40 mb-2">
               Middle Layer
             </div>
@@ -555,7 +555,7 @@ function InvalidResolutionState({
       <div className="mb-12 flex flex-wrap gap-3">
         <button
           onClick={handleChangeInventory}
-          className="px-4 py-2 bg-white/10 hover:bg-white/15 border border-white/20 rounded-sm text-sm text-white/80 transition-colors"
+          className="px-4 py-2 bg-white/10 hover:bg-white/15 border border-white/10 hover:border-white/20 text-xs text-white/70 uppercase tracking-wider transition-colors"
         >
           [ Change inventory ]
         </button>

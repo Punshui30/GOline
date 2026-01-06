@@ -1405,17 +1405,17 @@ export default function GOLineCalculator() {
             <div className="mb-8 space-y-6 go-fade-in">
               {/* Clarification Questions */}
               {guidance.clarificationNeeded && guidance.clarificationNeeded.length > 0 && (
-                <div className="go-bg-elevated rounded-sm p-6 phase-clarifying">
-                  <h2 className="text-lg font-medium text-white mb-4">
+                <div className="bg-[#0a0b0e] border border-white/10 p-8">
+                  <h2 className="text-base font-medium text-white mb-6">
                     Clarifications Needed
                   </h2>
                   <div className="space-y-6">
                     {guidance.clarificationNeeded.map((question, index) => (
-                      <div key={index} className="space-y-3">
-                        <label className="block text-sm font-medium text-white/80">
+                      <div key={index} className="space-y-4">
+                        <label className="block text-sm font-medium text-white">
                           {question.question}
                         </label>
-                        <div className="space-y-2">
+                        <div className="flex flex-wrap gap-2">
                           {question.options.map((option) => {
                             // Determine if this is a sensitivity question (tradeoff type with specific options)
                             const isSensitivityQuestion = question.type === 'tradeoff' && 
@@ -1429,7 +1429,11 @@ export default function GOLineCalculator() {
                             return (
                               <label
                                 key={option}
-                                className="flex items-center gap-3 p-3 bg-[#0a0b0e] border border-white/10 rounded-sm cursor-pointer hover:bg-white/5 transition-colors"
+                                className={`inline-flex items-center px-3 py-1.5 cursor-pointer transition-colors ${
+                                  isChecked
+                                    ? 'bg-[#D4AF37]/20 text-white border border-[#D4AF37]/40'
+                                    : 'bg-white/5 text-white/70 border border-white/10 hover:bg-white/10 hover:border-white/20'
+                                }`}
                               >
                                 <input
                                   type={isSensitivityQuestion ? "checkbox" : "radio"}
@@ -1437,9 +1441,9 @@ export default function GOLineCalculator() {
                                   value={option}
                                   checked={isChecked}
                                   onChange={(e) => handleClarificationAnswer(question.type, e.target.value, isSensitivityQuestion)}
-                                  className="w-4 h-4 text-white border-white/30 focus:ring-white/50"
+                                  className="sr-only"
                                 />
-                                <span className="text-sm text-white/80">{option}</span>
+                                <span className="text-xs uppercase tracking-wider">{option}</span>
                               </label>
                             );
                           })}
@@ -1451,7 +1455,7 @@ export default function GOLineCalculator() {
               )}
 
               {/* Assumptions Panel */}
-              <div className="bg-[#111216] border border-white/10 rounded-sm p-6">
+              <div className="bg-[#111216] border border-white/10 p-6">
                 <h2 className="text-lg font-medium text-white mb-4">
                   Assumptions We're Making
                 </h2>
