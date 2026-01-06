@@ -475,9 +475,10 @@ export function resolveOutcome(
   }
   
   // Return result (existing structure preserved, explanation added optionally)
+  // MANDATORY: Output canonical IDs that match STRAIN_LIBRARY (strip ref- prefix)
   return {
     selectedCultivars: topCultivars.map(sc => ({
-      id: sc.cultivar.id,
+      id: sc.cultivar.id.replace(/^ref-/, '').toLowerCase().trim(), // Strip ref- prefix to match STRAIN_LIBRARY
       displayName: sc.cultivar.displayName,
     })),
     ratios: bestRatios,

@@ -1,0 +1,23 @@
+/**
+ * GO Line Design System - Exact Color Matching
+ * 
+ * MANDATORY: These values must match exactly.
+ * No gradients, no browser defaults, no approximations.
+ */
+
+:root {
+  --bg-black: #000000;
+  --logo-black: #000000;
+  --gold: #f5b642;
+  --text-main: #f2f2f2;
+  --text-muted: #9a9a9a;
+}
+
+html,
+body {
+  background: var(--bg-black);
+  color: var(--text-main);
+  margin: 0;
+  padding: 0;
+}
+

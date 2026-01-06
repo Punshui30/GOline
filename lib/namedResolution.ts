@@ -7,8 +7,8 @@
  */
 
 import { OutcomeResult } from './goOutcomeEngine';
-import { mapCultivarIdToStrain, getStrainCount, getAllStrainIds, type Strain } from './strainLibrary';
-import { normalizeCultivarId } from './strainIdNormalization';
+import { resolveStrain, type Strain } from './resolveNamedStrains';
+import { STRAIN_LIBRARY } from './strainLibrary';
 
 /**
  * Named strain component (maps abstract chemotype to inventory strain)
@@ -77,28 +77,12 @@ export interface NamedResolutionResult {
 
 /**
  * Map cultivarId to Strain from STRAIN_LIBRARY
- * MANDATORY: Normalizes IDs and enforces strict mapping
- * Throws error if mapping fails (no silent skipping)
+ * MANDATORY: Uses resolveStrain which throws on unmapped strains
+ * NO SKIPPING - hard error if strain not found
  */
 function mapCultivarIdToStrainName(cultivarId: string): Strain {
-  // Normalize the ID first
-  const normalizedId = normalizeCultivarId(cultivarId);
-  
-  // Log the mapping attempt for debugging
-  if (process.env.NODE_ENV === 'development') {
-    console.debug(`[NAMED_RESOLUTION] Attempting to map cultivarId: "${cultivarId}" → normalized: "${normalizedId}"`);
-    console.debug(`[NAMED_RESOLUTION] STRAIN_LIBRARY has ${getStrainCount()} strains`);
-    console.debug(`[NAMED_RESOLUTION] Available IDs (first 5): ${getAllStrainIds().slice(0, 5).join(', ')}`);
-  }
-  
-  // Use deterministic mapping function from strainLibrary (throws on failure)
-  const strain = mapCultivarIdToStrain(cultivarId);
-  
-  if (process.env.NODE_ENV === 'development') {
-    console.debug(`[NAMED_RESOLUTION] Successfully mapped "${cultivarId}" → "${normalizedId}" to "${strain.name}"`);
-  }
-  
-  return strain;
+  // Use resolveStrain which throws on failure (no skipping)
+  return resolveStrain(cultivarId);
 }
 
 /**
@@ -211,15 +195,12 @@ function generateStackingPlan(blend: NamedStrainComponent[]): StackingPlan {
 function convertToNamedComponent(
   component: { cultivarId: string; displayName: string; role: "primary" | "corrective" | "supporting"; ratio: number }
 ): NamedStrainComponent {
-  // Normalize cultivarId before mapping
-  const normalizedId = normalizeCultivarId(component.cultivarId);
-  
   // Map cultivarId directly to STRAIN_LIBRARY (throws on failure - no silent skipping)
   const strain = mapCultivarIdToStrainName(component.cultivarId);
   
   return {
-    strainName: strain.name,
-    strainId: normalizedId,  // Use normalized ID
+    strainName: strain.displayName,
+    strainId: strain.id,
     percentage: component.ratio,
     role: component.role,
     rationale: component.role === 'primary' 
@@ -276,8 +257,8 @@ export function resolveToNamedStrains(outcome: OutcomeResult): NamedResolutionRe
           // Log which component failed to map (ALWAYS log, not just dev)
           console.error(`[NAMED_RESOLUTION] STACKED mode - Failed to map component: cultivarId="${component.cultivarId}", displayName="${component.displayName}"`);
           console.error(`[NAMED_RESOLUTION] Error: ${error.message}`);
-          console.error(`[NAMED_RESOLUTION] STRAIN_LIBRARY has ${getStrainCount()} strains`);
-          console.error(`[NAMED_RESOLUTION] Available IDs (first 10): ${getAllStrainIds().slice(0, 10).join(', ')}`);
+          console.error(`[NAMED_RESOLUTION] STRAIN_LIBRARY has ${Object.keys(STRAIN_LIBRARY).length} strains`);
+          console.error(`[NAMED_RESOLUTION] Available IDs (first 10): ${Object.keys(STRAIN_LIBRARY).slice(0, 10).join(', ')}`);
           // Re-throw to abort render (no partial rendering)
           throw error;
         }
@@ -286,11 +267,11 @@ export function resolveToNamedStrains(outcome: OutcomeResult): NamedResolutionRe
       // Fail if no strains mapped for this phase (should not happen due to throws above, but guard anyway)
       if (namedStrains.length === 0) {
         const failedIds = phase.composition.map((c: any) => c.cultivarId).join(', ');
-        const availableIds = getAllStrainIds().slice(0, 20).join(', ');
+        const availableIds = Object.keys(STRAIN_LIBRARY).slice(0, 20).join(', ');
         throw new Error(
           `Failed to map chemotypes to named strains (STACKED mode, phase: ${phase.phase}).\n` +
           `  CultivarIds from resolver: ${failedIds}\n` +
-          `  STRAIN_LIBRARY size: ${getStrainCount()}\n` +
+          `  STRAIN_LIBRARY size: ${Object.keys(STRAIN_LIBRARY).length}\n` +
           `  Available IDs (first 20): ${availableIds}`
         );
       }
@@ -318,7 +299,7 @@ export function resolveToNamedStrains(outcome: OutcomeResult): NamedResolutionRe
     if (primaryBlend.length === 0) {
         throw new Error(
           `Failed to map chemotypes to named strains (STACKED mode - no strains in primary phase).\n` +
-          `  STRAIN_LIBRARY size: ${getStrainCount()}`
+          `  STRAIN_LIBRARY size: ${Object.keys(STRAIN_LIBRARY).length}`
         );
     }
     
@@ -349,53 +330,10 @@ export function resolveToNamedStrains(outcome: OutcomeResult): NamedResolutionRe
   // Convert selectedCultivars to named strains using STRAIN_LIBRARY
   const namedStrains: NamedStrainComponent[] = [];
   
-  // Log all components being mapped
-  if (process.env.NODE_ENV === 'development') {
-    console.debug(`[NAMED_RESOLUTION] Mapping ${outcome.selectedCultivars.length} components:`);
-    outcome.selectedCultivars.forEach((c, idx) => {
-      const normalizedId = normalizeCultivarId(c.id);
-      console.debug(`  [${idx}] id: "${c.id}" → normalized: "${normalizedId}", displayName: "${c.displayName}", ratio: ${outcome.ratios[idx]}%`);
-    });
-  }
-  
-  // Map cultivarIds to strains
-  // In development: throw on unmapped strains (hard assertion)
-  // In production: skip unmapped strains (defensive fallback)
+  // Map cultivarIds to strains - NO SKIPPING, throws on unmapped
   for (let i = 0; i < outcome.selectedCultivars.length; i++) {
     const cultivar = outcome.selectedCultivars[i];
     const ratio = outcome.ratios[i];
-    
-    // Normalize ID before mapping
-    const normalizedId = normalizeCultivarId(cultivar.id);
-    
-    // Try to map - behavior differs by environment
-    let strain: Strain | null = null;
-    try {
-      strain = mapCultivarIdToStrain(cultivar.id);
-    } catch (error: any) {
-      // Development: Hard assertion - throw immediately
-      if (process.env.NODE_ENV === 'development') {
-        console.error(`[NAMED_RESOLUTION] DEVELOPMENT: Unmapped cultivarId detected`);
-        console.error(`[NAMED_RESOLUTION] CultivarId: "${cultivar.id}" → normalized: "${normalizedId}"`);
-        console.error(`[NAMED_RESOLUTION] Error: ${error.message}`);
-        console.error(`[NAMED_RESOLUTION] STRAIN_LIBRARY has ${getStrainCount()} strains`);
-        console.error(`[NAMED_RESOLUTION] Available IDs (first 10): ${getAllStrainIds().slice(0, 10).join(', ')}`);
-        throw new Error(
-          `STRAIN_MAPPING_FAILURE (DEV): Resolver output contains unmapped cultivarId.\n` +
-          `  This should not happen during normal operation.\n` +
-          `  CultivarId: "${cultivar.id}" → normalized: "${normalizedId}"\n` +
-          `  ${error.message}`
-        );
-      }
-      
-      // Production: Defensive fallback - log and skip
-      console.warn(`[NAMED_RESOLUTION] PRODUCTION: Skipping unmapped cultivarId: "${cultivar.id}" → normalized: "${normalizedId}"`);
-      console.warn(`[NAMED_RESOLUTION] Error: ${error.message}`);
-      console.warn(`[NAMED_RESOLUTION] STRAIN_LIBRARY has ${getStrainCount()} strains`);
-      console.warn(`[NAMED_RESOLUTION] Available IDs (first 10): ${getAllStrainIds().slice(0, 10).join(', ')}`);
-      // Skip this cultivar - do not add to namedStrains
-      continue;
-    }
     
     // Convert to the format expected by convertToNamedComponent
     const component = {
@@ -405,34 +343,19 @@ export function resolveToNamedStrains(outcome: OutcomeResult): NamedResolutionRe
       ratio: ratio,
     };
     
-    // Convert to named component (should not throw since we validated above)
-    try {
-      const named = convertToNamedComponent(component);
-      namedStrains.push(named);
-    } catch (error: any) {
-      // This should not happen if mapCultivarIdToStrain succeeded
-      if (process.env.NODE_ENV === 'development') {
-        throw new Error(
-          `STRAIN_MAPPING_FAILURE (DEV): Failed to convert component after successful mapping.\n` +
-          `  CultivarId: "${cultivar.id}"\n` +
-          `  Error: ${error.message}`
-        );
-      }
-      // Production: Log and skip
-      console.warn(`[NAMED_RESOLUTION] PRODUCTION: Failed to convert component: cultivarId="${cultivar.id}"`);
-      console.warn(`[NAMED_RESOLUTION] Error: ${error.message}`);
-      continue;
-    }
+    // Convert to named component - throws on unmapped strain (no skipping)
+    const named = convertToNamedComponent(component);
+    namedStrains.push(named);
   }
   
   // Ensure we have at least one named strain - fail explicitly if mapping fails
   if (namedStrains.length === 0) {
     const failedIds = outcome.selectedCultivars.map(c => c.id).join(', ');
-    const availableIds = getAllStrainIds().slice(0, 20).join(', ');
+    const availableIds = Object.keys(STRAIN_LIBRARY).slice(0, 20).join(', ');
     throw new Error(
       `Failed to map chemotypes to named strains.\n` +
       `  CultivarIds from resolver: ${failedIds}\n` +
-      `  STRAIN_LIBRARY size: ${getStrainCount()}\n` +
+      `  STRAIN_LIBRARY size: ${Object.keys(STRAIN_LIBRARY).length}\n` +
       `  Available IDs (first 20): ${availableIds}`
     );
   }
