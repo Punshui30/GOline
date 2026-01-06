@@ -24,6 +24,7 @@ export interface OutcomeIntent {
   activationTarget: number; // 0-1: target activation level (alias for activation in some contexts)
   anxietySensitivity: number; // 0-1: sensitivity to anxiety-inducing compounds
   cognitiveEndurance: number; // 0-1: need for sustained focus vs intensity
+  overshootTolerance: number; // 0-1: tolerance for overshooting optimal terpene ranges (higher = more tolerant)
   avoidSedation: boolean; // avoid sedating profiles
   physicalRelief?: number; // 0-1: need for physical comfort/relief (optional, expanded dimension)
   cognitiveClarity?: number; // 0-1: need for mental clarity/sharpness (optional, expanded dimension)

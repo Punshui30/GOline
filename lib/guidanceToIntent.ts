@@ -145,11 +145,23 @@ export function translateGuidanceToIntent(
 
   const temporal = getTemporalFromGuidance(guidance);
 
+  // Calculate overshootTolerance based on anxiety sensitivity and intensity preferences
+  // Higher anxiety sensitivity = lower tolerance for overshooting
+  // Preference for intensity/peak = higher tolerance
+  const intensityKeywords = ['peak', 'intense', 'strong', 'powerful', 'rush'];
+  const hasIntensityPreference = resolvedPriorities.some(p => 
+    intensityKeywords.some(k => p.toLowerCase().includes(k))
+  );
+  const overshootTolerance = hasIntensityPreference 
+    ? Math.max(0.4, 0.7 - (anxietySensitivity * 0.3)) // Higher tolerance if intensity preferred
+    : Math.max(0.3, 0.6 - (anxietySensitivity * 0.4)); // Lower tolerance if balanced/gentle
+
   return {
     activation,
     activationTarget: activation, // Set activationTarget equal to activation
     anxietySensitivity,
     cognitiveEndurance,
+    overshootTolerance,
     avoidSedation,
     physicalRelief: getPhysicalReliefFromPriorities(resolvedPriorities),
     cognitiveClarity: getCognitiveClarityFromPriorities(resolvedPriorities),

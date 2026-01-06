@@ -79,6 +79,7 @@ export function referenceProfileToIntent(reference: ReferenceProfile): OutcomeIn
     activationTarget,
     anxietySensitivity,
     cognitiveEndurance,
+    overshootTolerance,
     avoidSedation: false, // Default to false for reference profiles
     physicalRelief: vectors.bodyRelaxation > 0.6 ? 0.7 : undefined,
     cognitiveClarity: vectors.clarity > 0.6 ? 0.75 : undefined,
