@@ -1063,7 +1063,7 @@ export default function GOLineCalculator() {
     if (!guidance || !guidance.clarificationNeeded || guidance.clarificationNeeded.length === 0) {
       return true;
     }
-    return guidance.clarificationNeeded.every(q => {
+    return guidance.clarificationNeeded.every((q) => {
       const answer = clarificationAnswers[q.type];
       // For multi-select (sensitivity questions), check if array has at least one item
       if (Array.isArray(answer)) {
