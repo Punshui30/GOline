@@ -132,11 +132,13 @@ function validateGuidance(parsed: any): StrategicGuidance {
     throw new Error('Invalid guidance: temporalProfile must be "single-phase" or "multi-phase"');
   }
 
-  // Validate arrays
+  // Validate arrays (with fallback to empty arrays if missing)
   const arrayFields = ['dominantPriorities', 'strictAvoidances', 'acceptableTradeoffs', 'suggestedStrategies', 'riskFlags'];
   for (const field of arrayFields) {
-    if (!Array.isArray(parsed[field])) {
-      throw new Error(`Invalid guidance: ${field} must be an array`);
+    if (parsed[field] === undefined || parsed[field] === null) {
+      parsed[field] = []; // Default to empty array if missing
+    } else if (!Array.isArray(parsed[field])) {
+      throw new Error(`Invalid guidance: ${field} must be an array, got ${typeof parsed[field]}`);
     }
     if (!parsed[field].every((item: any) => typeof item === 'string')) {
       throw new Error(`Invalid guidance: ${field} must be an array of strings`);
@@ -304,14 +306,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Log raw response for debugging
+    console.log('[API/INTENT] Raw OpenAI response:', JSON.stringify(responseText, null, 2));
+    console.log('[API/INTENT] Parsed object:', JSON.stringify(parsed, null, 2));
+
     // Validate guidance structure
     let validatedGuidance: StrategicGuidance;
     try {
       validatedGuidance = validateGuidance(parsed);
+      console.log('[API/INTENT] Validation successful:', JSON.stringify(validatedGuidance, null, 2));
     } catch (validationError: any) {
       console.error('[API/INTENT] Validation error', {
         message: validationError?.message,
-        parsed,
+        parsed: JSON.stringify(parsed, null, 2),
+        rawResponse: responseText?.substring(0, 500),
       });
       
       return NextResponse.json(
@@ -319,7 +327,11 @@ export async function POST(request: NextRequest) {
           ok: false,
           error: 'INVALID_GUIDANCE',
           message: 'OpenAI response did not match expected schema',
-          debug: process.env.NODE_ENV === 'development' ? String(validationError) : undefined,
+          debug: process.env.NODE_ENV === 'development' ? {
+            validationError: validationError?.message,
+            parsed: parsed,
+            rawResponse: responseText?.substring(0, 500),
+          } : undefined,
         },
         { status: 500 }
       );
