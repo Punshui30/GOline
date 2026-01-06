@@ -1,0 +1,356 @@
+[
+  {
+    "id": "R1_identity_not_determined",
+    "label": "Identity determination failure (hemp vs marijuana not assessed)",
+    "category": "identity",
+    "severity": 5,
+    "keywords_any": [
+      "did not select to determine hemp vs marijuana",
+      "hemp determination not selected",
+      "identity test not selected",
+      "no differentiation between hemp and marijuana",
+      "identity not assessed",
+      "identity test omitted",
+      "no screening for hemp"
+    ],
+    "keywords_all": [],
+    "keywords_not": [],
+    "flags": [
+      "identity_failure",
+      "hemp_vs_marijuana_not_tested"
+    ],
+    "explanation": "The lab explicitly states it did not determine whether the material was hemp or marijuana."
+  },
+  {
+    "id": "R2_identity_by_odor_or_appearance",
+    "label": "Identity based on appearance/odor only",
+    "category": "identity",
+    "severity": 4,
+    "keywords_any": [
+      "odor of marijuana",
+      "smell of marijuana",
+      "odor consistent with marijuana",
+      "visually identified as marijuana",
+      "based on appearance",
+      "green plant-like substance"
+    ],
+    "keywords_all": [],
+    "keywords_not": [
+      "% THC",
+      "percent THC",
+      "quantitation"
+    ],
+    "flags": [
+      "pc_odor_only",
+      "identity_unreliable"
+    ],
+    "explanation": "Identity is being inferred from odor or appearance without quantitative THC analysis."
+  },
+  {
+    "id": "R3_no_quantitative_thc",
+    "label": "No quantitative THC measurement performed",
+    "category": "identity",
+    "severity": 5,
+    "keywords_any": [
+      "quantitation not performed",
+      "no percent THC reported",
+      "THC level not measured",
+      "qualitative test only",
+      "no analytical determination of potency",
+      "screening only"
+    ],
+    "keywords_all": [],
+    "keywords_not": [],
+    "flags": [
+      "no_thc_quant",
+      "hemp_vs_marijuana_not_proven"
+    ],
+    "explanation": "The report indicates only qualitative or screening results, without a THC percentage needed to distinguish hemp from marijuana."
+  },
+  {
+    "id": "R4_non_quantitative_sampling",
+    "label": "Sampling protocol invalid (random/non-quantitative sampling)",
+    "category": "sampling",
+    "severity": 5,
+    "keywords_any": [
+      "did not select quantitative sampling",
+      "quantitative sampling not selected",
+      "non-quantitative sample",
+      "random selection",
+      "arbitrary selection",
+      "selected at officer's discretion"
+    ],
+    "keywords_all": [],
+    "keywords_not": [],
+    "flags": [
+      "sampling_invalid",
+      "aggregation_unreliable"
+    ],
+    "explanation": "Sampling was random or non-quantitative, undermining any conclusions drawn about the entire seizure."
+  },
+  {
+    "id": "R5_subset_only",
+    "label": "Only subset of items tested",
+    "category": "sampling",
+    "severity": 4,
+    "keywords_any": [
+      "subset of items tested",
+      "representative sample",
+      "not all items analyzed",
+      "not all packets were tested",
+      "only [number] of",
+      "composite sample",
+      "partial sampling"
+    ],
+    "keywords_all": [],
+    "keywords_not": [],
+    "flags": [
+      "not_all_items_tested",
+      "aggregation_issue"
+    ],
+    "explanation": "The document indicates only a subset of items were tested, without a robust, validated sampling plan."
+  },
+  {
+    "id": "R6_no_homogenization",
+    "label": "No homogenization performed",
+    "category": "sampling",
+    "severity": 4,
+    "keywords_any": [
+      "no homogenization performed",
+      "not homogenized",
+      "unmixed material",
+      "heterogeneous sample",
+      "analyzed without mixing"
+    ],
+    "keywords_all": [],
+    "keywords_not": [],
+    "flags": [
+      "no_homogenization",
+      "sampling_invalid"
+    ],
+    "explanation": "Multiple items or composite samples were analyzed without homogenization, making results unrepresentative."
+  },
+  {
+    "id": "R7_aggregate_weight_without_sampling",
+    "label": "Aggregate weight used without valid sampling",
+    "category": "sampling",
+    "severity": 5,
+    "keywords_any": [
+      "aggregate weight",
+      "total weight",
+      "all packages weighed",
+      "bulk weight"
+    ],
+    "keywords_all": [],
+    "keywords_not": [],
+    "flags": [
+      "aggregate_weight_issue",
+      "hemp_vs_marijuana_weight_not_proven"
+    ],
+    "explanation": "Aggregate weight appears to be used, which is invalid unless hemp vs marijuana and representativeness are first established."
+  },
+  {
+    "id": "R8_gc_ms_used",
+    "label": "GC-MS used for THC quantitation",
+    "category": "method_gc_ms",
+    "severity": 5,
+    "keywords_any": [
+      "GC-MS",
+      "gas chromatography",
+      "gas chromatograph"
+    ],
+    "keywords_all": [],
+    "keywords_not": [],
+    "flags": [
+      "gc_ms_used",
+      "thc_quant_method_suspect"
+    ],
+    "explanation": "Gas chromatography / GC-MS is being used, which can decarboxylate THCA and distort THC quantitation."
+  },
+  {
+    "id": "R9_total_thc_formula",
+    "label": "Total THC formula used",
+    "category": "method_total_thc",
+    "severity": 5,
+    "keywords_any": [
+      "Total THC",
+      "Total Δ9-THC",
+      "THC + 0.877",
+      "0.877 × THCA",
+      "0.877 * THCA",
+      "potential THC"
+    ],
+    "keywords_all": [],
+    "keywords_not": [],
+    "flags": [
+      "total_thc_formula",
+      "predictive_not_measured"
+    ],
+    "explanation": "The Farm Bill-style total THC formula is being used, which is predictive rather than a direct measurement."
+  },
+  {
+    "id": "R10_presumptive_only",
+    "label": "Presumptive / field test only",
+    "category": "method_presumptive",
+    "severity": 4,
+    "keywords_any": [
+      "NARK",
+      "NARK II",
+      "Duquenois",
+      "colorimetric",
+      "field test",
+      "preliminary test",
+      "screening test"
+    ],
+    "keywords_all": [],
+    "keywords_not": [
+      "LC-MS",
+      "LC-MS/MS",
+      "HPLC"
+    ],
+    "flags": [
+      "presumptive_only",
+      "identity_unreliable"
+    ],
+    "explanation": "Only presumptive/field tests are mentioned without confirmatory instrumental analysis."
+  },
+  {
+    "id": "R11_lightlab_used",
+    "label": "LightLab or handheld analyzer used",
+    "category": "method_device",
+    "severity": 5,
+    "keywords_any": [
+      "LightLab",
+      "portable analyzer",
+      "handheld analyzer",
+      "on-site THC analyzer"
+    ],
+    "keywords_all": [],
+    "keywords_not": [],
+    "flags": [
+      "non_forensic_device",
+      "method_unvalidated"
+    ],
+    "explanation": "A device such as LightLab is being used, which is not a validated forensic laboratory method."
+  },
+  {
+    "id": "R12_thca_flower_case",
+    "label": "THCA flower / hemp flower case",
+    "category": "thca_flower",
+    "severity": 3,
+    "keywords_any": [
+      "THCA flower",
+      "hemp flower",
+      "smokable hemp flower",
+      "high THCA hemp",
+      "hemp buds",
+      "industrial hemp flower"
+    ],
+    "keywords_all": [],
+    "keywords_not": [],
+    "flags": [
+      "thca_flower_case"
+    ],
+    "explanation": "The case involves THCA or hemp flower, where pre-harvest COA and hemp rules may control legality."
+  },
+  {
+    "id": "R13_preharvest_coa",
+    "label": "Pre-harvest COA within 30 days of harvest",
+    "category": "thca_flower",
+    "severity": 5,
+    "keywords_any": [
+      "pre-harvest sample",
+      "sample collected within 30 days of harvest",
+      "30 days prior to harvest",
+      "pre-harvest certificate of analysis",
+      "pre-harvest COA",
+      "pre-harvest test",
+      "pre-harvest compliance testing"
+    ],
+    "keywords_all": [],
+    "keywords_not": [],
+    "flags": [
+      "preharvest_coa_present"
+    ],
+    "explanation": "The case mentions a pre-harvest COA, which is the governing compliance check under hemp rules."
+  },
+  {
+    "id": "R14_sold_as_hemp",
+    "label": "Product sold or labeled as hemp",
+    "category": "thca_flower",
+    "severity": 4,
+    "keywords_any": [
+      "purchased as hemp",
+      "sold as hemp flower",
+      "labeled as hemp",
+      "packaging indicated hemp",
+      "hemp retailer"
+    ],
+    "keywords_all": [],
+    "keywords_not": [],
+    "flags": [
+      "sold_as_hemp"
+    ],
+    "explanation": "The material was represented as hemp at the time of sale, supporting a theory that it was lawful when purchased."
+  },
+  {
+    "id": "R15_enforcement_manufactured_illegality",
+    "label": "Illegality created by post-seizure testing",
+    "category": "thca_flower",
+    "severity": 5,
+    "keywords_any": [
+      "pre-harvest COA showed compliant hemp",
+      "no allegation of post-harvest alteration",
+      "material was lawful hemp at time of harvest",
+      "converted to illegal status only after testing"
+    ],
+    "keywords_all": [],
+    "keywords_not": [],
+    "flags": [
+      "enforcement_manufactured_illegality"
+    ],
+    "explanation": "Language suggests the product was lawful hemp and only deemed illegal due to post-seizure testing and enforcement choices."
+  },
+  {
+    "id": "R_PC_ODOR_MJ",
+    "label": "Probable cause based on odor of marijuana",
+    "category": "pc_odor",
+    "severity": 5,
+    "keywords_any": [
+      "odor of marijuana",
+      "smell of marijuana",
+      "plain smell",
+      "strong odor of marijuana",
+      "odor of raw marijuana",
+      "odor of burnt marijuana"
+    ],
+    "keywords_all": [],
+    "keywords_not": [],
+    "flags": [
+      "pc_odor_only",
+      "4A_target_case"
+    ],
+    "explanation": "Search or seizure based on odor of marijuana, which cannot reliably differentiate hemp from marijuana and has 4th Amendment implications after hemp legalization and adult-use reforms."
+  },
+  {
+    "id": "R_CONTEXT_CANNABIS",
+    "label": "Cannabis terminology present",
+    "category": "context",
+    "severity": 1,
+    "keywords_any": [
+      "marijuana",
+      "cannabis",
+      "hemp",
+      "thc",
+      "thca",
+      "delta-9"
+    ],
+    "keywords_all": [],
+    "keywords_not": [],
+    "flags": [
+      "cannabis_context"
+    ],
+    "explanation": "Case contains cannabis-related terminology. This is context only and should not exclude other cases that trigger odor-PC rules."
+  }
+]
+

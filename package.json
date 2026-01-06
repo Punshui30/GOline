@@ -1,0 +1,43 @@
+{
+  "name": "daniel-simmonds-portfolio",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "export": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "test": "jest",
+    "test:watch": "jest --watch"
+  },
+  "dependencies": {
+    "@netlify/functions": "^5.1.2",
+    "openai": "^6.15.0",
+    "pdfkit": "^0.17.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-wavesurfer": "^0.3.0",
+    "tone": "^15.0.4",
+    "uuid": "^13.0.0",
+    "wavesurfer.js": "^7.8.3",
+    "zod": "^4.2.1",
+    "zustand": "^4.5.2"
+  },
+  "devDependencies": {
+    "@jest/globals": "^30.2.0",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^20.14.0",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@types/uuid": "^11.0.0",
+    "autoprefixer": "^10.4.20",
+    "jest": "^30.2.0",
+    "netlify-cli": "^23.13.0",
+    "next": "^14.2.0",
+    "postcss": "^8.4.47",
+    "tailwindcss": "^3.4.13",
+    "ts-jest": "^29.4.6",
+    "typescript": "^5.5.4"
+  }
+}

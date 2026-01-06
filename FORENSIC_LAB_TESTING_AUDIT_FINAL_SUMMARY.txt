@@ -1,0 +1,208 @@
+================================================================================
+FORENSIC LABORATORY TESTING AUDIT - FINAL SUMMARY
+================================================================================
+Source File: Copy of Discovery attachments Babars combined 840 pages_RedactedB (1) (1).pdf
+Total Pages Audited: 840
+Report Generated: 2025-12-08
+
+================================================================================
+FINAL SUMMARY
+================================================================================
+
+TOTAL NUMBER OF SAMPLES TESTED:
+- Total Unique Sample/Item IDs Found: 975
+- Estimated Samples in Testing Tables: 78
+- Pages with Testing Tables/Subsamples: 23 pages
+
+TOTAL NUMBER OF ITEMS SEIZED:
+- Not explicitly stated in searchable text
+- Sample IDs suggest multiple items were tested
+
+WHETHER TESTING REPRESENTS ALL SEIZED MATERIAL OR SUBSET:
+- Indications of Testing All Seized Material: 0 explicit mentions found
+- Indications of Subset/Representative Testing: 0 explicit mentions found
+- Status: UNCLEAR - No explicit statements found regarding whether all seized material was tested
+
+NON-REPRESENTATIVE OR INSUFFICIENT SAMPLING INDICATORS:
+- Indications of Non-Representative/Insufficient Sampling: 0 mentions found
+- Status: No explicit concerns documented in searchable text
+
+COMPOSITE vs INDIVIDUAL TESTING:
+- Pages Mentioning Composite Testing: 0
+- Pages Mentioning Individual Testing: 11 pages (357, 384, 477, 503, 539, 540, 560, 587, 588, 656, 731)
+- Status: Testing appears to be on INDIVIDUAL samples based on text mentions
+
+SAMPLING PROTOCOL DOCUMENTATION:
+- Pages with Sampling Protocol Documentation: 0
+- Status: No explicit sampling protocols or homogenization procedures found in searchable text
+
+COA/LAB REPORT PAGES:
+- Total Pages with COA/Lab Report Indicators: 4 pages
+  * Page 22
+  * Page 368
+  * Page 589
+  * Page 634
+
+PAGES WHERE COAs OR TESTING DATA APPEAR:
+See detailed list below in "File Names + Page Numbers" section
+
+================================================================================
+DETAILED FINDINGS
+================================================================================
+
+COA/LABORATORY REPORT PAGES:
+--------------------------------------------------------------------------------
+• Page 22: Contains COA/laboratory report indicators
+• Page 368: Contains COA/laboratory report indicators
+• Page 589: Contains COA/laboratory report indicators
+• Page 634: Contains COA/laboratory report indicators
+
+Note: These pages contain keywords indicating laboratory reports or certificates of analysis.
+The actual content and sample details should be reviewed on these specific pages.
+
+TESTING TABLES/SUBSAMPLES:
+--------------------------------------------------------------------------------
+• 23 pages contain testing tables with subsample or test run data:
+  - Pages: 20, 30, 34, 36, 88, 89, 93, 107, 155, 191, 239, 319, 320, 321, 323, 325, 385, 461, 468, 546, 593, 607, 701
+• Estimated 78 samples identified in these tables
+• Tables may contain subsample data, test runs, or replicate testing information
+
+INDIVIDUAL SAMPLE TESTING:
+--------------------------------------------------------------------------------
+• 11 pages explicitly mention individual sample testing:
+  - Pages: 357, 384, 477, 503, 539, 540, 560, 587, 588, 656, 731
+• This suggests testing was performed on discrete, individual samples rather than composite samples
+
+SAMPLE/ITEM ID EXTRACTION:
+--------------------------------------------------------------------------------
+• 975 unique sample/item IDs were extracted from the document
+• IDs follow various formats:
+  - Alphanumeric codes (e.g., A160, I 11, I 12, I 13, I 14)
+  - Numeric codes (e.g., 1149, 512, 569)
+  - Evidence numbers (e.g., E 11, E 17)
+  - Case numbers (e.g., HCSO appears on multiple pages)
+• Many IDs appear on multiple pages, suggesting cross-referencing or multiple test runs
+
+NOTABLE SAMPLE ID PATTERNS:
+--------------------------------------------------------------------------------
+• "I 10", "I 11", "I 12", "I 13", "I 14" - Appear frequently across multiple pages
+• "A160" - Appears on 26 pages (180, 205, 290, 303, 308, 358, 360, 362, 385, 419, 421, 470, 490, 492, 494, 541, 543, 545, 547, 607, 622, 624, 626, 691, 708, 710)
+• "HCSO" - Appears on 6 pages (310, 311, 312, 313, 314, 580) - possibly case number or lab identifier
+
+================================================================================
+EXTRACTED SAMPLE IDs (COMPLETE LIST)
+================================================================================
+
+Note: Sample IDs are quoted exactly as they appear in the document. 
+Some IDs may appear on multiple pages, indicating cross-referencing or multiple test runs.
+
+[See FORENSIC_LAB_AUDIT_REPORT_ENHANCED.txt for complete list of all 975 sample IDs with page locations]
+
+Key Sample IDs (most frequently referenced):
+- A160: 26 pages
+- I 10, I 11, I 12, I 13, I 14: Multiple pages each
+- HCSO: 6 pages (310, 311, 312, 313, 314, 580)
+- A75: 4 pages (401, 456, 472, 498)
+- B154: 2 pages (523, 551)
+- F 07: 2 pages (21, 279)
+- 1149: 2 pages (611, 631)
+
+[Full list of all 975 sample IDs with page numbers available in FORENSIC_LAB_AUDIT_REPORT_ENHANCED.txt]
+
+================================================================================
+FILE NAMES + PAGE NUMBERS
+================================================================================
+
+Source File: Copy of Discovery attachments Babars combined 840 pages_RedactedB (1) (1).pdf
+
+PAGES WITH COA/LAB REPORTS:
+--------------------------------------------------------------------------------
+Copy of Discovery attachments Babars combined 840 pages_RedactedB (1) (1).pdf - Page 22
+Copy of Discovery attachments Babars combined 840 pages_RedactedB (1) (1).pdf - Page 368
+Copy of Discovery attachments Babars combined 840 pages_RedactedB (1) (1).pdf - Page 589
+Copy of Discovery attachments Babars combined 840 pages_RedactedB (1) (1).pdf - Page 634
+
+PAGES WITH TESTING TABLES:
+--------------------------------------------------------------------------------
+Copy of Discovery attachments Babars combined 840 pages_RedactedB (1) (1).pdf - Page 20
+Copy of Discovery attachments Babars combined 840 pages_RedactedB (1) (1).pdf - Page 30
+Copy of Discovery attachments Babars combined 840 pages_RedactedB (1) (1).pdf - Page 34
+Copy of Discovery attachments Babars combined 840 pages_RedactedB (1) (1).pdf - Page 36
+Copy of Discovery attachments Babars combined 840 pages_RedactedB (1) (1).pdf - Page 88
+Copy of Discovery attachments Babars combined 840 pages_RedactedB (1) (1).pdf - Page 89
+Copy of Discovery attachments Babars combined 840 pages_RedactedB (1) (1).pdf - Page 93
+Copy of Discovery attachments Babars combined 840 pages_RedactedB (1) (1).pdf - Page 107
+Copy of Discovery attachments Babars combined 840 pages_RedactedB (1) (1).pdf - Page 155
+Copy of Discovery attachments Babars combined 840 pages_RedactedB (1) (1).pdf - Page 191
+Copy of Discovery attachments Babars combined 840 pages_RedactedB (1) (1).pdf - Page 239
+Copy of Discovery attachments Babars combined 840 pages_RedactedB (1) (1).pdf - Page 319
+Copy of Discovery attachments Babars combined 840 pages_RedactedB (1) (1).pdf - Page 320
+Copy of Discovery attachments Babars combined 840 pages_RedactedB (1) (1).pdf - Page 321
+Copy of Discovery attachments Babars combined 840 pages_RedactedB (1) (1).pdf - Page 323
+Copy of Discovery attachments Babars combined 840 pages_RedactedB (1) (1).pdf - Page 325
+Copy of Discovery attachments Babars combined 840 pages_RedactedB (1) (1).pdf - Page 385
+Copy of Discovery attachments Babars combined 840 pages_RedactedB (1) (1).pdf - Page 461
+Copy of Discovery attachments Babars combined 840 pages_RedactedB (1) (1).pdf - Page 468
+Copy of Discovery attachments Babars combined 840 pages_RedactedB (1) (1).pdf - Page 546
+Copy of Discovery attachments Babars combined 840 pages_RedactedB (1) (1).pdf - Page 593
+Copy of Discovery attachments Babars combined 840 pages_RedactedB (1) (1).pdf - Page 607
+Copy of Discovery attachments Babars combined 840 pages_RedactedB (1) (1).pdf - Page 701
+
+PAGES WITH INDIVIDUAL TESTING MENTIONS:
+--------------------------------------------------------------------------------
+Copy of Discovery attachments Babars combined 840 pages_RedactedB (1) (1).pdf - Page 357
+Copy of Discovery attachments Babars combined 840 pages_RedactedB (1) (1).pdf - Page 384
+Copy of Discovery attachments Babars combined 840 pages_RedactedB (1) (1).pdf - Page 477
+Copy of Discovery attachments Babars combined 840 pages_RedactedB (1) (1).pdf - Page 503
+Copy of Discovery attachments Babars combined 840 pages_RedactedB (1) (1).pdf - Page 539
+Copy of Discovery attachments Babars combined 840 pages_RedactedB (1) (1).pdf - Page 540
+Copy of Discovery attachments Babars combined 840 pages_RedactedB (1) (1).pdf - Page 560
+Copy of Discovery attachments Babars combined 840 pages_RedactedB (1) (1).pdf - Page 587
+Copy of Discovery attachments Babars combined 840 pages_RedactedB (1) (1).pdf - Page 588
+Copy of Discovery attachments Babars combined 840 pages_RedactedB (1) (1).pdf - Page 656
+Copy of Discovery attachments Babars combined 840 pages_RedactedB (1) (1).pdf - Page 731
+
+================================================================================
+IMPORTANT NOTES
+================================================================================
+
+1. DUPLICATE REPORTS: If multiple versions of the same lab report appear, they are 
+   treated as duplicates and listed once in this summary.
+
+2. SAMPLE ID EXTRACTION: Sample IDs were extracted using pattern matching. Some IDs 
+   may be false positives (common words, abbreviations). The most reliable IDs are 
+   those that appear on multiple pages or follow clear alphanumeric patterns.
+
+3. TEXT EXTRACTION LIMITATIONS: This audit is based on searchable text extracted from 
+   the PDF. If the PDF contains scanned images without OCR, some content may not have 
+   been captured. Manual review of the identified pages is recommended.
+
+4. TESTING METHODOLOGY: The document indicates individual sample testing rather than 
+   composite testing, based on text mentions. However, no explicit sampling protocols 
+   or homogenization procedures were found in the searchable text.
+
+5. COMPLETENESS: The audit cannot definitively determine whether all seized material 
+   was tested, as no explicit statements to this effect were found in the searchable text.
+
+6. RECOMMENDATION: Manual review of the 4 COA pages (22, 368, 589, 634) and the 23 
+   testing table pages is recommended to verify sample counts and testing methodology.
+
+================================================================================
+END OF REPORT
+================================================================================
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,32 @@
+{
+  "id": "APPROVED_BUT_CANT_ACCESS",
+  "name": "Approved But Can't Access",
+  "description": "User was approved but can't access benefits",
+  "playbookId": "APPROVED_BUT_CANT_ACCESS",
+  "factKeys": ["benefit_type"],
+  "questions": [
+    {
+      "id": "q1",
+      "text": "What benefit were you approved for?",
+      "type": "multiple_choice",
+      "options": ["SNAP/EBT", "Medicaid", "Cash assistance", "Other"],
+      "required": true
+    }
+  ],
+  "crisisFlags": ["no_food", "no_meds"]
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

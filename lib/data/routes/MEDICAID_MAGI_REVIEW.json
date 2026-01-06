@@ -1,0 +1,31 @@
+{
+  "id": "MEDICAID_MAGI_REVIEW",
+  "name": "Medicaid MAGI Review",
+  "description": "User needs to complete a Medicaid MAGI eligibility review",
+  "playbookId": "MEDICAID_MAGI_REVIEW",
+  "factKeys": ["deadline_date"],
+  "questions": [
+    {
+      "id": "q1",
+      "text": "Do you have a deadline to complete this review?",
+      "type": "yes_no",
+      "required": true
+    }
+  ],
+  "crisisFlags": ["deadline", "no_meds"]
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
