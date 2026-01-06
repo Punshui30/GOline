@@ -7,8 +7,8 @@
  */
 
 import { OutcomeResult } from './goOutcomeEngine';
-import { resolveStrain, type Strain } from './resolveNamedStrains';
-import { STRAIN_LIBRARY } from './strainLibrary';
+import { resolveStrain } from './resolveNamedStrains';
+import { STRAIN_LIBRARY, type Strain } from './strainLibrary';
 
 /**
  * Named strain component (maps abstract chemotype to inventory strain)
