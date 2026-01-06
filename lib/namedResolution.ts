@@ -262,9 +262,10 @@ export function resolveToNamedStrains(outcome: OutcomeResult): NamedResolutionRe
         if (named) {
           namedStrains.push(named);
         } else {
-          // Log which component failed to map
+          // Log which component failed to map (ALWAYS log, not just dev)
           console.error(`[NAMED_RESOLUTION] STACKED mode - Failed to map component: cultivarId="${component.cultivarId}", displayName="${component.displayName}"`);
-          console.error(`[NAMED_RESOLUTION] STRAIN_LIBRARY IDs: ${STRAIN_LIBRARY.map(s => s.id).join(', ')}`);
+          console.error(`[NAMED_RESOLUTION] STRAIN_LIBRARY has ${STRAIN_LIBRARY.length} strains`);
+          console.error(`[NAMED_RESOLUTION] STRAIN_LIBRARY IDs (first 10): ${STRAIN_LIBRARY.slice(0, 10).map(s => s.id).join(', ')}`);
         }
       }
       
@@ -352,9 +353,10 @@ export function resolveToNamedStrains(outcome: OutcomeResult): NamedResolutionRe
     if (named) {
       namedStrains.push(named);
     } else {
-      // Log which component failed to map with full context
+      // Log which component failed to map with full context (ALWAYS log, not just dev)
       console.error(`[NAMED_RESOLUTION] Failed to map component: cultivarId="${component.cultivarId}", displayName="${component.displayName}"`);
-      console.error(`[NAMED_RESOLUTION] STRAIN_LIBRARY IDs: ${STRAIN_LIBRARY.map(s => s.id).join(', ')}`);
+      console.error(`[NAMED_RESOLUTION] STRAIN_LIBRARY has ${STRAIN_LIBRARY.length} strains`);
+      console.error(`[NAMED_RESOLUTION] STRAIN_LIBRARY IDs (first 10): ${STRAIN_LIBRARY.slice(0, 10).map(s => s.id).join(', ')}`);
     }
   }
   

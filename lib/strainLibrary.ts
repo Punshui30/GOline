@@ -369,8 +369,10 @@ export function mapCultivarIdToStrain(cultivarId: string): Strain | null {
   }
   
   if (!byNormalized) {
+    // ALWAYS log errors (not just in development) - critical for debugging production issues
     console.error(`[STRAIN_LIBRARY] No match found for cultivarId: "${cultivarId}"`);
     console.error(`[STRAIN_LIBRARY] Tried: direct="${cultivarId}", withoutPrefix="${idWithoutPrefix}", normalized="${normalizedId}"`);
+    console.error(`[STRAIN_LIBRARY] STRAIN_LIBRARY has ${STRAIN_LIBRARY.length} strains`);
     console.error(`[STRAIN_LIBRARY] Available IDs (first 10): ${Array.from(STRAIN_BY_ID_MAP.keys()).slice(0, 10).join(', ')}`);
   }
   
