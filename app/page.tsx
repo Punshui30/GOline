@@ -10,7 +10,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import { OutcomeIntent } from '@/lib/goOutcomeEngine';
+import { OutcomeIntent, OutcomeResult } from '@/lib/goOutcomeEngine';
 import { resolveOutcome } from '@/lib/goOutcomeEngine';
 import { resolveToNamedStrains, type NamedResolutionResult } from '@/lib/namedResolution';
 import ResolutionPanel, { type ResolvedBlend, type ResolvedCultivar, type CultivarRole } from '@/components/ResolutionPanel';
@@ -47,14 +47,7 @@ interface ResolutionTier {
   instructions: string;
 }
 
-interface OutcomeResult {
-  resolutionMode?: "BLENDED" | "STACKED";
-  resolution?: ResolvedBlend;
-  namedResolution?: NamedResolutionResult;
-  intent?: OutcomeIntent;
-  tiers?: ResolutionTier[];
-  error?: string;
-}
+// OutcomeResult is now imported from @/lib/goOutcomeEngine
 
 function generateConservativeExplanations(intent: OutcomeIntent, tier: ResolutionTier): string[] {
   const explanations: string[] = [];
