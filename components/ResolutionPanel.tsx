@@ -392,6 +392,49 @@ function ResolutionRationale({
           ))}
         </div>
       </div>
+      
+      {/* Usage Guidance (Optional but powerful) */}
+      <div className="mb-8">
+        <div className="text-xs text-white/50 mb-3">Usage Guidance</div>
+        <div className="space-y-2">
+          {(() => {
+            const guidance: string[] = [];
+            
+            // Recommended pacing based on cognitive endurance
+            if (intent.cognitiveEndurance > 0.7) {
+              guidance.push('Recommended pacing: Gradual onset, extended duration');
+            } else if (intent.cognitiveEndurance < 0.4) {
+              guidance.push('Recommended pacing: Quick onset, shorter session');
+            } else {
+              guidance.push('Recommended pacing: Moderate onset, balanced duration');
+            }
+            
+            // When this blend is strongest
+            if (intent.activationTarget > 0.6 && intent.anxietySensitivity < 0.4) {
+              guidance.push('When this blend is strongest: Social settings, creative tasks, daytime focus');
+            } else if (intent.activationTarget < 0.4) {
+              guidance.push('When this blend is strongest: Evening wind-down, relaxation, body comfort');
+            } else {
+              guidance.push('When this blend is strongest: Balanced activities, flexible timing');
+            }
+            
+            // When to stop
+            if (intent.anxietySensitivity > 0.6) {
+              guidance.push('When to stop: If anxiety increases or cognitive clarity decreases');
+            } else if (intent.cognitiveEndurance < 0.4) {
+              guidance.push('When to stop: After 2-3 hours or when desired effect plateaus');
+            } else {
+              guidance.push('When to stop: When desired outcome is achieved or tolerance builds');
+            }
+            
+            return guidance.map((item, idx) => (
+              <div key={idx} className="text-xs text-white/60 leading-relaxed">
+                • {item}
+              </div>
+            ));
+          })()}
+        </div>
+      </div>
     </div>
   );
 }
