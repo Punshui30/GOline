@@ -17,7 +17,7 @@ import { OutcomeIntent } from './goOutcomeEngine';
  */
 export function translateGuidanceToIntent(
   guidance: StrategicGuidance,
-  clarifications?: Record<string, string>
+  clarifications?: Record<string, string | string[]>
 ): OutcomeIntent {
   // Helper: Map priority strings to numeric ranges
   const getActivationFromPriorities = (priorities: string[]): number => {
@@ -57,26 +57,32 @@ export function translateGuidanceToIntent(
 
   if (clarifications) {
     // Handle temporal clarification
-    if (clarifications.temporal) {
-      if (clarifications.temporal === 'Later' || clarifications.temporal === 'Both') {
+    const temporal = clarifications.temporal;
+    if (temporal) {
+      const temporalValue = Array.isArray(temporal) ? temporal[0] : temporal;
+      if (temporalValue === 'Later' || temporalValue === 'Both') {
         resolvedPriorities.push('later phase focus');
       }
     }
 
-    // Handle tradeoff clarification
-    if (clarifications.tradeoff) {
-      if (clarifications.tradeoff.includes('energized') || clarifications.tradeoff.includes('energy')) {
+    // Handle tradeoff clarification (can be string or string[])
+    const tradeoff = clarifications.tradeoff;
+    if (tradeoff) {
+      const tradeoffArray = Array.isArray(tradeoff) ? tradeoff : [tradeoff];
+      if (tradeoffArray.some(t => t.includes('energized') || t.includes('energy'))) {
         resolvedPriorities.push('energy');
-      } else if (clarifications.tradeoff.includes('anxiety')) {
+      } else if (tradeoffArray.some(t => t.includes('anxiety'))) {
         resolvedAvoidances.push('anxiety');
       }
     }
 
     // Handle tolerance clarification
-    if (clarifications.tolerance) {
-      if (clarifications.tolerance.includes('Gentle') || clarifications.tolerance.includes('gentle')) {
+    const tolerance = clarifications.tolerance;
+    if (tolerance) {
+      const toleranceArray = Array.isArray(tolerance) ? tolerance : [tolerance];
+      if (toleranceArray.some(t => t.includes('Gentle') || t.includes('gentle'))) {
         resolvedPriorities.push('endurance');
-      } else if (clarifications.tolerance.includes('Stronger') || clarifications.tolerance.includes('stronger')) {
+      } else if (toleranceArray.some(t => t.includes('Stronger') || t.includes('stronger'))) {
         resolvedPriorities.push('peak');
       }
     }

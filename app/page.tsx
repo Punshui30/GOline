@@ -19,6 +19,7 @@ import { DEMO_MENU } from '@/data/demoMenu';
 import { translateGuidanceToIntent } from '@/lib/guidanceToIntent';
 import { ReferenceProfile, referenceProfileToIntent } from '@/lib/referenceProfile';
 import { convertToResolvedBlend } from '@/lib/convertToResolvedBlend';
+import { computeIntentConfidence, filterRedundantQuestions, shouldClarify } from '@/lib/intentConfidence';
 
 type InteractionPhase = 'FREE' | 'GUIDED' | 'LOCKED';
 
