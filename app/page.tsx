@@ -10,7 +10,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import { OutcomeIntent, ResolutionType } from '@/lib/goOutcomeEngine';
+import { OutcomeIntent } from '@/lib/goOutcomeEngine';
 import { resolveOutcome } from '@/lib/goOutcomeEngine';
 import { resolveToNamedStrains, type NamedResolutionResult } from '@/lib/namedResolution';
 import ResolutionPanel, { type ResolvedBlend, type ResolvedCultivar, type CultivarRole } from '@/components/ResolutionPanel';
@@ -37,7 +37,7 @@ interface BlendComponent {
 interface ResolutionTier {
   tierLabel: "Optimal" | "Balanced" | "Simplified";
   compositionStrategy: "single_cultivar" | "homogeneous_blend" | "layered_stack";
-  resolutionType: ResolutionType;
+  resolutionType: "BLENDED" | "STACKED";
   composition: BlendComponent[];
   compositionFit: number;
   systemNotes: string[];
