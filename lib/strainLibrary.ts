@@ -13,339 +13,322 @@ export type TerpeneProfile = {
   limonene: number;
   caryophyllene: number;
   pinene: number;
-  linalool: number;
   humulene: number;
+  linalool: number;
+  terpinolene: number;
 };
 
 export type Strain = {
   id: string;
-  displayName: string;
+  name: string;
   thc: number;
   cbd: number;
   terpenes: TerpeneProfile;
   effects: {
-    energy: number;
-    calm: number;
-    focus: number;
-    appetite: number;
-    anxietyRisk: number;
+    energy: number;      // 0-100: stimulation/activation
+    calm: number;        // 0-100: relaxation/sedation
+    focus: number;       // 0-100: mental clarity/concentration
+    body: number;        // 0-100: physical relief/body load
+    anxietyRisk: number; // 0-100: risk of anxiety (lower is better)
   };
 };
 
 export const STRAIN_LIBRARY: Record<string, Strain> = {
   "blue-dream": {
     id: "blue-dream",
-    displayName: "Blue Dream",
+    name: "Blue Dream",
     thc: 18,
     cbd: 0.1,
-    terpenes: { myrcene: 0.6, pinene: 0.3, caryophyllene: 0.2, limonene: 0.2, linalool: 0.05, humulene: 0.05 },
-    effects: { energy: 70, calm: 40, focus: 65, appetite: 45, anxietyRisk: 35 }
+    terpenes: { myrcene: 0.6, limonene: 0.2, caryophyllene: 0.1, pinene: 0.15, humulene: 0.05, linalool: 0.05, terpinolene: 0.1 },
+    effects: { energy: 65, calm: 60, focus: 60, body: 50, anxietyRisk: 35 }
   },
 
   "jack-herer": {
     id: "jack-herer",
-    displayName: "Jack Herer",
-    thc: 20,
-    cbd: 0,
-    terpenes: { pinene: 0.5, limonene: 0.25, caryophyllene: 0.25, myrcene: 0.1, linalool: 0.05, humulene: 0.05 },
-    effects: { energy: 80, calm: 30, focus: 75, appetite: 30, anxietyRisk: 45 }
+    name: "Jack Herer",
+    thc: 19,
+    cbd: 0.1,
+    terpenes: { myrcene: 0.2, limonene: 0.25, caryophyllene: 0.15, pinene: 0.3, humulene: 0.05, linalool: 0.02, terpinolene: 0.2 },
+    effects: { energy: 80, calm: 35, focus: 80, body: 40, anxietyRisk: 40 }
   },
 
   "durban-poison": {
     id: "durban-poison",
-    displayName: "Durban Poison",
-    thc: 21,
+    name: "Durban Poison",
+    thc: 20,
     cbd: 0,
-    terpenes: { pinene: 0.4, limonene: 0.3, myrcene: 0.15, caryophyllene: 0.15, linalool: 0.05, humulene: 0.05 },
-    effects: { energy: 90, calm: 20, focus: 85, appetite: 25, anxietyRisk: 55 }
+    terpenes: { myrcene: 0.15, limonene: 0.3, caryophyllene: 0.1, pinene: 0.25, humulene: 0.05, linalool: 0.02, terpinolene: 0.35 },
+    effects: { energy: 90, calm: 20, focus: 85, body: 30, anxietyRisk: 55 }
   },
 
   "sour-diesel": {
     id: "sour-diesel",
-    displayName: "Sour Diesel",
-    thc: 22,
+    name: "Sour Diesel",
+    thc: 21,
     cbd: 0,
-    terpenes: { limonene: 0.4, caryophyllene: 0.3, myrcene: 0.2, pinene: 0.1, linalool: 0.05, humulene: 0.05 },
-    effects: { energy: 85, calm: 25, focus: 70, appetite: 30, anxietyRisk: 50 }
+    terpenes: { myrcene: 0.3, limonene: 0.3, caryophyllene: 0.2, pinene: 0.1, humulene: 0.1, linalool: 0.02, terpinolene: 0.05 },
+    effects: { energy: 85, calm: 30, focus: 70, body: 45, anxietyRisk: 50 }
   },
 
   "og-kush": {
     id: "og-kush",
-    displayName: "OG Kush",
-    thc: 20,
-    cbd: 0,
-    terpenes: { myrcene: 0.5, limonene: 0.3, caryophyllene: 0.2, pinene: 0.1, linalool: 0.1, humulene: 0.1 },
-    effects: { energy: 55, calm: 70, focus: 50, appetite: 65, anxietyRisk: 40 }
+    name: "OG Kush",
+    thc: 22,
+    cbd: 0.1,
+    terpenes: { myrcene: 0.45, limonene: 0.25, caryophyllene: 0.15, pinene: 0.1, humulene: 0.1, linalool: 0.05, terpinolene: 0.03 },
+    effects: { energy: 55, calm: 70, focus: 55, body: 60, anxietyRisk: 40 }
   },
 
   "girl-scout-cookies": {
     id: "girl-scout-cookies",
-    displayName: "Girl Scout Cookies",
+    name: "Girl Scout Cookies",
     thc: 23,
-    cbd: 0,
-    terpenes: { caryophyllene: 0.4, limonene: 0.3, myrcene: 0.2, humulene: 0.1, pinene: 0.1, linalool: 0.05 },
-    effects: { energy: 60, calm: 65, focus: 55, appetite: 70, anxietyRisk: 35 }
+    cbd: 0.1,
+    terpenes: { myrcene: 0.4, limonene: 0.25, caryophyllene: 0.3, pinene: 0.05, humulene: 0.1, linalool: 0.05, terpinolene: 0.02 },
+    effects: { energy: 60, calm: 70, focus: 55, body: 65, anxietyRisk: 30 }
   },
 
   "gelato": {
     id: "gelato",
-    displayName: "Gelato",
-    thc: 24,
-    cbd: 0,
-    terpenes: { caryophyllene: 0.35, limonene: 0.25, myrcene: 0.25, linalool: 0.15, humulene: 0.1, pinene: 0.05 },
-    effects: { energy: 60, calm: 70, focus: 55, appetite: 65, anxietyRisk: 30 }
+    name: "Gelato",
+    thc: 21,
+    cbd: 0.1,
+    terpenes: { myrcene: 0.35, limonene: 0.3, caryophyllene: 0.25, pinene: 0.05, humulene: 0.1, linalool: 0.05, terpinolene: 0.03 },
+    effects: { energy: 60, calm: 70, focus: 55, body: 60, anxietyRisk: 30 }
   },
 
   "wedding-cake": {
     id: "wedding-cake",
-    displayName: "Wedding Cake",
-    thc: 25,
-    cbd: 0,
-    terpenes: { caryophyllene: 0.4, limonene: 0.3, linalool: 0.2, myrcene: 0.15, humulene: 0.1, pinene: 0.05 },
-    effects: { energy: 50, calm: 80, focus: 45, appetite: 75, anxietyRisk: 25 }
+    name: "Wedding Cake",
+    thc: 24,
+    cbd: 0.1,
+    terpenes: { myrcene: 0.4, limonene: 0.2, caryophyllene: 0.3, pinene: 0.05, humulene: 0.15, linalool: 0.05, terpinolene: 0.02 },
+    effects: { energy: 50, calm: 80, focus: 45, body: 70, anxietyRisk: 25 }
   },
 
   "zkittlez": {
     id: "zkittlez",
-    displayName: "Zkittlez",
-    thc: 19,
+    name: "Zkittlez",
+    thc: 20,
     cbd: 0.1,
-    terpenes: { limonene: 0.5, myrcene: 0.25, caryophyllene: 0.15, linalool: 0.1, humulene: 0.05, pinene: 0.05 },
-    effects: { energy: 55, calm: 75, focus: 50, appetite: 80, anxietyRisk: 20 }
+    terpenes: { myrcene: 0.3, limonene: 0.35, caryophyllene: 0.15, pinene: 0.05, humulene: 0.05, linalool: 0.1, terpinolene: 0.05 },
+    effects: { energy: 55, calm: 75, focus: 50, body: 55, anxietyRisk: 20 }
   },
 
   "pineapple-express": {
     id: "pineapple-express",
-    displayName: "Pineapple Express",
-    thc: 18,
-    cbd: 0,
-    terpenes: { limonene: 0.45, pinene: 0.3, myrcene: 0.2, caryophyllene: 0.15, linalool: 0.05, humulene: 0.05 },
-    effects: { energy: 75, calm: 45, focus: 65, appetite: 55, anxietyRisk: 35 }
+    name: "Pineapple Express",
+    thc: 19,
+    cbd: 0.1,
+    terpenes: { myrcene: 0.25, limonene: 0.4, caryophyllene: 0.1, pinene: 0.15, humulene: 0.05, linalool: 0.03, terpinolene: 0.2 },
+    effects: { energy: 75, calm: 45, focus: 65, body: 40, anxietyRisk: 35 }
   },
 
   "green-crack": {
     id: "green-crack",
-    displayName: "Green Crack",
+    name: "Green Crack",
     thc: 20,
     cbd: 0,
-    terpenes: { myrcene: 0.4, pinene: 0.3, limonene: 0.2, caryophyllene: 0.1, linalool: 0.05, humulene: 0.05 },
-    effects: { energy: 90, calm: 20, focus: 80, appetite: 40, anxietyRisk: 60 }
+    terpenes: { myrcene: 0.2, limonene: 0.3, caryophyllene: 0.1, pinene: 0.3, humulene: 0.05, linalool: 0.02, terpinolene: 0.25 },
+    effects: { energy: 90, calm: 20, focus: 85, body: 35, anxietyRisk: 60 }
   },
 
   "super-lemon-haze": {
     id: "super-lemon-haze",
-    displayName: "Super Lemon Haze",
+    name: "Super Lemon Haze",
     thc: 22,
     cbd: 0,
-    terpenes: { limonene: 0.6, pinene: 0.2, myrcene: 0.15, caryophyllene: 0.15, linalool: 0.05, humulene: 0.05 },
-    effects: { energy: 85, calm: 30, focus: 75, appetite: 35, anxietyRisk: 50 }
+    terpenes: { myrcene: 0.15, limonene: 0.45, caryophyllene: 0.1, pinene: 0.15, humulene: 0.05, linalool: 0.03, terpinolene: 0.35 },
+    effects: { energy: 85, calm: 30, focus: 80, body: 30, anxietyRisk: 55 }
   },
 
   "granddaddy-purple": {
     id: "granddaddy-purple",
-    displayName: "Granddaddy Purple",
-    thc: 19,
-    cbd: 0,
-    terpenes: { myrcene: 0.6, caryophyllene: 0.25, pinene: 0.1, limonene: 0.1, linalool: 0.15, humulene: 0.1 },
-    effects: { energy: 30, calm: 85, focus: 35, appetite: 80, anxietyRisk: 15 }
+    name: "Granddaddy Purple",
+    thc: 18,
+    cbd: 0.1,
+    terpenes: { myrcene: 0.6, limonene: 0.1, caryophyllene: 0.15, pinene: 0.05, humulene: 0.1, linalool: 0.15, terpinolene: 0.02 },
+    effects: { energy: 30, calm: 85, focus: 35, body: 80, anxietyRisk: 15 }
   },
 
   "northern-lights": {
     id: "northern-lights",
-    displayName: "Northern Lights",
+    name: "Northern Lights",
     thc: 18,
-    cbd: 0,
-    terpenes: { myrcene: 0.55, caryophyllene: 0.2, pinene: 0.15, limonene: 0.1, linalool: 0.15, humulene: 0.1 },
-    effects: { energy: 35, calm: 80, focus: 40, appetite: 75, anxietyRisk: 20 }
-  },
-
-  "bubba-kush": {
-    id: "bubba-kush",
-    displayName: "Bubba Kush",
-    thc: 20,
-    cbd: 0,
-    terpenes: { myrcene: 0.5, caryophyllene: 0.3, pinene: 0.1, limonene: 0.1, linalool: 0.1, humulene: 0.1 },
-    effects: { energy: 30, calm: 85, focus: 35, appetite: 80, anxietyRisk: 20 }
-  },
-
-  "la-confidential": {
-    id: "la-confidential",
-    displayName: "LA Confidential",
-    thc: 21,
-    cbd: 0,
-    terpenes: { myrcene: 0.45, caryophyllene: 0.25, limonene: 0.15, pinene: 0.15, linalool: 0.1, humulene: 0.1 },
-    effects: { energy: 40, calm: 75, focus: 45, appetite: 70, anxietyRisk: 25 }
+    cbd: 0.1,
+    terpenes: { myrcene: 0.5, limonene: 0.1, caryophyllene: 0.15, pinene: 0.1, humulene: 0.1, linalool: 0.1, terpinolene: 0.02 },
+    effects: { energy: 35, calm: 80, focus: 40, body: 75, anxietyRisk: 20 }
   },
 
   "white-widow": {
     id: "white-widow",
-    displayName: "White Widow",
-    thc: 20,
-    cbd: 0,
-    terpenes: { myrcene: 0.35, pinene: 0.3, caryophyllene: 0.2, limonene: 0.2, linalool: 0.05, humulene: 0.05 },
-    effects: { energy: 65, calm: 55, focus: 60, appetite: 50, anxietyRisk: 40 }
+    name: "White Widow",
+    thc: 19,
+    cbd: 0.1,
+    terpenes: { myrcene: 0.35, limonene: 0.2, caryophyllene: 0.25, pinene: 0.15, humulene: 0.1, linalool: 0.05, terpinolene: 0.05 },
+    effects: { energy: 65, calm: 60, focus: 60, body: 55, anxietyRisk: 40 }
   },
 
   "ak-47": {
     id: "ak-47",
-    displayName: "AK-47",
-    thc: 21,
-    cbd: 0,
-    terpenes: { myrcene: 0.4, pinene: 0.25, limonene: 0.2, caryophyllene: 0.15, linalool: 0.05, humulene: 0.05 },
-    effects: { energy: 70, calm: 50, focus: 65, appetite: 55, anxietyRisk: 45 }
+    name: "AK-47",
+    thc: 20,
+    cbd: 0.1,
+    terpenes: { myrcene: 0.3, limonene: 0.2, caryophyllene: 0.2, pinene: 0.2, humulene: 0.1, linalool: 0.05, terpinolene: 0.1 },
+    effects: { energy: 70, calm: 55, focus: 65, body: 50, anxietyRisk: 45 }
   },
 
   "amnesia-haze": {
     id: "amnesia-haze",
-    displayName: "Amnesia Haze",
+    name: "Amnesia Haze",
     thc: 22,
     cbd: 0,
-    terpenes: { limonene: 0.45, pinene: 0.25, myrcene: 0.15, caryophyllene: 0.15, linalool: 0.05, humulene: 0.05 },
-    effects: { energy: 85, calm: 30, focus: 80, appetite: 35, anxietyRisk: 55 }
+    terpenes: { myrcene: 0.2, limonene: 0.35, caryophyllene: 0.1, pinene: 0.25, humulene: 0.05, linalool: 0.02, terpinolene: 0.3 },
+    effects: { energy: 85, calm: 30, focus: 80, body: 35, anxietyRisk: 55 }
   },
 
   "trainwreck": {
     id: "trainwreck",
-    displayName: "Trainwreck",
-    thc: 20,
+    name: "Trainwreck",
+    thc: 21,
     cbd: 0,
-    terpenes: { myrcene: 0.4, pinene: 0.3, limonene: 0.2, caryophyllene: 0.15, linalool: 0.05, humulene: 0.05 },
-    effects: { energy: 80, calm: 35, focus: 70, appetite: 45, anxietyRisk: 50 }
+    terpenes: { myrcene: 0.3, limonene: 0.25, caryophyllene: 0.2, pinene: 0.2, humulene: 0.1, linalool: 0.03, terpinolene: 0.15 },
+    effects: { energy: 80, calm: 40, focus: 70, body: 45, anxietyRisk: 50 }
   },
 
   "mac-1": {
     id: "mac-1",
-    displayName: "MAC-1",
-    thc: 23,
-    cbd: 0,
-    terpenes: { caryophyllene: 0.35, limonene: 0.3, myrcene: 0.2, linalool: 0.15, humulene: 0.1, pinene: 0.05 },
-    effects: { energy: 60, calm: 65, focus: 55, appetite: 65, anxietyRisk: 30 }
+    name: "MAC 1",
+    thc: 22,
+    cbd: 0.1,
+    terpenes: { myrcene: 0.25, limonene: 0.25, caryophyllene: 0.3, pinene: 0.1, humulene: 0.15, linalool: 0.05, terpinolene: 0.05 },
+    effects: { energy: 60, calm: 70, focus: 55, body: 65, anxietyRisk: 30 }
   },
 
   "do-si-dos": {
     id: "do-si-dos",
-    displayName: "Do-Si-Dos",
-    thc: 24,
-    cbd: 0,
-    terpenes: { caryophyllene: 0.4, limonene: 0.25, myrcene: 0.2, linalool: 0.15, humulene: 0.1, pinene: 0.05 },
-    effects: { energy: 55, calm: 75, focus: 50, appetite: 70, anxietyRisk: 25 }
+    name: "Do-Si-Dos",
+    thc: 23,
+    cbd: 0.1,
+    terpenes: { myrcene: 0.4, limonene: 0.2, caryophyllene: 0.3, pinene: 0.05, humulene: 0.15, linalool: 0.1, terpinolene: 0.03 },
+    effects: { energy: 55, calm: 75, focus: 50, body: 70, anxietyRisk: 25 }
   },
 
   "runtz": {
     id: "runtz",
-    displayName: "Runtz",
-    thc: 22,
-    cbd: 0,
-    terpenes: { limonene: 0.4, caryophyllene: 0.3, myrcene: 0.2, linalool: 0.1, humulene: 0.05, pinene: 0.05 },
-    effects: { energy: 65, calm: 65, focus: 55, appetite: 70, anxietyRisk: 30 }
+    name: "Runtz",
+    thc: 21,
+    cbd: 0.1,
+    terpenes: { myrcene: 0.3, limonene: 0.35, caryophyllene: 0.2, pinene: 0.05, humulene: 0.1, linalool: 0.1, terpinolene: 0.05 },
+    effects: { energy: 65, calm: 70, focus: 55, body: 60, anxietyRisk: 30 }
   },
 
   "animal-mints": {
     id: "animal-mints",
-    displayName: "Animal Mints",
-    thc: 24,
-    cbd: 0,
-    terpenes: { caryophyllene: 0.45, limonene: 0.25, myrcene: 0.15, linalool: 0.15, humulene: 0.1, pinene: 0.05 },
-    effects: { energy: 55, calm: 75, focus: 50, appetite: 70, anxietyRisk: 25 }
+    name: "Animal Mints",
+    thc: 22,
+    cbd: 0.1,
+    terpenes: { myrcene: 0.35, limonene: 0.2, caryophyllene: 0.35, pinene: 0.05, humulene: 0.15, linalool: 0.05, terpinolene: 0.02 },
+    effects: { energy: 55, calm: 75, focus: 50, body: 70, anxietyRisk: 25 }
   },
 
   "gelato-33": {
     id: "gelato-33",
-    displayName: "Gelato #33",
-    thc: 24,
-    cbd: 0,
-    terpenes: { caryophyllene: 0.35, limonene: 0.3, myrcene: 0.2, linalool: 0.15, humulene: 0.1, pinene: 0.05 },
-    effects: { energy: 60, calm: 70, focus: 55, appetite: 65, anxietyRisk: 30 }
+    name: "Gelato #33",
+    thc: 22,
+    cbd: 0.1,
+    terpenes: { myrcene: 0.35, limonene: 0.3, caryophyllene: 0.25, pinene: 0.05, humulene: 0.1, linalool: 0.05, terpinolene: 0.03 },
+    effects: { energy: 60, calm: 70, focus: 55, body: 60, anxietyRisk: 30 }
   },
 
   "sunset-sherbet": {
     id: "sunset-sherbet",
-    displayName: "Sunset Sherbet",
+    name: "Sunset Sherbet",
     thc: 20,
-    cbd: 0,
-    terpenes: { limonene: 0.4, caryophyllene: 0.25, myrcene: 0.2, linalool: 0.15, humulene: 0.1, pinene: 0.05 },
-    effects: { energy: 60, calm: 65, focus: 55, appetite: 65, anxietyRisk: 30 }
+    cbd: 0.1,
+    terpenes: { myrcene: 0.3, limonene: 0.35, caryophyllene: 0.2, pinene: 0.05, humulene: 0.1, linalool: 0.1, terpinolene: 0.05 },
+    effects: { energy: 60, calm: 70, focus: 55, body: 60, anxietyRisk: 30 }
   },
 
   "mimosa": {
     id: "mimosa",
-    displayName: "Mimosa",
+    name: "Mimosa",
     thc: 21,
     cbd: 0,
-    terpenes: { limonene: 0.5, pinene: 0.25, myrcene: 0.15, caryophyllene: 0.1, linalool: 0.05, humulene: 0.05 },
-    effects: { energy: 80, calm: 40, focus: 75, appetite: 45, anxietyRisk: 45 }
+    terpenes: { myrcene: 0.2, limonene: 0.45, caryophyllene: 0.1, pinene: 0.15, humulene: 0.05, linalool: 0.05, terpinolene: 0.25 },
+    effects: { energy: 80, calm: 40, focus: 75, body: 40, anxietyRisk: 45 }
   },
 
   "clementine": {
     id: "clementine",
-    displayName: "Clementine",
+    name: "Clementine",
     thc: 19,
     cbd: 0,
-    terpenes: { limonene: 0.55, pinene: 0.25, myrcene: 0.1, caryophyllene: 0.1, linalool: 0.05, humulene: 0.05 },
-    effects: { energy: 85, calm: 35, focus: 80, appetite: 40, anxietyRisk: 50 }
+    terpenes: { myrcene: 0.15, limonene: 0.5, caryophyllene: 0.1, pinene: 0.15, humulene: 0.05, linalool: 0.03, terpinolene: 0.25 },
+    effects: { energy: 85, calm: 35, focus: 80, body: 35, anxietyRisk: 50 }
   },
 
   "tangie": {
     id: "tangie",
-    displayName: "Tangie",
-    thc: 18,
+    name: "Tangie",
+    thc: 19,
     cbd: 0,
-    terpenes: { limonene: 0.6, pinene: 0.2, myrcene: 0.1, caryophyllene: 0.1, linalool: 0.05, humulene: 0.05 },
-    effects: { energy: 90, calm: 30, focus: 85, appetite: 35, anxietyRisk: 55 }
+    terpenes: { myrcene: 0.15, limonene: 0.55, caryophyllene: 0.05, pinene: 0.15, humulene: 0.05, linalool: 0.02, terpinolene: 0.35 },
+    effects: { energy: 90, calm: 30, focus: 85, body: 30, anxietyRisk: 55 }
   },
 
   "strawberry-cough": {
     id: "strawberry-cough",
-    displayName: "Strawberry Cough",
-    thc: 20,
+    name: "Strawberry Cough",
+    thc: 18,
     cbd: 0,
-    terpenes: { myrcene: 0.4, pinene: 0.3, limonene: 0.2, caryophyllene: 0.1, linalool: 0.05, humulene: 0.05 },
-    effects: { energy: 75, calm: 45, focus: 65, appetite: 50, anxietyRisk: 45 }
+    terpenes: { myrcene: 0.25, limonene: 0.25, caryophyllene: 0.15, pinene: 0.25, humulene: 0.05, linalool: 0.05, terpinolene: 0.15 },
+    effects: { energy: 75, calm: 45, focus: 70, body: 40, anxietyRisk: 45 }
   },
 
   "purple-punch": {
     id: "purple-punch",
-    displayName: "Purple Punch",
-    thc: 19,
-    cbd: 0,
-    terpenes: { myrcene: 0.5, caryophyllene: 0.25, limonene: 0.15, pinene: 0.1, linalool: 0.15, humulene: 0.1 },
-    effects: { energy: 35, calm: 85, focus: 40, appetite: 80, anxietyRisk: 15 }
+    name: "Purple Punch",
+    thc: 20,
+    cbd: 0.1,
+    terpenes: { myrcene: 0.5, limonene: 0.15, caryophyllene: 0.2, pinene: 0.05, humulene: 0.1, linalool: 0.15, terpinolene: 0.02 },
+    effects: { energy: 35, calm: 85, focus: 40, body: 80, anxietyRisk: 15 }
   },
 
   "ice-cream-cake": {
     id: "ice-cream-cake",
-    displayName: "Ice Cream Cake",
+    name: "Ice Cream Cake",
     thc: 23,
-    cbd: 0,
-    terpenes: { caryophyllene: 0.4, limonene: 0.25, myrcene: 0.2, linalool: 0.15, humulene: 0.1, pinene: 0.05 },
-    effects: { energy: 45, calm: 80, focus: 45, appetite: 75, anxietyRisk: 20 }
+    cbd: 0.1,
+    terpenes: { myrcene: 0.45, limonene: 0.2, caryophyllene: 0.3, pinene: 0.05, humulene: 0.15, linalool: 0.1, terpinolene: 0.02 },
+    effects: { energy: 45, calm: 80, focus: 45, body: 75, anxietyRisk: 20 }
   },
 
   "forbidden-fruit": {
     id: "forbidden-fruit",
-    displayName: "Forbidden Fruit",
+    name: "Forbidden Fruit",
     thc: 21,
-    cbd: 0,
-    terpenes: { limonene: 0.4, myrcene: 0.25, caryophyllene: 0.2, linalool: 0.15, humulene: 0.1, pinene: 0.05 },
-    effects: { energy: 50, calm: 75, focus: 50, appetite: 70, anxietyRisk: 25 }
+    cbd: 0.1,
+    terpenes: { myrcene: 0.35, limonene: 0.35, caryophyllene: 0.2, pinene: 0.05, humulene: 0.1, linalool: 0.1, terpinolene: 0.05 },
+    effects: { energy: 50, calm: 75, focus: 50, body: 65, anxietyRisk: 25 }
   },
 
   "skywalker-og": {
     id: "skywalker-og",
-    displayName: "Skywalker OG",
+    name: "Skywalker OG",
     thc: 22,
-    cbd: 0,
-    terpenes: { myrcene: 0.45, caryophyllene: 0.25, limonene: 0.2, pinene: 0.15, linalool: 0.1, humulene: 0.1 },
-    effects: { energy: 40, calm: 80, focus: 45, appetite: 75, anxietyRisk: 20 }
+    cbd: 0.1,
+    terpenes: { myrcene: 0.45, limonene: 0.2, caryophyllene: 0.25, pinene: 0.05, humulene: 0.15, linalool: 0.1, terpinolene: 0.02 },
+    effects: { energy: 40, calm: 80, focus: 45, body: 75, anxietyRisk: 20 }
   },
 
   "afghan-kush": {
     id: "afghan-kush",
-    displayName: "Afghan Kush",
-    thc: 18,
-    cbd: 0,
-    terpenes: { myrcene: 0.6, caryophyllene: 0.25, pinene: 0.15, limonene: 0.1, linalool: 0.15, humulene: 0.1 },
-    effects: { energy: 30, calm: 90, focus: 35, appetite: 85, anxietyRisk: 10 }
+    name: "Afghan Kush",
+    thc: 17,
+    cbd: 0.2,
+    terpenes: { myrcene: 0.6, limonene: 0.1, caryophyllene: 0.2, pinene: 0.05, humulene: 0.15, linalool: 0.15, terpinolene: 0.01 },
+    effects: { energy: 30, calm: 90, focus: 35, body: 85, anxietyRisk: 10 }
   }
 };
 

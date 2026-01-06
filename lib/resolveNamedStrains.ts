@@ -9,6 +9,14 @@
 import { STRAIN_LIBRARY, type Strain } from './strainLibrary';
 
 /**
+ * Get strain by ID (direct lookup, no normalization needed)
+ * IDs are already canonical in STRAIN_LIBRARY
+ */
+export function getStrainById(id: string): Strain | null {
+  return STRAIN_LIBRARY[id] || null;
+}
+
+/**
  * Resolve strain ID to Strain object
  * 
  * @param id - Strain ID (may have ref- prefix)

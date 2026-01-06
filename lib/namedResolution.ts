@@ -199,7 +199,7 @@ function convertToNamedComponent(
   const strain = mapCultivarIdToStrainName(component.cultivarId);
   
   return {
-    strainName: strain.displayName,
+    strainName: strain.name,
     strainId: strain.id,
     percentage: component.ratio,
     role: component.role,
