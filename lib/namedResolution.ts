@@ -239,20 +239,33 @@ function convertToNamedComponent(
  * This is the final step before UI display - ensures every recommendation has named cultivars.
  */
 export function resolveToNamedStrains(outcome: OutcomeResult): NamedResolutionResult {
-  // Validation: OutcomeResult must have either tiers or phases
-  if (!outcome.tiers && !outcome.phases) {
-    throw new Error('OutcomeResult must have either tiers or phases');
+  // Check for failure state
+  if (outcome.failure) {
+    throw new Error(`Resolution failed: ${outcome.failure.reason} - ${outcome.failure.details || ''}`);
   }
   
-  // Handle STACKED mode
-  if (outcome.resolutionMode === 'STACKED' && outcome.phases) {
-    const stackedPhases = outcome.phases.map(phase => {
+  // Validation: OutcomeResult must have selectedCultivars and ratios
+  if (!outcome.selectedCultivars || outcome.selectedCultivars.length === 0) {
+    throw new Error('OutcomeResult must have selectedCultivars');
+  }
+  if (!outcome.ratios || outcome.ratios.length === 0) {
+    throw new Error('OutcomeResult must have ratios');
+  }
+  if (outcome.selectedCultivars.length !== outcome.ratios.length) {
+    throw new Error('OutcomeResult selectedCultivars and ratios must have the same length');
+  }
+  
+  // Handle STACKED mode (if resolutionMode is set, though current OutcomeResult doesn't have this)
+  // For now, we'll treat everything as BLENDED mode since the current structure doesn't support STACKED
+  // If outcome has phases property (legacy support), handle STACKED mode
+  if ((outcome as any).resolutionMode === 'STACKED' && (outcome as any).phases) {
+    const stackedPhases = (outcome as any).phases.map((phase: any) => {
       const namedStrains: NamedStrainComponent[] = [];
       
       // Log all components being mapped
       if (process.env.NODE_ENV === 'development') {
         console.debug(`[NAMED_RESOLUTION] STACKED mode - Mapping ${phase.composition.length} components for phase: ${phase.phase}`);
-        phase.composition.forEach((c, idx) => {
+        phase.composition.forEach((c: any, idx: number) => {
           console.debug(`  [${idx}] cultivarId: "${c.cultivarId}", displayName: "${c.displayName}"`);
         });
       }
@@ -322,39 +335,45 @@ export function resolveToNamedStrains(outcome: OutcomeResult): NamedResolutionRe
     return {
       primaryBlend,
       stackingOptions,
-      confidenceScore: outcome.phases?.[0]?.compositionFit || 0.7,
-      tradeoffs: outcome.phases?.[0]?.systemNotes || [],
-      rationaleSummary: outcome.phases?.[0]?.systemNotes?.[0] || 'Stacked resolution for multi-phase outcome.',
+      confidenceScore: (outcome as any).phases?.[0]?.compositionFit || outcome.confidenceScore || 0.7,
+      tradeoffs: (outcome as any).phases?.[0]?.systemNotes || outcome.notes || [],
+      rationaleSummary: (outcome as any).phases?.[0]?.systemNotes?.[0] || outcome.notes?.[0] || 'Stacked resolution for multi-phase outcome.',
       resolutionMode: 'STACKED',
       stackedPhases,
       stack,
     };
   }
   
-  // Handle BLENDED mode (single-phase)
-  const bestTier = outcome.tiers?.[0];
-  if (!bestTier || !bestTier.composition || bestTier.composition.length === 0) {
-    throw new Error('OutcomeResult must have at least one tier with composition');
-  }
-  
-  // Convert abstract components to named strains using STRAIN_LIBRARY
+  // Handle BLENDED mode (single-phase) - use selectedCultivars and ratios
+  // Convert selectedCultivars to named strains using STRAIN_LIBRARY
   const namedStrains: NamedStrainComponent[] = [];
   
   // Log all components being mapped
   if (process.env.NODE_ENV === 'development') {
-    console.debug(`[NAMED_RESOLUTION] Mapping ${bestTier.composition.length} components:`);
-    bestTier.composition.forEach((c, idx) => {
-      console.debug(`  [${idx}] cultivarId: "${c.cultivarId}", displayName: "${c.displayName}"`);
+    console.debug(`[NAMED_RESOLUTION] Mapping ${outcome.selectedCultivars.length} components:`);
+    outcome.selectedCultivars.forEach((c, idx) => {
+      console.debug(`  [${idx}] id: "${c.id}", displayName: "${c.displayName}", ratio: ${outcome.ratios[idx]}%`);
     });
   }
   
-  for (const component of bestTier.composition) {
+  for (let i = 0; i < outcome.selectedCultivars.length; i++) {
+    const cultivar = outcome.selectedCultivars[i];
+    const ratio = outcome.ratios[i];
+    
+    // Convert to the format expected by convertToNamedComponent
+    const component = {
+      cultivarId: cultivar.id,
+      displayName: cultivar.displayName,
+      role: 'primary' as const, // Default role, could be enhanced later
+      ratio: ratio,
+    };
+    
     const named = convertToNamedComponent(component);
     if (named) {
       namedStrains.push(named);
     } else {
       // Log which component failed to map with full context (ALWAYS log, not just dev)
-      console.error(`[NAMED_RESOLUTION] Failed to map component: cultivarId="${component.cultivarId}", displayName="${component.displayName}"`);
+      console.error(`[NAMED_RESOLUTION] Failed to map component: cultivarId="${cultivar.id}", displayName="${cultivar.displayName}"`);
       console.error(`[NAMED_RESOLUTION] STRAIN_LIBRARY has ${STRAIN_LIBRARY.length} strains`);
       console.error(`[NAMED_RESOLUTION] STRAIN_LIBRARY IDs (first 10): ${STRAIN_LIBRARY.slice(0, 10).map(s => s.id).join(', ')}`);
     }
@@ -362,7 +381,7 @@ export function resolveToNamedStrains(outcome: OutcomeResult): NamedResolutionRe
   
   // Ensure we have at least one named strain - fail explicitly if mapping fails
   if (namedStrains.length === 0) {
-    const failedIds = bestTier.composition.map(c => c.cultivarId).join(', ');
+    const failedIds = outcome.selectedCultivars.map(c => c.id).join(', ');
     const availableIds = STRAIN_LIBRARY.map(s => s.id).join(', ');
     throw new Error(
       `Failed to map chemotypes to named strains.\n` +
@@ -394,9 +413,9 @@ export function resolveToNamedStrains(outcome: OutcomeResult): NamedResolutionRe
   return {
     primaryBlend: namedStrains,
     stackingOptions,
-    confidenceScore: bestTier.compositionFit,
-    tradeoffs: bestTier.tradeoffs,
-    rationaleSummary: bestTier.whyChosen?.[0] || 'Blend optimized for stated outcome.',
+    confidenceScore: outcome.confidenceScore || 0.7,
+    tradeoffs: outcome.notes || [],
+    rationaleSummary: outcome.notes?.[0] || outcome.explanation?.explanation || 'Blend optimized for stated outcome.',
     resolutionMode: 'BLENDED',
     stack,
   };
