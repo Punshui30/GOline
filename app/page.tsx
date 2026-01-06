@@ -1074,8 +1074,6 @@ export default function GOLineCalculator() {
     });
   };
 
-  // convertToResolvedBlend function extracted to @/lib/convertToResolvedBlend
-
   return (
     <main className="min-h-screen w-full go-bg-primary text-white">
       <div className="pt-16 pb-20">
