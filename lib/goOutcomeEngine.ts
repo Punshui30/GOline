@@ -38,11 +38,23 @@ export interface SelectedCultivar {
   displayName: string;
 }
 
+export interface ResolutionFailure {
+  status: 'invalid';
+  reason: 'INSUFFICIENT_DISTINCT_CULTIVARS' | 'INVENTORY_TOO_NARROW' | 'CONSTRAINT_CONFLICT' | 'PERCENTAGE_INVALID' | 'SYSTEM_ERROR';
+  details?: string;
+  excludedBy?: Array<{
+    cultivarId: string;
+    constraint: string;
+    numericValue: number;
+  }>;
+}
+
 export interface OutcomeResult {
   selectedCultivars: SelectedCultivar[];
   ratios: number[]; // must sum to 100
   confidenceScore: number; // 0-1
   notes: string[]; // neutral, non-experiential notes
+  failure?: ResolutionFailure; // Optional failure state
   // Additive brain layers (optional, for explainability)
   explanation?: {
     primaryChemicalDrivers: Array<{ compound: string; percentage: number; contribution: string }>;
