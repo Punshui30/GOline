@@ -18,6 +18,7 @@ import { StrategicGuidance, ClarificationQuestion } from '@/lib/strategicGuidanc
 import { DEMO_MENU } from '@/data/demoMenu';
 import { translateGuidanceToIntent } from '@/lib/guidanceToIntent';
 import { ReferenceProfile, referenceProfileToIntent } from '@/lib/referenceProfile';
+import { convertToResolvedBlend } from '@/lib/convertToResolvedBlend';
 
 type InteractionPhase = 'FREE' | 'GUIDED' | 'LOCKED';
 
