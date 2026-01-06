@@ -1403,7 +1403,7 @@ export default function GOLineCalculator() {
             <div className="mb-8 space-y-6 go-fade-in">
               {/* Clarification Questions */}
               {guidance.clarificationNeeded && guidance.clarificationNeeded.length > 0 && (
-                <div className="bg-[#0a0b0e] border border-white/10 p-8">
+                <div className="bg-[#0a0b0e] border border-white/20 p-8" style={{ boxShadow: '0 1px 3px rgba(0, 0, 0, 0.3)' }}>
                   <h2 className="text-base font-medium text-white mb-6">
                     Clarifications Needed
                   </h2>
@@ -1548,6 +1548,32 @@ export default function GOLineCalculator() {
             </div>
           )}
 
+
+          {/* Reference Comparison Entry - Secondary CTA at bottom */}
+          {phase === 'FREE' && !resolvedBlend && (
+            <div className="mt-16 pt-8 border-t border-white/5">
+              <div className="text-xs text-white/50 mb-3">
+                Have a product you liked?
+              </div>
+              <div className="text-xs text-white/40 mb-4">
+                Compare its chemistry to what's available now.
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setInputMode('reference')}
+                  className="px-4 py-2 bg-white/5 text-white/70 text-xs uppercase tracking-wider border border-white/10 hover:bg-white/10 hover:border-white/20 transition-colors"
+                >
+                  Scan Label
+                </button>
+                <button
+                  onClick={() => setInputMode('reference')}
+                  className="px-4 py-2 bg-white/5 text-white/70 text-xs uppercase tracking-wider border border-white/10 hover:bg-white/10 hover:border-white/20 transition-colors"
+                >
+                  Enter Manually
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Footer Disclosure */}
           <div className="mt-32 pt-8 border-t border-white/5">

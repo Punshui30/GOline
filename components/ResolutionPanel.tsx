@@ -60,29 +60,23 @@ interface ResolutionPanelProps {
  */
 function BlendBars({ cultivars }: { cultivars: ResolvedCultivar[] }) {
   return (
-    <div className="space-y-6 mb-8">
+    <div className="space-y-4 mb-8">
       {cultivars.map((cultivar, index) => (
-        <div key={index} className="flex items-center gap-4">
-          {/* Strain name - primary typography */}
+        <div key={index} className="flex items-center gap-6">
+          {/* Strain name - primary typography (H1) */}
           <div className="flex-1">
-            <div className="text-xl font-semibold text-white tracking-tight">
-                {cultivar.name}
-              </div>
-            <div className="text-xs uppercase tracking-wider text-white/40 mt-0.5">
-                {cultivar.role === 'foundation' ? 'Foundation' : 
-                 cultivar.role === 'modulator' ? 'Modulator' : 'Accent'}
-              </div>
+            <div className="text-xl font-semibold text-white">
+              {cultivar.name}
             </div>
-          {/* Percentage - bound to name, same row, same visual weight */}
-          <div className="text-xl font-semibold text-white tabular-nums">
-              {cultivar.percentage}%
           </div>
-          {/* Visual bar - subtle, square corners */}
-          <div className="w-32 h-2 bg-white/5 overflow-hidden">
-            <div
-              className="h-full bg-white/30"
-              style={{ width: `${cultivar.percentage}%` }}
-            />
+          {/* Role - uppercase, subdued (Meta) */}
+          <div className="text-xs uppercase tracking-wider text-white/40 w-24">
+            {cultivar.role === 'foundation' ? 'Foundation' : 
+             cultivar.role === 'modulator' ? 'Modulator' : 'Accent'}
+          </div>
+          {/* Percentage - right-aligned (Meta) */}
+          <div className="text-base font-medium text-white/70 tabular-nums w-16 text-right">
+            {cultivar.percentage}%
           </div>
         </div>
       ))}
@@ -283,7 +277,7 @@ function StackedConsumptionView({ stack }: { stack?: ResolvedStack }) {
           </div>
         )}
         
-        <div className="p-5 bg-white/5 border border-white/10 rounded-sm">
+          <div className="p-5 bg-white/5 border border-white/10">
           <div className="text-xs uppercase tracking-wider text-white/40 mb-2">
             Bottom Layer
           </div>
@@ -294,6 +288,53 @@ function StackedConsumptionView({ stack }: { stack?: ResolvedStack }) {
             Duration / Body
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Resolved Metrics Component
+ * Read-only static bars replacing sliders
+ * No knobs, no hover affordance, thin horizontal bars
+ */
+function ResolvedMetrics({ 
+  intent 
+}: { 
+  intent: {
+    activationTarget: number;
+    cognitiveEndurance: number;
+    anxietySensitivity: number;
+  };
+}) {
+  const metrics = [
+    { label: 'Energy', value: intent.activationTarget },
+    { label: 'Clarity', value: intent.cognitiveEndurance },
+    { label: 'Anxiety Risk', value: intent.anxietySensitivity },
+  ];
+
+  return (
+    <div className="mb-8 pt-6 border-t border-white/5">
+      <div className="text-xs uppercase tracking-wider text-white/40 mb-4">
+        Resolved Metrics
+      </div>
+      <div className="space-y-4">
+        {metrics.map((metric, idx) => (
+          <div key={idx} className="flex items-center gap-4">
+            <div className="text-xs text-white/60 w-24 uppercase tracking-wider">
+              {metric.label}
+            </div>
+            <div className="flex-1 h-1 bg-white/5">
+              <div
+                className="h-full bg-white/30"
+                style={{ width: `${metric.value * 100}%` }}
+              />
+            </div>
+            <div className="text-xs text-white/50 tabular-nums w-12 text-right">
+              {Math.round(metric.value * 100)}%
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -689,12 +730,10 @@ export default function ResolutionPanel({ blend, intent, isComputing }: Resoluti
       {/* Resolved Composition - Visual anchor, no dividers above */}
       <div className="mb-8">
         <h2 className="text-xl font-semibold text-white mb-2">
-          Resolved Composition
+          GO Line — Resolved Composition
         </h2>
         <div className="text-xs text-white/40">
-          {blend.cultivars.length === 1 
-            ? 'Single cultivar recommendation'
-            : `${blend.cultivars.length}-cultivar blend`}
+          Deterministic blend based on current inventory
         </div>
       </div>
       
@@ -704,14 +743,10 @@ export default function ResolutionPanel({ blend, intent, isComputing }: Resoluti
       {/* 2. SECONDARY: Cultivar Breakdown - Strain names = primary typography */}
       <BlendBars cultivars={blend.cultivars} />
       
-      {/* 3. TERTIARY: Metadata (optional) */}
-      {blend.stack && (
-        <div className="mb-8 text-xs text-white/40">
-          {blend.stack.top && blend.stack.middle ? '3-phase stacked consumption plan' : '2-phase stacked consumption plan'}
-        </div>
-      )}
+      {/* 3. Resolved Metrics - Read-only static bars */}
+      {intent && <ResolvedMetrics intent={intent} />}
       
-      {/* Resolution Rationale - collapsed by default, lower contrast */}
+      {/* 4. Resolution Rationale - collapsed by default, lower contrast */}
       {intent && <ResolutionRationale intent={intent} />}
     </div>
   );
