@@ -14,14 +14,21 @@
  * - Clear, real-world mixing instructions
  */
 
-import { canonicalChemotypes, type CanonicalChemotype } from '@/data/canonicalChemotypes';
-import { getDemoInventoryAsChemotypes } from '@/data/demoInventory';
+import { type CanonicalChemotype } from '@/data/canonicalChemotypes';
+import { getStrainInventoryAsChemotypes } from '@/lib/data/strainInventory';
 import { computeEffectVectors, type EffectVectors } from './terpeneEffectVectors';
 
-// Use the new deterministic demo inventory (30 strains with numeric terpene data)
-// Fallback to canonicalChemotypes for backward compatibility
-const ACTIVE_INVENTORY = getDemoInventoryAsChemotypes();
-console.debug(`[GO_OUTCOME_ENGINE] Using ${ACTIVE_INVENTORY.length} cultivars from deterministic demo inventory`);
+// Use STRAIN_INVENTORY as the ONLY candidate pool for resolution
+// No fallbacks, no demos, no hardcoded strains
+const ACTIVE_INVENTORY = getStrainInventoryAsChemotypes();
+
+// Validation: Fail explicitly if inventory is too small
+if (ACTIVE_INVENTORY.length < 10) {
+  throw new Error(`ACTIVE_INVENTORY must contain at least 10 strains. Found: ${ACTIVE_INVENTORY.length}`);
+}
+
+console.debug(`[GO_OUTCOME_ENGINE] Using ${ACTIVE_INVENTORY.length} strains from STRAIN_INVENTORY`);
+console.debug(`[GO_OUTCOME_ENGINE] INVENTORY_SIZE: ${ACTIVE_INVENTORY.length}`);
 
 /**
  * Outcome input constraints (directional, not goals)
@@ -760,7 +767,7 @@ function classifyResolutionType(
   
   const hasCorrective = blend.some(c => 
     c.role === 'corrective' || 
-    isNonPsychoactive(ACTIVE_INVENTORY.find(cv => cv.id === c.cultivarId) || canonicalChemotypes.find(cv => cv.id === c.cultivarId)!)
+    isNonPsychoactive(ACTIVE_INVENTORY.find(cv => cv.id === c.cultivarId)!)
   );
   
   if (hasCorrective) return 'CORRECTIVE_BLEND';
@@ -800,7 +807,7 @@ function generateTiers(
   if (compositional3.length === 3) {
     const metrics3 = computeBlendMetrics(
       compositional3.map(c => ({
-        cultivar: ACTIVE_INVENTORY.find(cv => cv.id === c.cultivarId) || canonicalChemotypes.find(cv => cv.id === c.cultivarId)!,
+        cultivar: ACTIVE_INVENTORY.find(cv => cv.id === c.cultivarId)!,
         ratio: c.ratio,
       }))
     );
@@ -819,7 +826,7 @@ function generateTiers(
   if (correctiveBlend && correctiveBlend.length === 2) {
     const metricsCorr = computeBlendMetrics(
       correctiveBlend.map(c => ({
-        cultivar: ACTIVE_INVENTORY.find(cv => cv.id === c.cultivarId) || canonicalChemotypes.find(cv => cv.id === c.cultivarId)!,
+        cultivar: ACTIVE_INVENTORY.find(cv => cv.id === c.cultivarId)!,
         ratio: c.ratio,
       }))
     );
@@ -879,7 +886,7 @@ function generateTiers(
   if (compositional2.length === 2) {
     const metrics2 = computeBlendMetrics(
       compositional2.map(c => ({
-        cultivar: ACTIVE_INVENTORY.find(cv => cv.id === c.cultivarId) || canonicalChemotypes.find(cv => cv.id === c.cultivarId)!,
+        cultivar: ACTIVE_INVENTORY.find(cv => cv.id === c.cultivarId)!,
         ratio: c.ratio,
       }))
     );
@@ -1041,7 +1048,7 @@ function attemptUnifiedBlended(
     if (blend.length === 2) {
       const metrics = computeBlendMetrics(
         blend.map(c => ({
-          cultivar: ACTIVE_INVENTORY.find(cv => cv.id === c.cultivarId) || canonicalChemotypes.find(cv => cv.id === c.cultivarId)!,
+          cultivar: ACTIVE_INVENTORY.find(cv => cv.id === c.cultivarId)!,
           ratio: c.ratio,
         }))
       );
@@ -1107,7 +1114,10 @@ function generateStackedResolution(
     // CBD allowed in opening phase ONLY if calm onset is desired (activation < 0.4)
     if (intent.activationTarget >= 0.4) {
       return composition.filter(comp => {
-        const chemotype = ACTIVE_INVENTORY.find(cv => cv.id === comp.cultivarId) || canonicalChemotypes.find(cv => cv.id === comp.cultivarId);
+        const chemotype = ACTIVE_INVENTORY.find(cv => cv.id === comp.cultivarId);
+        if (!chemotype) {
+          throw new Error(`Cultivar ${comp.cultivarId} not found in STRAIN_INVENTORY`);
+        }
         return !chemotype || !isNonPsychoactive(chemotype);
       });
     }
@@ -1119,14 +1129,20 @@ function generateStackedResolution(
     // If end phase needs calming and doesn't already have CBD, consider adding it
     if (intent.activationTarget < 0.5) {
       const hasCBD = composition.some(comp => {
-        const chemotype = ACTIVE_INVENTORY.find(cv => cv.id === comp.cultivarId) || canonicalChemotypes.find(cv => cv.id === comp.cultivarId);
+        const chemotype = ACTIVE_INVENTORY.find(cv => cv.id === comp.cultivarId);
+        if (!chemotype) {
+          throw new Error(`Cultivar ${comp.cultivarId} not found in STRAIN_INVENTORY`);
+        }
         return chemotype && isNonPsychoactive(chemotype);
       });
       
       // If no CBD and calming is desired, try to add it (but don't force if composition is already good)
       if (!hasCBD) {
         // Find CBD cultivar
-        const cbdCultivar = ACTIVE_INVENTORY.find(cv => isNonPsychoactive(cv)) || canonicalChemotypes.find(cv => isNonPsychoactive(cv));
+        const cbdCultivar = ACTIVE_INVENTORY.find(cv => isNonPsychoactive(cv));
+        if (!cbdCultivar) {
+          throw new Error('No CBD cultivar found in STRAIN_INVENTORY');
+        }
         if (cbdCultivar) {
           // Add CBD as 15-25% of end phase
           const newComposition = [...composition];
@@ -1417,8 +1433,22 @@ export function resolveOutcome(intent: OutcomeIntent): OutcomeResult {
     if (unified && unified.earlyPenalty < 0.2 && unified.latePenalty < 0.2) {
       // Unified blended solution acceptable (homogeneous blend strategy)
       const unifiedResolutionType = unified.blend.length === 1 ? 'SINGLE_CULTIVAR' : 
-                         unified.blend.some(c => isNonPsychoactive(ACTIVE_INVENTORY.find(cv => cv.id === c.cultivarId) || canonicalChemotypes.find(cv => cv.id === c.cultivarId)!)) ? 
+                         unified.blend.some(c => {
+                           const cv = ACTIVE_INVENTORY.find(cv => cv.id === c.cultivarId);
+                           return cv ? isNonPsychoactive(cv) : false;
+                         }) ? 
                          'CORRECTIVE_BLEND' : 'COMPOSITIONAL_BLEND';
+      
+      // Log final selected strains (dev-only)
+      if (process.env.NODE_ENV === 'development') {
+        const finalStrains = unified.blend.map(c => {
+          const cv = ACTIVE_INVENTORY.find(cv => cv.id === c.cultivarId);
+          return cv ? cv.displayName : c.cultivarId;
+        });
+        console.debug('FINAL_SELECTED_STRAINS', finalStrains);
+        console.debug('FINAL_STRAIN_COUNT', finalStrains.length);
+      }
+      
       return {
         resolutionMode: 'BLENDED',
         tiers: [{
@@ -1463,6 +1493,19 @@ export function resolveOutcome(intent: OutcomeIntent): OutcomeResult {
         const validationError = validateBlendComposition(phase.composition, true);
         return validationError === null;
       });
+      
+      // Log final selected strains for stacked resolution (dev-only)
+      if (validPhases.length > 0 && process.env.NODE_ENV === 'development') {
+        const allStrains = validPhases.flatMap(phase => 
+          phase.composition.map(c => {
+            const cv = ACTIVE_INVENTORY.find(cv => cv.id === c.cultivarId);
+            return cv ? cv.displayName : c.cultivarId;
+          })
+        );
+        const uniqueStrains = [...new Set(allStrains)];
+        console.debug('FINAL_SELECTED_STRAINS', uniqueStrains);
+        console.debug('FINAL_STRAIN_COUNT', uniqueStrains.length);
+      }
       
       // Add explanation to first phase about why stacking was chosen
       if (validPhases.length > 0) {
@@ -1522,9 +1565,9 @@ export function resolveOutcome(intent: OutcomeIntent): OutcomeResult {
     });
   }
 
-  // Filter eligible cultivars
-  const totalCultivars = canonicalChemotypes.length;
-  const eligibleCultivars = canonicalChemotypes.filter(
+  // Filter eligible cultivars from STRAIN_INVENTORY ONLY
+  const totalCultivars = ACTIVE_INVENTORY.length;
+  const eligibleCultivars = ACTIVE_INVENTORY.filter(
     cv => !isNonPsychoactive(cv) || cv.id.includes('cbd') || cv.id.includes('cbg')
   );
   
@@ -1532,11 +1575,13 @@ export function resolveOutcome(intent: OutcomeIntent): OutcomeResult {
   console.debug('INVENTORY_TOTAL', totalCultivars);
   console.debug('INVENTORY_ELIGIBLE', eligibleCultivars.length);
   
+  // Validation: Fail explicitly if inventory is too small
+  if (totalCultivars < 10) {
+    throw new Error(`STRAIN_INVENTORY must contain at least 10 strains. Found: ${totalCultivars}`);
+  }
+  
   // Verify inventory meets requirements
   if (process.env.NODE_ENV === 'development') {
-    if (totalCultivars !== 40) {
-      console.warn(`[INVENTORY] Expected 40 cultivars, found ${totalCultivars}`);
-    }
     if (eligibleCultivars.length < 3) {
       console.warn(`[INVENTORY] Only ${eligibleCultivars.length} eligible cultivars - may cause resolution failures`);
     }
@@ -1597,6 +1642,16 @@ export function resolveOutcome(intent: OutcomeIntent): OutcomeResult {
     const validationError = validateBlendComposition(tier.composition, false);
     return validationError === null;
   });
+
+  // Log final selected strains (dev-only)
+  if (validTiers.length > 0 && process.env.NODE_ENV === 'development') {
+    const finalStrains = validTiers[0].composition.map(c => {
+      const cv = ACTIVE_INVENTORY.find(cv => cv.id === c.cultivarId);
+      return cv ? cv.displayName : c.cultivarId;
+    });
+    console.debug('FINAL_SELECTED_STRAINS', finalStrains);
+    console.debug('FINAL_STRAIN_COUNT', finalStrains.length);
+  }
 
   if (validTiers.length === 0) {
     // Log failure reason
