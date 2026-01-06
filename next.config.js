@@ -1,8 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Note: 'output: export' disables API routes. For Navigator app, remove this.
-  // If you need static export for portfolio, consider splitting into separate apps.
-  output: 'export',
+  // Removed 'output: export' to enable API routes for /api/intent
   images: {
     unoptimized: true,
     deviceSizes: [640, 750, 828, 1080, 1200],

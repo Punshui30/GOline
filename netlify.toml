@@ -1,6 +1,9 @@
 [build]
   command = "pnpm run build"
-  publish = "out"
+  publish = ".next"
+
+[plugins]
+  package = "@netlify/plugin-nextjs"
 
 # Redirects for DAW route
 [[redirects]]
