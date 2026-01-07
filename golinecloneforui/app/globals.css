@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+  .text-gold-gradient {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(to right, #C5A065, #E5C590);
+  }
+
+  .font-serif {
+    font-family: var(--font-playfair), serif;
+  }
+}
+
+body {
+  background-color: #111111;
+  color: #E5E5E5;
+}
