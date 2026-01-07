@@ -18,7 +18,8 @@ export default function BlendVisualizer({ blend }: BlendVisualizerProps) {
 
     // Sort by percentage descent for visual hierarchy
     // (Optional: keep original order if semantic, but visual sorting often looks better)
-    const sortedStrains = [...blend.primaryBlend].sort((a, b) => b.percentage - a.percentage);
+    // Spec Compliance: Do not reorder for aesthetics. Render exactly as derived.
+    const sortedStrains = blend.primaryBlend;
 
     return (
         <div className="w-full mb-16 overflow-hidden">
