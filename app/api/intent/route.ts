@@ -100,21 +100,23 @@ If you do not follow this format exactly, the response will be rejected.`;
  */
 function extractJSON(response: string): string {
   let jsonStr = response.trim();
-  
+
   // Remove markdown code blocks if present
   if (jsonStr.includes('```')) {
-    const jsonMatch = jsonStr.match(/```(?:json)?\s*(\{[\s\S]*\})\s*```/);
+    const jsonMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
     if (jsonMatch) {
-      jsonStr = jsonMatch[1];
+      jsonStr = jsonMatch[1].trim();
     }
   }
-  
-  // Try to extract first JSON object
-  const objectMatch = jsonStr.match(/\{[\s\S]*\}/);
-  if (objectMatch) {
-    return objectMatch[0];
+
+  // Locate the first '{' and the last '}' to handle potential preamble/postamble
+  const firstOpen = jsonStr.indexOf('{');
+  const lastClose = jsonStr.lastIndexOf('}');
+
+  if (firstOpen !== -1 && lastClose !== -1 && lastClose > firstOpen) {
+    return jsonStr.substring(firstOpen, lastClose + 1);
   }
-  
+
   return jsonStr;
 }
 
@@ -138,36 +140,31 @@ function validateGuidance(parsed: any): StrategicGuidance {
     if (parsed[field] === undefined || parsed[field] === null) {
       parsed[field] = []; // Default to empty array if missing
     } else if (!Array.isArray(parsed[field])) {
-      throw new Error(`Invalid guidance: ${field} must be an array, got ${typeof parsed[field]}`);
-    }
-    if (!parsed[field].every((item: any) => typeof item === 'string')) {
-      throw new Error(`Invalid guidance: ${field} must be an array of strings`);
+      // Relaxed check: if it's a string, wrap it in array? No, just warn and use empty.
+      console.warn(`[Guidance Validation] Field ${field} is not an array, resetting to empty. Got:`, typeof parsed[field]);
+      parsed[field] = [];
     }
   }
 
   // Validate clarification questions if present
-  if (parsed.clarificationNeeded !== undefined) {
+  if (parsed.clarificationNeeded !== undefined && parsed.clarificationNeeded !== null) {
     if (!Array.isArray(parsed.clarificationNeeded)) {
-      throw new Error('Invalid guidance: clarificationNeeded must be an array');
+      parsed.clarificationNeeded = []; // Reset if invalid
+    } else {
+      // Filter out invalid items instead of throwing
+      parsed.clarificationNeeded = parsed.clarificationNeeded.filter((q: any) =>
+        q &&
+        typeof q.question === 'string' &&
+        Array.isArray(q.options) &&
+        q.options.length > 0
+      );
     }
-    for (const question of parsed.clarificationNeeded) {
-      if (!question.type || !['temporal', 'tradeoff', 'tolerance', 'priority'].includes(question.type)) {
-        throw new Error('Invalid guidance: clarification question type must be "temporal", "tradeoff", "tolerance", or "priority"');
-      }
-      if (typeof question.question !== 'string') {
-        throw new Error('Invalid guidance: clarification question must be a string');
-      }
-      if (!Array.isArray(question.options) || question.options.length === 0) {
-        throw new Error('Invalid guidance: clarification options must be a non-empty array');
-      }
-      if (!question.options.every((opt: any) => typeof opt === 'string')) {
-        throw new Error('Invalid guidance: clarification options must be strings');
-      }
-    }
+  } else {
+    parsed.clarificationNeeded = [];
   }
 
   return {
-    temporalProfile: parsed.temporalProfile,
+    temporalProfile: (parsed.temporalProfile === 'single-phase' || parsed.temporalProfile === 'multi-phase') ? parsed.temporalProfile : 'single-phase', // Default to single-phase
     dominantPriorities: parsed.dominantPriorities || [],
     strictAvoidances: parsed.strictAvoidances || [],
     acceptableTradeoffs: parsed.acceptableTradeoffs || [],
@@ -227,7 +224,7 @@ export async function POST(request: NextRequest) {
     const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
       { role: 'system', content: SYSTEM_PROMPT },
     ];
-    
+
     // Include baseline calibration as contextual bias if provided
     if (baselineCalibration) {
       const calibrationContext = [];
@@ -247,7 +244,7 @@ export async function POST(request: NextRequest) {
         });
       }
     }
-    
+
     messages.push({ role: 'user', content: text });
 
     // Call OpenAI
@@ -272,7 +269,7 @@ export async function POST(request: NextRequest) {
         message: openaiError?.message,
         stack: openaiError?.stack,
       });
-      
+
       return NextResponse.json(
         {
           ok: false,
@@ -294,7 +291,7 @@ export async function POST(request: NextRequest) {
         message: parseError?.message,
         responsePreview: responseText?.substring(0, 200),
       });
-      
+
       return NextResponse.json(
         {
           ok: false,
@@ -321,7 +318,7 @@ export async function POST(request: NextRequest) {
         parsed: JSON.stringify(parsed, null, 2),
         rawResponse: responseText?.substring(0, 500),
       });
-      
+
       return NextResponse.json(
         {
           ok: false,
@@ -355,7 +352,7 @@ export async function POST(request: NextRequest) {
       message: err?.message,
       stack: err?.stack,
     });
-    
+
     return NextResponse.json(
       {
         ok: false,
