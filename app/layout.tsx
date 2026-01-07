@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import "@/styles/theme.css";
+import Header from "@/components/Header";
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://goline.netlify.app'), // Updating to app domain if known, or relative
@@ -38,7 +39,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <Header />
+        {children}
+      </body>
     </html>
   );
 }

@@ -15,7 +15,6 @@ import { resolveToNamedStrains, type NamedResolutionResult } from '@/lib/namedRe
 import ResolutionPanel, { type ResolvedBlend, type ResolvedCultivar, type CultivarRole } from '@/components/ResolutionPanel';
 import UsageProtocol from '@/components/UsageProtocol';
 import AgeGate from '@/components/AgeGate';
-import { GOLogo } from '@/components/GOLogo';
 import OutcomeIntentInput from '@/components/OutcomeIntentInput';
 import OutcomeTransitionBanner from '@/components/OutcomeTransitionBanner';
 import { generateDeterministicExplanation, type DeterministicExplanation } from '@/lib/outcomeBrain/deterministicExplanation';
@@ -593,18 +592,12 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-noise text-[#E5E5E5] font-sans selection:bg-[#C5A065]/30 overflow-x-hidden flex flex-col">
-      {/* Header */}
-      <header className="pt-16 px-6 lg:px-12 xl:px-24 flex justify-between items-baseline">
-        <div className="flex items-center gap-4">
-          {resolvedBlend && <GOLogo />}
-          <div className="flex flex-col gap-2">
-            <span className="text-[10px] font-sans font-medium text-zinc-500 uppercase tracking-widest">GO // 2.1</span>
-          </div>
-        </div>
-        {isProcessing && (
+      {/* Processing status indicator - shown inline with content if needed */}
+      {isProcessing && (
+        <div className="px-6 lg:px-12 xl:px-24 pt-4">
           <span className="text-[10px] font-mono font-medium tracking-widest text-zinc-400">PROCESSING...</span>
-        )}
-      </header>
+        </div>
+      )}
 
       <main className="flex-1 w-full max-w-[1920px] mx-auto px-6 lg:px-12 xl:px-24 pb-32 pt-16 lg:pt-32 overflow-y-auto">
         {!isResolved ? (
