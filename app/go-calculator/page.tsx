@@ -85,7 +85,7 @@ export default function GOLineCalculator() {
   const [pendingClarification, setPendingClarification] = useState<ClarificationQuestion | null>(null);
 
   // Clarification axis tracking (prevents asking about same axis twice)
-  const [resolvedAxes, setResolvedAxes] = new Set<ClarificationAxis>();
+  const [resolvedAxes, setResolvedAxes] = useState<Set<ClarificationAxis>>(new Set());
 
 
 
@@ -349,30 +349,23 @@ export default function GOLineCalculator() {
     }
   };
 
-  return (
-    <main className="min-h-screen w-full bg-[#0a0b0e] text-white flex flex-col">
-      {/* Header */}
-      <div className="fixed top-0 left-0 right-0 z-50 bg-[#0a0b0e]/95 backdrop-blur-sm border-b border-white/5">
-        <div className="max-w-[900px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-center h-16">
-            <button
-              onClick={handleLogoClick}
-              className="text-lg font-medium text-white/80 hover:text-white/90 transition-colors cursor-pointer"
-            >
-              GO Line Calculator
-            </button>
+  // --- RENDER: VIEW 1 - PRESET SELECTION ---
+  if (!presetSelected && !calibrationComplete) {
+    return (
+      <main className="min-h-screen w-full bg-[#0a0b0e] text-white flex flex-col">
+        {/* Header */}
+        <div className="fixed top-0 left-0 right-0 z-50 bg-[#0a0b0e] border-b border-white/5">
+          <div className="max-w-[900px] mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-center h-16">
+              <button onClick={handleLogoClick} className="text-lg font-medium text-white/90">
+                GO Line Calculator
+              </button>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Preset Selection (Optional Entry Points) */}
-      {!presetSelected && !calibrationComplete && (
-        <div className="pt-24 pb-8 px-4 sm:px-6 lg:px-8">
+        <div className="pt-24 pb-8 px-4 sm:px-6 lg:px-8 flex-1">
           <div className="max-w-[900px] mx-auto">
-            <div className="mb-6">
-              <h2 className="text-sm font-medium text-white/80 mb-2">Quick Start (Optional)</h2>
-              <p className="text-xs text-white/50 mb-4">Select a preset to pre-fill context, or start from scratch below.</p>
-            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-6">
               {presets.map((preset) => (
                 <button
@@ -395,11 +388,32 @@ export default function GOLineCalculator() {
             </div>
           </div>
         </div>
-      )}
 
-      {/* Baseline Calibration (Optional, Lightweight) */}
-      {presetSelected && !calibrationComplete && (
-        <div className="pt-24 pb-8 px-4 sm:px-6 lg:px-8">
+        <SecretInventoryPortal
+          isOpen={showInventoryPortal}
+          onClose={() => setShowInventoryPortal(false)}
+          onSave={(items) => setInventory(items)}
+        />
+      </main>
+    );
+  }
+
+  // --- RENDER: VIEW 2 - CALIBRATION ---
+  if (presetSelected && !calibrationComplete) {
+    return (
+      <main className="min-h-screen w-full bg-[#0a0b0e] text-white flex flex-col">
+        {/* Header */}
+        <div className="fixed top-0 left-0 right-0 z-50 bg-[#0a0b0e] border-b border-white/5">
+          <div className="max-w-[900px] mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-center h-16">
+              <button onClick={handleLogoClick} className="text-lg font-medium text-white/90">
+                GO Line Calculator
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="pt-24 pb-8 px-4 sm:px-6 lg:px-8 flex-1">
           <div className="max-w-[900px] mx-auto">
             <div className="bg-[#111216] border border-white/10 rounded-sm p-6">
               {selectedPreset && (
@@ -419,7 +433,7 @@ export default function GOLineCalculator() {
                   </button>
                 </div>
               )}
-              <h2 className="text-sm font-medium text-white/80 mb-4">Quick Calibration (Optional)</h2>
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                 <div>
                   <label className="block text-xs text-white/60 mb-2">THC Tolerance</label>
@@ -470,57 +484,88 @@ export default function GOLineCalculator() {
             </div>
           </div>
         </div>
-      )}
 
-      {/* Panel-Based Interface */}
-      {calibrationComplete && (
-        <div className="flex flex-col h-screen pt-16">
-          {/* Top: Outcome Input */}
-          <div className="border-b border-white/10 bg-[#0a0b0e]/95 backdrop-blur-sm">
-            <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-4">
-              <form onSubmit={handleSubmit} className="flex gap-3">
-                <textarea
-                  ref={inputRef}
-                  value={userInput}
-                  onChange={(e) => setUserInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSubmit();
-                    }
-                  }}
-                  placeholder="Describe your desired outcome..."
-                  className="flex-1 px-4 py-3 bg-[#111216] border border-white/10 rounded-lg text-white placeholder-white/30 text-sm focus:outline-none focus:border-white/20 resize-none"
-                  rows={2}
-                  disabled={isProcessing}
-                />
-                <button
-                  type="submit"
-                  disabled={!userInput.trim() || isProcessing}
-                  className="px-6 py-3 bg-white text-[#0a0b0e] font-medium text-sm rounded-lg hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  {isProcessing ? 'Processing...' : 'Process'}
-                </button>
-              </form>
-              {error && (
-                <div className="mt-2 text-xs text-red-400">{error}</div>
-              )}
-              {pendingClarification && conversationState === 'active' && (
-                <div className="mt-2 text-xs text-white/60">
-                  Clarification needed: {pendingClarification.question}
+        <SecretInventoryPortal
+          isOpen={showInventoryPortal}
+          onClose={() => setShowInventoryPortal(false)}
+          onSave={(items) => setInventory(items)}
+        />
+      </main>
+    );
+  }
+
+  // --- RENDER: VIEW 3 - MAIN INTERFACE ---
+  return (
+    <main className="min-h-screen w-full bg-[#0a0b0e] text-white flex flex-col">
+      {/* Header */}
+      <div className="fixed top-0 left-0 right-0 z-50 bg-[#0a0b0e] border-b border-white/5">
+        <div className="max-w-[900px] mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-center h-16">
+            <button onClick={handleLogoClick} className="text-lg font-medium text-white/90">
+              GO Line Calculator
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-col min-h-screen pt-16">
+        {/* Input Area */}
+        <div className="border-b border-white/10 bg-[#0a0b0e]">
+          <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <form onSubmit={handleSubmit} className="flex gap-3">
+              <textarea
+                ref={inputRef}
+                value={userInput}
+                onChange={(e) => setUserInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSubmit();
+                  }
+                }}
+                placeholder="Describe your desired outcome..."
+                className="flex-1 px-4 py-3 bg-[#111216] border border-white/10 rounded-lg text-white placeholder-white/30 text-sm focus:outline-none focus:border-white/20 resize-none"
+                rows={2}
+                disabled={isProcessing}
+              />
+              <button
+                type="submit"
+                disabled={!userInput.trim() || isProcessing}
+                className="px-6 py-3 bg-white text-[#0a0b0e] font-medium text-sm rounded-lg hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {isProcessing ? 'Processing...' : 'Process'}
+              </button>
+            </form>
+            {error && <div className="mt-2 text-xs text-red-400">{error}</div>}
+            {pendingClarification && conversationState === 'active' && (
+              <div className="mt-2 text-xs text-white/60">
+                Clarification needed: {pendingClarification.question}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Content Area */}
+        <div className="flex-1 flex w-full">
+          {/* Active State (Processing / Empty) */}
+          {conversationState === 'active' && (
+            <div className="flex-1 flex items-center justify-center px-4">
+              {isProcessing && (
+                <div className="flex items-center gap-2 text-white/60 text-xs">
+                  <span className="animate-pulse">●</span>
+                  <span>Processing...</span>
                 </div>
               )}
             </div>
-          </div>
+          )}
 
-          {/* Main Panel Area: Left (Adjustment Controls) + Right (Pre-Roll Stack Visualization) */}
+          {/* Resolved State (Results) */}
           {conversationState === 'resolved' && intent && stackSegments.length > 0 && (
-            <div className="flex-1 flex overflow-hidden">
-              {/* Left: Adjustment Controls (sliders only) */}
+            <div className="flex-1 flex w-full">
+              {/* Left: Adjustment Controls */}
               <div className="w-80 border-r border-white/10 bg-[#111216] p-6 overflow-y-auto">
                 <div className="mb-6">
                   <h3 className="text-sm font-medium text-white mb-1">Adjustment Controls</h3>
-                  <div className="text-xs text-white/50">Fine-tune the outcome parameters</div>
                 </div>
 
                 <div className="space-y-8">
@@ -587,9 +632,9 @@ export default function GOLineCalculator() {
               </div>
 
               {/* Right: Pre-Roll Stack Visualization */}
-              <div className="flex-1 overflow-y-auto p-6">
-                <div className="flex flex-col items-center">
-                  <div className="mb-8">
+              <div className="flex-1 overflow-y-auto p-6 bg-[#0a0b0e]">
+                <div className="flex flex-col items-center max-w-4xl mx-auto">
+                  <div className="mb-8 w-full text-center">
                     <h2 className="text-lg font-medium text-white mb-1">GO Line — Resolved Composition</h2>
                     <div className="text-xs text-white/30">
                       {stackSegments.length === 1
@@ -598,10 +643,8 @@ export default function GOLineCalculator() {
                     </div>
                   </div>
 
-                  {/* Pre-Roll Stack (Primary Visualization) */}
                   <PreRollStack segments={stackSegments} height={400} />
 
-                  {/* Composition Breakdown (Collapsible) */}
                   {breakdownComponents.length > 0 && (
                     <div className="mt-12 w-full max-w-2xl">
                       <button
@@ -618,51 +661,28 @@ export default function GOLineCalculator() {
                       )}
                     </div>
                   )}
+
+                  {/* Disclaimer Footer */}
+                  <div className="mt-16 pt-8 border-t border-white/10 w-full pb-8">
+                    <p className="text-xs text-white/40 leading-relaxed text-center">
+                      Live GO systems operate exclusively on QR-verified batch data.
+                      <span className="block mt-2 font-mono text-[9px] text-[#C5A065]/50">v2.1 (Math-Spec Enforced)</span>
+                    </p>
+                    <div className="text-xs text-white/40 mt-2 text-center">
+                      Deterministic result — identical inputs will always resolve to the same composition.
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           )}
-
-          {/* Initial State: Show input area only */}
-          {conversationState === 'active' && (
-            <div className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8">
-              <div className="text-center">
-                <div className="text-white/60 text-sm mb-2">Enter your desired outcome above</div>
-                {isProcessing && (
-                  <div className="flex items-center gap-2 text-white/40 text-xs justify-center mt-4">
-                    <span className="animate-pulse">●</span>
-                    <span>Processing...</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Disclaimer */}
-      <div className="mt-16 pt-8 border-t border-white/10 px-4 sm:px-6 lg:px-8 pb-8">
-        <div className="max-w-[900px] mx-auto">
-          <p className="text-xs text-white/40 leading-relaxed text-center">
-            This prototype uses canonical terpene distributions derived from commonly reported profiles.
-            Live GO systems operate exclusively on QR-verified batch data from accredited testing laboratories.
-            <span className="block mt-2 font-mono text-[9px] text-[#C5A065]/50">v2.1 (Math-Spec Enforced)</span>
-          </p>
-          <div className="text-xs text-white/40 mt-2 text-center">
-            Deterministic result — identical inputs will always resolve to the same composition.
-          </div>
         </div>
       </div>
 
-      {/* Secret Inventory Portal */}
       <SecretInventoryPortal
         isOpen={showInventoryPortal}
         onClose={() => setShowInventoryPortal(false)}
-        onSave={(items) => {
-          setInventory(items);
-          // In production, this would constrain the deterministic engine
-          console.log('Inventory saved:', items);
-        }}
+        onSave={(items) => setInventory(items)}
       />
     </main>
   );

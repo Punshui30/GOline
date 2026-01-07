@@ -57,14 +57,14 @@ export default function PreRollStack({ segments, height = 400 }: PreRollStackPro
 
   return (
     <div className="flex flex-col items-center">
-      <div 
-        className="w-32 border-2 border-[#3A3A3A] rounded-sm overflow-hidden bg-[#1A1A1A] shadow-lg"
-        style={{ height: `${height}px` }}
+      <div
+        className="w-32 border-2 border-[#3A3A3A] rounded-sm bg-[#1A1A1A] shadow-lg flex flex-col"
+        style={{ minHeight: `${height}px` }}
       >
         {segments.map((segment, index) => {
           const segmentHeight = (segment.percentage / 100) * height;
           const isLast = index === segments.length - 1;
-          
+
           return (
             <div
               key={`${segment.name}-${index}`}
@@ -79,12 +79,12 @@ export default function PreRollStack({ segments, height = 400 }: PreRollStackPro
               <div className="text-[#1A1A1A] font-semibold text-sm px-2 text-center leading-tight mb-1">
                 {segment.name}
               </div>
-              
+
               {/* Percentage */}
               <div className="text-[#2A2A2A] font-mono text-xs mb-1">
                 {segment.percentage}%
               </div>
-              
+
               {/* Role Label */}
               <div className="text-[#3A3A3A] text-xs uppercase tracking-wider">
                 {ROLE_LABELS[segment.role]}
