@@ -16,7 +16,7 @@
 
 export default function Header() {
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-[#0a0b0e]/95 backdrop-blur-sm border-b border-zinc-900/50">
+    <header className="fixed top-0 left-0 right-0 z-[60] bg-[#0a0b0e]/95 backdrop-blur-sm border-b border-zinc-900/50">
       <div className="px-6 lg:px-12 xl:px-24 py-4 flex items-center gap-4 min-h-[64px]">
         {/* GO Logo - Always visible, PNG-based, no conditional rendering */}
         <img

@@ -114,27 +114,14 @@ export default function AgeGate({ onComplete }: AgeGateProps) {
           <div className="space-y-6">
             <h2 className="font-serif text-3xl lg:text-4xl font-light text-white mb-6">How this works</h2>
             
+            {/* Consumer onboarding copy intentionally explains blends-only logic.
+                Do not reintroduce single-strain framing or business-specific language here. */}
             <div className="space-y-4 text-sm font-sans text-zinc-400 leading-relaxed">
               <p>
-                Cannabis strains change by batch, grow, and availability.
+                This system doesn't recommend a single strain—it builds intentional blends. Each strain contains many compounds that can interact differently depending on how they're combined. Some effects stack, some balance out, and some only work within certain ranges.
               </p>
               <p>
-                The feeling people like isn't tied to one strain name.
-              </p>
-              <p>
-                This calculator uses strain math to match effects, not hype.
-              </p>
-              <p>
-                You describe how you want to feel.
-              </p>
-              <p>
-                The system calculates the closest match using real terpene and effect data.
-              </p>
-              <p>
-                Sometimes that result is a single cultivar.
-              </p>
-              <p>
-                Sometimes it's a blend that more accurately recreates the outcome.
+                By blending multiple strains together, the system can more reliably recreate the feeling you're looking for, even when individual strains vary or aren't available. Behind the scenes, it uses real cannabis knowledge and structured math to weigh those interactions and turn your goal into a blend designed to work consistently. The result is less guesswork and a more predictable experience.
               </p>
             </div>
 

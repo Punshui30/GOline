@@ -127,10 +127,10 @@ export default function ResolutionPanel({ blend, intent, isComputing, onRefineOu
 
   // ACTIVE STATE
   return (
-    <div className="flex flex-col gap-24 lg:gap-32 mb-32 text-[#E5E5E5] overflow-y-auto">
+    <div className="flex flex-col gap-24 lg:gap-32 mb-32 text-[#E5E5E5] overflow-y-auto min-h-0">
 
       {/* 1. Header: Primary Conclusion */}
-      <section className="opacity-0 animate-[fadeIn_0.6s_ease-out_0.2s_forwards] overflow-y-auto">
+      <section className="opacity-0 animate-[fadeIn_0.6s_ease-out_0.2s_forwards] min-h-0">
         <div className="flex flex-col gap-6">
           <span className="text-[10px] font-sans font-medium uppercase tracking-[0.2em] text-zinc-500">
             Best Match

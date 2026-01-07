@@ -599,7 +599,7 @@ export default function Home() {
         </div>
       )}
 
-      <main className="flex-1 w-full max-w-[1920px] mx-auto px-6 lg:px-12 xl:px-24 pb-32 pt-20 lg:pt-28 overflow-y-auto">
+      <main className="flex-1 w-full max-w-[1920px] mx-auto px-6 lg:px-12 xl:px-24 pb-32 pt-20 lg:pt-28 overflow-y-auto min-h-0">
         {!isResolved ? (
           /* INPUT STATE: Header, textarea, submit button */
           <section className="max-w-3xl mx-auto">
