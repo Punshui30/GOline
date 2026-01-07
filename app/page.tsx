@@ -16,6 +16,7 @@ import ResolutionPanel, { type ResolvedBlend, type ResolvedCultivar, type Cultiv
 import UsageProtocol from '@/components/UsageProtocol';
 import AgeGate from '@/components/AgeGate';
 import GoMark from '@/components/GoMark';
+import OutcomeIntentInput from '@/components/OutcomeIntentInput';
 import { StrategicGuidance } from '@/lib/strategicGuidance';
 import { translateGuidanceToIntent } from '@/lib/guidanceToIntent';
 import { ReferenceProfile, referenceProfileToIntent } from '@/lib/referenceProfile';
@@ -637,11 +638,11 @@ export default function Home() {
               </div>
             )}
 
-            <div className="mb-8">
-              <textarea
+            <div className="mb-8 border-b border-zinc-700 focus-within:border-[#C5A065] transition-colors duration-300 py-4">
+              <OutcomeIntentInput
                 value={userInput}
-                onChange={(e) => {
-                  setUserInput(e.target.value);
+                onChange={(newValue) => {
+                  setUserInput(newValue);
                   if (phase === 'LOCKED' || resolvedBlend) {
                     setResolvedBlend(null);
                     setPhase('FREE');
@@ -657,12 +658,8 @@ export default function Home() {
                     setClarificationAnswers({});
                   }
                 }}
-                placeholder=""
-                aria-label="Describe your desired physical and mental state"
-                className="w-full bg-transparent text-2xl lg:text-3xl font-light leading-relaxed tracking-wide text-white placeholder-zinc-600 outline-none resize-y border-b border-zinc-700 focus:border-[#C5A065] py-4 transition-colors duration-300 overflow-y-auto min-h-[80px] max-h-[400px]"
-                rows={2}
+                onSubmit={handleAnalyze}
                 disabled={isProcessing || !!currentClarification}
-                spellCheck={false}
               />
             </div>
 
