@@ -45,7 +45,7 @@ export function predictTemporalProfile(
   intent: OutcomeIntent
 ): TemporalProfile {
   const aggregateTerpenes = doseAnalysis.aggregateTerpenes;
-  
+
   // Terpene volatility ranking (lower = faster onset)
   const volatilityRanking: { [terpene: string]: number } = {
     'terpinolene': 1, // Fastest
@@ -57,7 +57,7 @@ export function predictTemporalProfile(
     'linalool': 7,
     'humulene': 8, // Slowest
   };
-  
+
   // Compute weighted volatility (lower = faster overall onset)
   let weightedVolatility = 0;
   let totalTerpene = 0;
@@ -68,7 +68,7 @@ export function predictTemporalProfile(
     }
   }
   const avgVolatility = totalTerpene > 0 ? weightedVolatility / totalTerpene : 5;
-  
+
   // Determine onset speed
   let onsetDuration: TemporalProfile['onsetPhase']['duration'];
   let onsetMinutes: number;
@@ -82,12 +82,12 @@ export function predictTemporalProfile(
     onsetDuration = 'slow';
     onsetMinutes = 30;
   }
-  
+
   // Determine peak duration (based on blend complexity and saturation)
   const highMyrcene = aggregateTerpenes.myrcene > 0.25;
   const highLinalool = aggregateTerpenes.linalool > 0.20;
   const hasSedatingTerpenes = highMyrcene || highLinalool;
-  
+
   let peakDuration: TemporalProfile['peakPhase']['duration'];
   let peakMinutes: number;
   if (hasSedatingTerpenes) {
@@ -100,11 +100,11 @@ export function predictTemporalProfile(
     peakDuration = cultivars.length === 1 ? 'short' : 'moderate';
     peakMinutes = cultivars.length === 1 ? 60 : 90;
   }
-  
+
   // Determine tail duration
   const tailDuration: TemporalProfile['tailPhase']['duration'] = hasSedatingTerpenes ? 'long' : 'moderate';
   const tailMinutes = hasSedatingTerpenes ? 180 : 120;
-  
+
   // Identify dominant effects per phase
   // Onset: dominated by volatile terpenes (limonene, pinene, terpinolene)
   const onsetEffects: string[] = [];
@@ -112,7 +112,7 @@ export function predictTemporalProfile(
   if (aggregateTerpenes.pinene > 0.15) onsetEffects.push('focus');
   if (aggregateTerpenes.terpinolene > 0.08) onsetEffects.push('uplifting');
   if (onsetEffects.length === 0) onsetEffects.push('subtle activation');
-  
+
   // Peak: dominated by primary terpenes at mid/high zones
   const peakEffects: string[] = [];
   if (aggregateTerpenes.myrcene > 0.20) peakEffects.push('relaxation');
@@ -120,28 +120,28 @@ export function predictTemporalProfile(
   if (aggregateTerpenes.caryophyllene > 0.18) peakEffects.push('physical ease');
   if (aggregateTerpenes.limonene > 0.20) peakEffects.push('sustained energy');
   if (peakEffects.length === 0) peakEffects.push('balanced');
-  
+
   // Tail: dominated by slower, longer-lasting terpenes (myrcene, linalool, caryophyllene)
   const tailEffects: string[] = [];
   if (aggregateTerpenes.myrcene > 0.20 || aggregateTerpenes.linalool > 0.15) tailEffects.push('calm transition');
   if (aggregateTerpenes.caryophyllene > 0.18) tailEffects.push('body comfort');
   if (tailEffects.length === 0) tailEffects.push('gradual fade');
-  
+
   // Handle multi-phase intent (inspired now, calm later)
-  if (intent.temporalOnset !== undefined && intent.temporalOnset < 0.5) {
+  if (intent.temporalOnset === 'fast' || intent.temporalOnset === 'rapid') {
     // Fast onset preference - emphasize volatile terpenes in onset
     if (aggregateTerpenes.limonene < 0.12 && aggregateTerpenes.pinene < 0.10) {
       onsetEffects.unshift('rapid activation');
     }
   }
-  
-  if (intent.temporalDuration !== undefined && intent.temporalDuration > 0.6) {
+
+  if (intent.durationPreference !== undefined && intent.durationPreference > 0.6) {
     // Long duration preference - emphasize sedating terpenes in tail
     if (!hasSedatingTerpenes) {
       tailEffects.push('extended relaxation');
     }
   }
-  
+
   // Transition points
   const transitionPoints: TemporalProfile['transitionPoints'] = [
     {
@@ -155,7 +155,7 @@ export function predictTemporalProfile(
       effectShift: `${peakEffects.join(', ')} → ${tailEffects.join(', ')}`,
     },
   ];
-  
+
   return {
     onsetPhase: {
       dominantEffects: onsetEffects,

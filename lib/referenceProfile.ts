@@ -68,7 +68,7 @@ export function referenceProfileToIntent(reference: ReferenceProfile): OutcomeIn
   // Higher anxiety risk → higher anxiety sensitivity
   // Higher clarity → higher cognitive endurance
   // Lower overshoot tolerance for high-intensity profiles
-  
+
   const activationTarget = Math.max(0.1, Math.min(0.9, vectors.energy * 0.8 + (1 - vectors.bodyRelaxation) * 0.2));
   const anxietySensitivity = Math.max(0.1, Math.min(0.9, vectors.anxietyRisk * 0.7 + (reference.thc > 20 ? 0.2 : 0)));
   const cognitiveEndurance = Math.max(0.1, Math.min(0.9, vectors.clarity * 0.6 + vectors.duration * 0.4));
@@ -84,8 +84,8 @@ export function referenceProfileToIntent(reference: ReferenceProfile): OutcomeIn
     physicalRelief: vectors.bodyRelaxation > 0.6 ? 0.7 : undefined,
     cognitiveClarity: vectors.clarity > 0.6 ? 0.75 : undefined,
     functionalEnergy: vectors.energy > 0.5 && vectors.energy < 0.8 ? 0.6 : undefined,
-    temporalOnset: vectors.duration > 0.5 ? 0.6 : 0.3,
-    temporalDuration: vectors.duration > 0.5 ? 0.7 : 0.4,
+    temporalOnset: vectors.duration > 0.5 ? 'moderate' : 'fast',
+    durationPreference: vectors.duration > 0.5 ? 0.7 : 0.4,
   };
 }
 
@@ -95,7 +95,7 @@ export function referenceProfileToIntent(reference: ReferenceProfile): OutcomeIn
  */
 export function computeChemicalSimilarity(
   reference: ReferenceProfile,
-  chemotype: { 
+  chemotype: {
     cannabinoids: { THC: number; CBD?: number };
     terpenes: { [key: string]: number };
   }
@@ -116,7 +116,7 @@ export function computeChemicalSimilarity(
   terpeneKeys.forEach(key => {
     const refValue = reference.terpenes[key as keyof typeof reference.terpenes] || 0;
     const chemValue = chemotype.terpenes[key] || 0;
-    
+
     if (refValue > 0 || chemValue > 0) {
       const diff = Math.abs(refValue - chemValue);
       const maxValue = Math.max(refValue, chemValue, 0.1); // Avoid division by zero
