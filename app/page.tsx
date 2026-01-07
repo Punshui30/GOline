@@ -15,7 +15,7 @@ import { resolveToNamedStrains, type NamedResolutionResult } from '@/lib/namedRe
 import ResolutionPanel, { type ResolvedBlend, type ResolvedCultivar, type CultivarRole } from '@/components/ResolutionPanel';
 import UsageProtocol from '@/components/UsageProtocol';
 import AgeGate from '@/components/AgeGate';
-import GoMark from '@/components/GoMark';
+import { GOLogo } from '@/components/GOLogo';
 import OutcomeIntentInput from '@/components/OutcomeIntentInput';
 import OutcomeTransitionBanner from '@/components/OutcomeTransitionBanner';
 import { StrategicGuidance } from '@/lib/strategicGuidance';
@@ -582,9 +582,7 @@ export default function Home() {
       {/* Header */}
       <header className="pt-16 px-6 lg:px-12 xl:px-24 flex justify-between items-baseline">
         <div className="flex items-center gap-4">
-          <GoMark
-            className={`go-mark ${resolvedBlend ? "visible" : "hidden"}`}
-          />
+          {resolvedBlend && <GOLogo />}
           <div className="flex flex-col gap-2">
             <span className="text-[10px] font-sans font-medium text-zinc-500 uppercase tracking-widest">GO // 2.1</span>
           </div>
