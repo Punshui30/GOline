@@ -72,26 +72,26 @@ function BlendCompositionTable({ cultivars, totalWeight = 3.5 }: { cultivars: Re
 
   return (
     <div className="mb-8">
-      <div className="text-xs uppercase tracking-wider text-[#A1A1AA] mb-4 font-medium">
+      <div className="text-xs uppercase tracking-wider text-white/60 mb-4 font-medium">
         Blend Composition
       </div>
-      <div className="border border-[rgba(255,255,255,0.06)]">
+      <div className="border border-white/10">
         <table className="w-full" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
           <thead>
-            <tr className="border-b border-[rgba(255,255,255,0.06)]">
-              <th className="text-left text-xs uppercase tracking-wider text-[#A1A1AA] font-medium px-4 py-3">Cultivar</th>
-              <th className="text-left text-xs uppercase tracking-wider text-[#A1A1AA] font-medium px-4 py-3">Role</th>
-              <th className="text-right text-xs uppercase tracking-wider text-[#A1A1AA] font-medium px-4 py-3">%</th>
-              <th className="text-right text-xs uppercase tracking-wider text-[#A1A1AA] font-medium px-4 py-3">Grams</th>
+            <tr className="border-b border-white/10">
+              <th className="text-left text-xs uppercase tracking-wider text-white/60 font-medium px-4 py-3">Cultivar</th>
+              <th className="text-left text-xs uppercase tracking-wider text-white/60 font-medium px-4 py-3">Role</th>
+              <th className="text-right text-xs uppercase tracking-wider text-white/60 font-medium px-4 py-3">%</th>
+              <th className="text-right text-xs uppercase tracking-wider text-white/60 font-medium px-4 py-3">Grams</th>
             </tr>
           </thead>
           <tbody>
             {rows.map((row, idx) => (
-              <tr key={idx} className="border-b border-[rgba(255,255,255,0.06)] last:border-b-0">
-                <td className="px-4 py-3 text-sm text-[#EDEDED] font-medium">{row.name}</td>
-                <td className="px-4 py-3 text-xs text-[#A1A1AA] uppercase tracking-wider">{getRoleLabel(row.role)}</td>
-                <td className="px-4 py-3 text-sm text-[#A1A1AA] tabular-nums text-right">{row.percentage}%</td>
-                <td className="px-4 py-3 text-sm text-[#A1A1AA] tabular-nums text-right">{row.grams.toFixed(2)} g</td>
+              <tr key={idx} className="border-b border-white/10 last:border-b-0">
+                <td className="px-4 py-3 text-sm text-white/80 font-medium">{row.name}</td>
+                <td className="px-4 py-3 text-xs text-white/60 uppercase tracking-wider">{getRoleLabel(row.role)}</td>
+                <td className="px-4 py-3 text-sm text-white/60 tabular-nums text-right">{row.percentage}%</td>
+                <td className="px-4 py-3 text-sm text-white/60 tabular-nums text-right">{row.grams.toFixed(2)} g</td>
               </tr>
             ))}
           </tbody>
@@ -121,20 +121,20 @@ function VisualBlendBar({ cultivars, totalWeight = 3.5 }: { cultivars: ResolvedC
 
   return (
     <div className="mb-8">
-      <div className="text-xs uppercase tracking-wider text-[#A1A1AA] mb-4 font-medium">
+      <div className="text-xs uppercase tracking-wider text-white/60 mb-4 font-medium">
         Visual Blend
       </div>
-      <div className="w-full h-16 border border-[rgba(255,255,255,0.06)] flex overflow-hidden">
+      <div className="w-full h-16 border border-white/10 flex overflow-hidden">
         {segments.map((seg, idx) => (
           <div
             key={idx}
-            className={`${getRoleColor(seg.role)} border-r border-[rgba(255,255,255,0.06)] last:border-r-0 flex flex-col items-center justify-center px-2 relative`}
+            className={`${getRoleColor(seg.role)} border-r border-white/10 last:border-r-0 flex flex-col items-center justify-center px-2 relative`}
             style={{ width: `${seg.percentage}%` }}
           >
-            <div className="text-[10px] font-medium text-[#EDEDED] text-center leading-tight mb-0.5" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+            <div className="text-[10px] font-medium text-white/80 text-center leading-tight mb-0.5" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
               {seg.name}
             </div>
-            <div className="text-[9px] text-[#A1A1AA] tabular-nums text-center">
+            <div className="text-[9px] text-white/60 tabular-nums text-center">
               {seg.percentage}% / {seg.grams.toFixed(2)}g
             </div>
           </div>
@@ -164,13 +164,13 @@ function UsageInstructions({ intent }: { intent: { activationTarget: number; cog
   ];
 
   return (
-    <div className="mb-8 pt-6 border-t border-[rgba(255,255,255,0.06)]">
-      <div className="text-xs uppercase tracking-wider text-[#A1A1AA] mb-3 font-medium">
+    <div className="mb-8 pt-6 border-t border-white/10">
+      <div className="text-xs uppercase tracking-wider text-white/60 mb-3 font-medium">
         Usage Instructions
       </div>
       <ul className="space-y-1" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
         {bullets.map((bullet, idx) => (
-          <li key={idx} className="text-xs text-[#A1A1AA]">
+          <li key={idx} className="text-xs text-white/60">
             • {bullet}
           </li>
         ))}
@@ -295,12 +295,12 @@ function PhysicalStackVisualization({ cultivars, stack, totalWeight = 3.5 }: { c
 
   return (
     <div className="mb-12">
-      <div className="text-xs uppercase tracking-wider text-[#A1A1AA] mb-4 font-medium">
+      <div className="text-xs uppercase tracking-wider text-white/60 mb-4 font-medium">
         Stacked Consumption Visualization
       </div>
 
       {/* Instructional copy */}
-      <div className="text-sm text-[#A1A1AA] mb-6 leading-relaxed" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+      <div className="text-sm text-white/60 mb-6 leading-relaxed" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
         If rolling a {totalWeight}g pre-roll, use:
       </div>
 
@@ -326,17 +326,17 @@ function PhysicalStackVisualization({ cultivars, stack, totalWeight = 3.5 }: { c
               >
                 <div className="h-full flex items-center justify-center p-2">
                   <div className="text-center">
-                    <div className="text-xs font-medium text-[#EDEDED] mb-1 leading-tight" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+                    <div className="text-xs font-medium text-white/80 mb-1 leading-tight" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
                       {layer.name}
                     </div>
-                    <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] mb-1 font-light">
+                    <div className="text-[10px] uppercase tracking-wider text-white/60 mb-1 font-light">
                       {layer.role === 'foundation' ? 'Foundation' :
                         layer.role === 'modulator' ? 'Modulator' : 'Accent'}
                     </div>
-                    <div className="text-[10px] text-[#A1A1AA] font-mono font-light mb-0.5">
+                    <div className="text-[10px] text-white/60 font-mono font-light mb-0.5">
                       {layer.percentage.toFixed(0)}%
                     </div>
-                    <div className="text-[10px] text-[#A1A1AA] font-mono font-light">
+                    <div className="text-[10px] text-white/60 font-mono font-light">
                       {layer.weight.toFixed(2)}g
                     </div>
                   </div>
@@ -372,13 +372,13 @@ function ResolvedMetrics({
 
   return (
     <div className="mb-8 pt-6 border-b border-white/6 pb-6">
-      <div className="text-xs uppercase tracking-wider text-[#A1A1AA] mb-4 font-medium">
+      <div className="text-xs uppercase tracking-wider text-white/60 mb-4 font-medium">
         Target Metrics
       </div>
       <div className="space-y-4">
         {metrics.map((metric, idx) => (
           <div key={idx} className="flex items-center gap-4">
-            <div className="text-xs text-[#A1A1AA] w-24 uppercase tracking-wider font-light">
+            <div className="text-xs text-white/60 w-24 uppercase tracking-wider font-light">
               {metric.label}
             </div>
             <div className="flex-1 h-1 bg-white/6">
@@ -387,7 +387,7 @@ function ResolvedMetrics({
                 style={{ width: `${metric.value * 100}%` }}
               />
             </div>
-            <div className="text-xs text-[#A1A1AA] tabular-nums w-12 text-right font-light">
+            <div className="text-xs text-white/60 tabular-nums w-12 text-right font-light">
               {Math.round(metric.value * 100)}%
             </div>
           </div>
@@ -500,7 +500,7 @@ function InvalidResolutionState({
       <div className="mb-12 flex flex-wrap gap-3">
         <button
           onClick={handleChangeInventory}
-          className="px-4 py-2 bg-[#0F1013] hover:bg-[#0F1013]/80 border border-white/6 hover:border-white/10 text-xs text-[#A1A1AA] uppercase tracking-wider transition-colors"
+          className="px-4 py-2 bg-[#0F1013] hover:bg-[#0F1013]/80 border border-white/6 hover:border-white/10 text-xs text-white/60 uppercase tracking-wider transition-colors"
         >
           [ Change inventory ]
         </button>
@@ -508,12 +508,12 @@ function InvalidResolutionState({
 
       {/* Resolution Rationale - PART 7: Bullet-only, factual */}
       <div className="mb-8">
-        <div className="text-xs uppercase tracking-wider text-[#A1A1AA] mb-4 font-medium">
+        <div className="text-xs uppercase tracking-wider text-white/60 mb-4 font-medium">
           Resolution Rationale
         </div>
         <div className="space-y-2">
           {getRationalePoints().map((point, idx) => (
-            <div key={idx} className="text-xs text-[#A1A1AA] leading-relaxed" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+            <div key={idx} className="text-xs text-white/60 leading-relaxed" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
               • {point}
             </div>
           ))}

@@ -516,9 +516,9 @@ export default function Home() {
             <Image
               src="/go-logo.png"
               alt="GO Line"
-              width={160}
-              height={48}
-              className="w-auto h-8 opacity-80 hover:opacity-100 transition-opacity"
+              width={240}
+              height={80}
+              className="w-auto h-16 opacity-100"
             />
           </div>
         </div>
@@ -541,8 +541,8 @@ export default function Home() {
                     setPhase('FREE');
                   }}
                   className={`px-3 py-1.5 transition-colors uppercase tracking-wider ${inputMode === 'outcome'
-                      ? 'bg-white/10 text-white border border-[#D4AF37]/30'
-                      : 'text-white/40 hover:text-white/70 border border-transparent'
+                    ? 'bg-white/10 text-white border border-[#D4AF37]/30'
+                    : 'text-white/40 hover:text-white/70 border border-transparent'
                     }`}
                 >
                   Describe Outcome
@@ -554,8 +554,8 @@ export default function Home() {
                     setPhase('FREE');
                   }}
                   className={`px-3 py-1.5 transition-colors uppercase tracking-wider ${inputMode === 'reference'
-                      ? 'bg-white/10 text-white border border-[#D4AF37]/30'
-                      : 'text-white/40 hover:text-white/70 border border-transparent'
+                    ? 'bg-white/10 text-white border border-[#D4AF37]/30'
+                    : 'text-white/40 hover:text-white/70 border border-transparent'
                     }`}
                 >
                   Match Product
@@ -577,7 +577,7 @@ export default function Home() {
                           }
                         }}
                         placeholder="Describe the desired effect..."
-                        className="w-full h-full px-5 py-5 pr-20 bg-[#0F1013] border border-white/10 focus:border-[#D6A84A]/40 text-[#EDEDED] placeholder-[#A1A1AA]/30 text-base leading-relaxed focus:outline-none resize-none transition-colors rounded-sm font-mono"
+                        className="w-full h-full px-6 py-6 pr-20 bg-white/5 border border-white/10 focus:border-[#D6A84A]/60 text-white placeholder-white/20 text-lg leading-relaxed focus:outline-none resize-none transition-colors rounded-lg font-mono shadow-inner"
                         disabled={isProcessing} // Never fully locked, just disabled during processing
                       />
 
@@ -667,8 +667,8 @@ export default function Home() {
                                 <label
                                   key={option}
                                   className={`inline-flex items-center px-3 py-2 cursor-pointer transition-all border ${isChecked
-                                      ? 'bg-[#D6A84A]/20 text-[#EDEDED] border-[#D6A84A]/40'
-                                      : 'bg-transparent text-white/50 border-white/10 hover:border-white/30 hover:text-white/80'
+                                    ? 'bg-[#D6A84A]/20 text-[#EDEDED] border-[#D6A84A]/40'
+                                    : 'bg-transparent text-white/50 border-white/10 hover:border-white/30 hover:text-white/80'
                                     }`}
                                 >
                                   <input
