@@ -84,7 +84,7 @@ export function referenceProfileToIntent(reference: ReferenceProfile): OutcomeIn
     physicalRelief: vectors.bodyRelaxation > 0.6 ? 0.7 : undefined,
     cognitiveClarity: vectors.clarity > 0.6 ? 0.75 : undefined,
     functionalEnergy: vectors.energy > 0.5 && vectors.energy < 0.8 ? 0.6 : undefined,
-    temporalOnset: vectors.duration > 0.5 ? 'moderate' : 'fast',
+    temporalOnset: vectors.duration > 0.5 ? 0.6 : 0.3,
     durationPreference: vectors.duration > 0.5 ? 0.7 : 0.4,
   };
 }
