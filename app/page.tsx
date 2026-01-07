@@ -412,11 +412,12 @@ export default function Home() {
   // Strict Grid, Typography Dominant
   // Added Elevation: Visual Anchor, Deep Layering, Micro-motion
   // ALIGNMENT REPAIR: High Contrast, Visible Input Structure
+  // REFERENCE ALIGN: Serif Headings, Texture, Bronze
   return (
-    <div className={`min-h-screen bg-[#080808] text-[#E5E5E5] font-sans selection:bg-[#D6A84A]/30 overflow-x-hidden flex flex-col relative transition-colors duration-1000 ${isProcessing || userInput.length > 20 ? 'bg-black' : 'bg-[#080808]'}`}>
+    <div className={`min-h-screen bg-noise text-[#E5E5E5] font-sans selection:bg-[#C5A065]/30 overflow-x-hidden flex flex-col relative transition-colors duration-1000 ${isProcessing || userInput.length > 20 ? 'bg-black' : ''}`}>
 
       {/* Visual Anchor: Abstract Botanical (Fixed, Deep Layer) */}
-      <div className="fixed bottom-[-10%] right-[-10%] w-[60vw] h-[60vw] z-0 pointer-events-none opacity-[0.03] select-none mix-blend-screen">
+      <div className="fixed bottom-[-10%] right-[-10%] w-[60vw] h-[60vw] z-0 pointer-events-none opacity-[0.05] select-none mix-blend-overlay">
         <Image
           src="/botanical_anchor.png"
           alt=""
@@ -430,19 +431,28 @@ export default function Home() {
       <header className="relative z-50 pt-16 px-6 lg:px-12 xl:px-24 flex justify-between items-baseline pointer-events-none">
         <div className="flex flex-col gap-2">
           {/* Extremely subtle anchor */}
-          <span className="text-[10px] font-bold text-zinc-800 uppercase tracking-widest">GO // 2.1</span>
+          <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">GO // 2.1</span>
         </div>
 
         {/* Status - Only visible when active */}
         <div className={`transition-opacity duration-700 ${isProcessing ? 'opacity-100' : 'opacity-0'}`}>
-          <span className="text-[10px] font-mono tracking-widest text-[#D6A84A] animate-pulse">THINKING...</span>
+          <span className="text-[10px] font-mono tracking-widest text-[#C5A065] animate-pulse">THINKING...</span>
         </div>
       </header>
 
       <main className="flex-1 relative z-10 w-full max-w-[1920px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-x-12 px-6 lg:px-12 xl:px-24 pb-32 pt-16 lg:pt-32">
 
         {/* LEFT REGION: DOMINANT INPUT (Cols 1-7) */}
-        <section className="lg:col-span-7 flex flex-col">
+        <section className="lg:col-span-7 flex flex-col justify-center">
+
+          {/* REFERENCE HEADER */}
+          <h1 className="font-serif text-5xl lg:text-7xl text-[#E5E5E5] mb-4 leading-tight">
+            How would you <br />
+            <span className="italic text-zinc-400">like to feel?</span>
+          </h1>
+          <p className="text-sm font-light text-zinc-500 mb-12 max-w-md">
+            Describe your desired experience (e.g. relaxed, focused, creative...)
+          </p>
 
           {/* The Prompt */}
           <div className="mb-24 lg:mb-32 relative">
@@ -457,26 +467,25 @@ export default function Home() {
                     setGuidance(null);
                   }
                 }}
-                placeholder="How do you want to feel?"
-                className="w-full bg-transparent text-5xl lg:text-7xl xl:text-8xl font-light leading-[1.05] tracking-tight text-white placeholder-zinc-500 outline-none resize-none border-b border-zinc-800 focus:border-[#D6A84A] py-8 transition-colors duration-300 overflow-y-hidden max-h-[400px]"
-                rows={3}
+                placeholder=""
+                className="w-full bg-transparent text-2xl lg:text-3xl font-light leading-relaxed tracking-wide text-white placeholder-zinc-600 outline-none resize-none border-b border-zinc-700 focus:border-[#C5A065] py-4 transition-colors duration-300 overflow-y-hidden min-h-[80px]"
+                rows={2}
                 disabled={isProcessing}
                 spellCheck={false}
               />
             </div>
 
             {/* Simpler Interaction / Action */}
-            <div className="mt-12 flex items-center gap-8">
+            <div className="mt-8 flex items-center gap-8">
               <button
                 onClick={handleAnalyze}
                 disabled={!userInput.trim() || isProcessing}
                 className={`
-                  text-lg font-medium transition-all duration-300 flex items-center gap-4 group px-6 py-3 border border-transparent
-                  ${userInput.trim() ? 'text-[#080808] bg-[#D6A84A] hover:bg-white' : 'text-zinc-500 bg-zinc-900 border-zinc-800 cursor-not-allowed'}
+                  text-sm font-medium tracking-widest uppercase transition-all duration-300 flex items-center gap-4 group px-8 py-4
+                  ${userInput.trim() ? 'text-[#080808] bg-[#C5A065] hover:bg-[#D4B075] shadow-lg shadow-[#C5A065]/20' : 'text-zinc-500 bg-zinc-900 border border-zinc-800 cursor-not-allowed'}
                 `}
               >
-                <span>RESOLVE</span>
-                {userInput.trim() && <span className="block w-2 h-2 bg-current rounded-full" />}
+                <span>Find My Strain</span>
               </button>
             </div>
           </div>
@@ -498,11 +507,11 @@ export default function Home() {
                             key={option}
                             onClick={() => handleClarificationAnswer(q.type, option, q.type === 'tolerance' || q.type === 'priority')}
                             className={`text-base transition-all duration-500 text-left relative py-1 ${isSelected
-                              ? 'text-[#D6A84A] font-medium pl-6'
+                              ? 'text-[#C5A065] font-medium pl-6'
                               : 'text-zinc-600 hover:text-zinc-300 pl-0 hover:pl-2'
                               }`}
                           >
-                            <span className={`absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-[#D6A84A] transition-all duration-500 ${isSelected ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`} />
+                            <span className={`absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-[#C5A065] transition-all duration-500 ${isSelected ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`} />
                             {option}
                           </button>
                         );
@@ -517,7 +526,7 @@ export default function Home() {
 
         {/* RIGHT REGION: PROGRESSIVE RESOLUTION (Cols 9-12) */}
         {/* Added subtle elevation drop-shadow to lift it off the background slightly */}
-        <section className="lg:col-start-9 lg:col-span-4 mt-24 lg:mt-0 relative">
+        <section className="lg:col-start-9 lg:col-span-4 mt-24 lg:mt-0 relative border-l border-zinc-800/50 pl-12 min-h-[60vh]">
           {resolvedBlend && (
             <div className="animate-in fade-in duration-1000 fill-mode-forwards">
               <div className="sticky top-32 drop-shadow-2xl">
@@ -534,6 +543,18 @@ export default function Home() {
               </div>
             </div>
           )}
+
+          {/* Reference-style Empty State Placeholder */}
+          {!resolvedBlend && !isProcessing && (
+            <div className="hidden lg:flex h-full flex-col justify-center items-start opacity-20">
+              <span className="font-serif text-3xl text-zinc-500 mb-2">Tonight, try...</span>
+              <div className="w-16 h-px bg-zinc-700 mb-4"></div>
+              <p className="text-zinc-600 text-sm max-w-xs">
+                Awaits your input.
+              </p>
+            </div>
+          )}
+
         </section>
 
       </main>
@@ -542,7 +563,7 @@ export default function Home() {
       <div className="fixed bottom-12 right-12 z-50 mix-blend-difference">
         <button
           onClick={isListening ? stopListening : startListening}
-          className={`flex items-center gap-4 transition-colors duration-500 ${isListening ? 'text-[#D6A84A]' : 'text-zinc-600 hover:text-white'}`}
+          className={`flex items-center gap-4 transition-colors duration-500 ${isListening ? 'text-[#C5A065]' : 'text-zinc-600 hover:text-white'}`}
         >
           <span className="text-[10px] font-bold tracking-[0.2em] uppercase hidden lg:block">
             {isListening ? 'LISTENING' : 'VOICE INPUT'}

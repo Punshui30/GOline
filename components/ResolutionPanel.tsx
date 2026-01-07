@@ -53,7 +53,7 @@ export default function ResolutionPanel({ blend, intent, isComputing }: Resoluti
   if (!blend) {
     return (
       <div className="opacity-0 lg:opacity-100 transition-opacity duration-1000 delay-500 min-h-[50vh] flex flex-col justify-start pt-12">
-        <div className="w-8 h-1 bg-[#D6A84A] mb-8" />
+        <div className="w-8 h-1 bg-[#C5A065] mb-8" />
         <p className="text-xs font-bold text-zinc-700 uppercase tracking-widest max-w-xs">
           System Ready
         </p>
@@ -68,8 +68,8 @@ export default function ResolutionPanel({ blend, intent, isComputing }: Resoluti
       {/* 1. Header: Primary Conclusion */}
       <section className="animate-in fade-in slide-in-from-bottom-2 duration-700">
         <div className="flex flex-col gap-6">
-          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#D6A84A]">Resolved Output</span>
-          <h2 className="text-2xl lg:text-3xl font-normal leading-snug tracking-tight text-white/90">
+          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#C5A065]">Tonights Selection</span>
+          <h2 className="font-serif text-3xl lg:text-5xl font-normal leading-tight tracking-tight text-white">
             {blend.rationaleSummary}
           </h2>
         </div>
@@ -90,9 +90,9 @@ export default function ResolutionPanel({ blend, intent, isComputing }: Resoluti
 
         <div className="grid grid-cols-2 gap-x-12 gap-y-16">
           <div>
-            <span className="block text-[9px] uppercase tracking-widest text-zinc-600 mb-2">Confidence</span>
-            <div className="text-5xl font-light text-white tracking-tighter">
-              {(blend.confidenceScore * 100).toFixed(0)}<span className="text-lg text-zinc-700">%</span>
+            <span className="block text-[9px] uppercase tracking-widest text-[#C5A065] mb-2">Confidence</span>
+            <div className="text-5xl font-serif text-white tracking-tight">
+              {(blend.confidenceScore * 100).toFixed(0)}<span className="text-lg font-sans text-zinc-700">%</span>
             </div>
           </div>
 
@@ -100,13 +100,13 @@ export default function ResolutionPanel({ blend, intent, isComputing }: Resoluti
             <>
               <div>
                 <span className="block text-[9px] uppercase tracking-widest text-zinc-600 mb-2">Activation</span>
-                <div className="text-5xl font-light text-white tracking-tighter">
+                <div className="text-5xl font-serif text-white tracking-tight">
                   {(intent.activationTarget * 10).toFixed(1)}
                 </div>
               </div>
               <div>
                 <span className="block text-[9px] uppercase tracking-widest text-zinc-600 mb-2">Endurance</span>
-                <div className="text-5xl font-light text-white tracking-tighter">
+                <div className="text-5xl font-serif text-white tracking-tight">
                   {(intent.cognitiveEndurance * 10).toFixed(1)}
                 </div>
               </div>
@@ -118,11 +118,11 @@ export default function ResolutionPanel({ blend, intent, isComputing }: Resoluti
       {/* 4. Tradeoffs (Minimal List) */}
       {blend.tradeoffs.length > 0 && (
         <section className="animate-in fade-in slide-in-from-bottom-2 duration-700 delay-300">
-          <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-600 mb-8">Variances</h3>
+          <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-600 mb-8">Notes</h3>
           <ul className="space-y-4">
             {blend.tradeoffs.map((tradeoff, i) => (
-              <li key={i} className="text-sm text-zinc-400 font-light flex gap-3">
-                <span className="text-[#D6A84A]">•</span> {tradeoff}
+              <li key={i} className="text-sm text-zinc-400 font-light flex gap-3 italic">
+                <span className="text-[#C5A065] not-italic">•</span> {tradeoff}
               </li>
             ))}
           </ul>
