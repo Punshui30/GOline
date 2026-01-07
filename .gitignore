@@ -38,3 +38,4 @@ next-env.d.ts
 # netlify
 .netlify
 /_forensic_audit_archive
+.env
