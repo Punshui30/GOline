@@ -5,19 +5,20 @@
  * 
  * Renders on all states:
  * - Before age gate
- * - After age gate
+ * - During age gate
  * - Input state
- * - Processing
+ * - Processing state
  * - Resolved state
  * 
+ * Fixed/sticky at top, always visible, never conditionally hidden
  * Branding: GO logo (PNG) always visible, top-left
  */
 
 export default function Header() {
   return (
-    <header className="pt-16 px-6 lg:px-12 xl:px-24 flex justify-between items-baseline">
-      <div className="flex items-center gap-4">
-        {/* GO Logo - Always visible, PNG-based */}
+    <header className="fixed top-0 left-0 right-0 z-50 bg-[#0a0b0e]/95 backdrop-blur-sm border-b border-zinc-900/50">
+      <div className="px-6 lg:px-12 xl:px-24 py-4 flex items-center gap-4 min-h-[64px]">
+        {/* GO Logo - Always visible, PNG-based, no conditional rendering */}
         <img
           src="/brand/go-mark.png"
           srcSet="/brand/go-mark@2x.png 2x"
@@ -31,9 +32,7 @@ export default function Header() {
           }}
         />
         {/* Version text - Secondary to logo */}
-        <div className="flex flex-col gap-2">
-          <span className="text-[10px] font-sans font-medium text-zinc-500 uppercase tracking-widest">GO // 2.1</span>
-        </div>
+        <span className="text-[10px] font-sans font-medium text-zinc-500 uppercase tracking-widest">GO // 2.1</span>
       </div>
     </header>
   );

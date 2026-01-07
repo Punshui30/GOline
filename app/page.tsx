@@ -594,12 +594,12 @@ export default function Home() {
     <div className="min-h-screen bg-noise text-[#E5E5E5] font-sans selection:bg-[#C5A065]/30 overflow-x-hidden flex flex-col">
       {/* Processing status indicator - shown inline with content if needed */}
       {isProcessing && (
-        <div className="px-6 lg:px-12 xl:px-24 pt-4">
+        <div className="px-6 lg:px-12 xl:px-24 pt-20">
           <span className="text-[10px] font-mono font-medium tracking-widest text-zinc-400">PROCESSING...</span>
         </div>
       )}
 
-      <main className="flex-1 w-full max-w-[1920px] mx-auto px-6 lg:px-12 xl:px-24 pb-32 pt-16 lg:pt-32 overflow-y-auto">
+      <main className="flex-1 w-full max-w-[1920px] mx-auto px-6 lg:px-12 xl:px-24 pb-32 pt-20 lg:pt-28 overflow-y-auto">
         {!isResolved ? (
           /* INPUT STATE: Header, textarea, submit button */
           <section className="max-w-3xl mx-auto">
