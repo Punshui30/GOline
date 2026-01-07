@@ -128,7 +128,8 @@ export function predictTemporalProfile(
   if (tailEffects.length === 0) tailEffects.push('gradual fade');
 
   // Handle multi-phase intent (inspired now, calm later)
-  if (intent.temporalOnset === 'fast' || intent.temporalOnset === 'rapid') {
+  // Handle multi-phase intent (inspired now, calm later)
+  if (intent.temporalOnset !== undefined && intent.temporalOnset < 0.5) {
     // Fast onset preference - emphasize volatile terpenes in onset
     if (aggregateTerpenes.limonene < 0.12 && aggregateTerpenes.pinene < 0.10) {
       onsetEffects.unshift('rapid activation');

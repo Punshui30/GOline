@@ -37,7 +37,7 @@ export interface OutcomeIntent {
   physicalRelief?: number; // 0-1
   cognitiveClarity?: number; // 0-1
   functionalEnergy?: number; // 0-1
-  temporalOnset?: string; // e.g. "rapid", "creeper"
+  temporalOnset?: number; // 0-1 (0=Fast/Rapid, 1=Slow/Creeper)
 }
 
 export interface SelectedCultivar {

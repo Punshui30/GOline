@@ -68,8 +68,7 @@ export default function GOLineCalculator() {
   // Clarification axis tracking (prevents asking about same axis twice)
   const [resolvedAxes, setResolvedAxes] = useState<Set<ClarificationAxis>>(new Set());
 
-  // Variation tracking (prevents repetitive recommendations)
-  const [recentlyUsedCultivarIds, setRecentlyUsedCultivarIds] = useState<string[]>([]);
+
 
   // Resolution state (for PreRollStack)
   const [intent, setIntent] = useState<OutcomeIntent | null>(null);
@@ -293,14 +292,6 @@ export default function GOLineCalculator() {
     const { segments, components } = convertToStackFormat(resolvedOutcome);
     setStackSegments(segments);
     setBreakdownComponents(components);
-
-    // Track recently used cultivars (for variation logic)
-    const newCultivarIds = resolvedOutcome.selectedCultivars.map(c => c.id);
-    setRecentlyUsedCultivarIds(prev => {
-      // Keep last 6 cultivars (allows for 2-3 recent recommendations)
-      const combined = [...newCultivarIds, ...prev.filter(id => !newCultivarIds.includes(id))];
-      return combined.slice(0, 6);
-    });
   };
 
   // Handle adjustment (when user adjusts sliders)
@@ -633,6 +624,7 @@ export default function GOLineCalculator() {
           <p className="text-xs text-white/40 leading-relaxed text-center">
             This prototype uses canonical terpene distributions derived from commonly reported profiles.
             Live GO systems operate exclusively on QR-verified batch data from accredited testing laboratories.
+            <span className="block mt-2 font-mono text-[9px] text-[#C5A065]/50">v2.0 (Math-Spec Enforced)</span>
           </p>
         </div>
       </div>

@@ -172,7 +172,7 @@ export function translateGuidanceToIntent(
     physicalRelief: getPhysicalReliefFromPriorities(resolvedPriorities),
     cognitiveClarity: getCognitiveClarityFromPriorities(resolvedPriorities),
     functionalEnergy: getFunctionalEnergyFromPriorities(resolvedPriorities),
-    temporalOnset: temporal.onset?.toString(),
+    temporalOnset: temporal.onset,
     durationPreference: temporal.duration,
   };
 }
