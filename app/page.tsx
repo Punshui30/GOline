@@ -13,6 +13,7 @@ import { OutcomeIntent, OutcomeResult } from '@/lib/goOutcomeEngine';
 import { resolveOutcome } from '@/lib/goOutcomeEngine';
 import { resolveToNamedStrains, type NamedResolutionResult } from '@/lib/namedResolution';
 import ResolutionPanel, { type ResolvedBlend, type ResolvedCultivar, type CultivarRole } from '@/components/ResolutionPanel';
+import UsageProtocol from '@/components/UsageProtocol';
 import { StrategicGuidance } from '@/lib/strategicGuidance';
 import { translateGuidanceToIntent } from '@/lib/guidanceToIntent';
 import { ReferenceProfile, referenceProfileToIntent } from '@/lib/referenceProfile';
@@ -84,6 +85,7 @@ export default function Home() {
   const [outcome, setOutcome] = useState<OutcomeResult | null>(null);
   const [namedResolution, setNamedResolution] = useState<NamedResolutionResult | null>(null);
   const [resolvedBlend, setResolvedBlend] = useState<ResolvedBlend | null>(null);
+  const [showUsageProtocol, setShowUsageProtocol] = useState(false);
 
   // Initialize speech recognition
   useEffect(() => {
@@ -381,6 +383,59 @@ export default function Home() {
     }
   };
 
+  const handleAdjustment = (adjustedIntent: {
+    activationTarget: number;
+    cognitiveEndurance: number;
+    anxietySensitivity: number;
+  }) => {
+    if (!intent) return;
+    
+    setIsProcessing(true);
+    setError(null);
+
+    try {
+      // Create updated intent with adjusted values
+      const updatedIntent: OutcomeIntent = {
+        ...intent,
+        activationTarget: adjustedIntent.activationTarget,
+        cognitiveEndurance: adjustedIntent.cognitiveEndurance,
+        anxietySensitivity: adjustedIntent.anxietySensitivity,
+      };
+      
+      setIntent(updatedIntent);
+      
+      // Re-resolve with adjusted intent
+      const resolvedOutcome = resolveOutcome(updatedIntent);
+      setOutcome(resolvedOutcome);
+
+      if (resolvedOutcome.failure) {
+        const blend = convertToResolvedBlend({ primaryBlend: [], stackingOptions: [], confidenceScore: 0, tradeoffs: [], rationaleSummary: '', resolutionMode: 'BLENDED' }, resolvedOutcome);
+        setResolvedBlend(blend);
+        setIsProcessing(false);
+        return;
+      }
+
+      const named = resolveToNamedStrains(resolvedOutcome);
+      setNamedResolution(named);
+      const blend = convertToResolvedBlend(named, resolvedOutcome);
+      setResolvedBlend(blend);
+    } catch (err) {
+      console.error('Adjustment error:', err);
+      setError('Failed to adjust outcome. Please try again.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleRefineOutcome = () => {
+    // This is handled by ResolutionPanel showing adjustment controls
+    // No additional action needed here
+  };
+
+  const handleShowUsageProtocol = () => {
+    setShowUsageProtocol(true);
+  };
+
   const handleClarificationAnswer = (questionType: string, answer: string, isMultiSelect: boolean = false) => {
     setClarificationAnswers(prev => {
       const isSensitivityQuestion = questionType === 'tradeoff' &&
@@ -415,25 +470,23 @@ export default function Home() {
       {/* Header */}
       <header className="pt-16 px-6 lg:px-12 xl:px-24 flex justify-between items-baseline">
         <div className="flex flex-col gap-2">
-          <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">GO // 2.1</span>
+          <span className="text-[10px] font-sans font-medium text-zinc-500 uppercase tracking-widest">GO // 2.1</span>
         </div>
         {isProcessing && (
-          <span className="text-[10px] font-mono tracking-widest text-[#C5A065] animate-pulse">THINKING...</span>
+          <span className="text-[10px] font-mono font-medium tracking-widest text-zinc-400">PROCESSING...</span>
         )}
       </header>
 
-      <main className="flex-1 w-full max-w-[1920px] mx-auto px-6 lg:px-12 xl:px-24 pb-32 pt-16 lg:pt-32">
+      <main className="flex-1 w-full max-w-[1920px] mx-auto px-6 lg:px-12 xl:px-24 pb-32 pt-16 lg:pt-32 overflow-y-auto">
         {!isResolved ? (
           /* INPUT STATE: Header, textarea, submit button */
           <section className="max-w-3xl mx-auto">
             <div className="mb-8">
-              <h1 className="font-serif text-5xl lg:text-7xl text-[#E5E5E5] leading-tight mb-6">
-                How would you <br />
-                <span className="italic text-zinc-400">like to feel?</span>
+              <h1 className="font-serif text-5xl lg:text-7xl font-light text-white leading-tight mb-6">
+                Calculate Your Outcome
               </h1>
-              <p className="text-sm lg:text-base font-light text-zinc-400 max-w-md border-l-2 border-[#C5A065] pl-4">
-                Describe your desired physical and mental state. <br />
-                <span className="text-zinc-500">We will precisely formulate a terpene blend to match.</span>
+              <p className="text-sm lg:text-base font-sans text-zinc-400 max-w-md border-l border-zinc-700 pl-4">
+                Describe your desired physical and mental state. The system will calculate a precise blend formulation to match your needs.
               </p>
             </div>
 
@@ -462,22 +515,24 @@ export default function Home() {
                 onClick={handleAnalyze}
                 disabled={!userInput.trim() || isProcessing}
                 className={`
-                  text-sm font-medium tracking-widest uppercase transition-all duration-300 flex items-center gap-4 group px-8 py-4
-                  ${userInput.trim() ? 'text-[#080808] bg-[#C5A065] hover:bg-[#D4B075] shadow-lg shadow-[#C5A065]/20' : 'text-zinc-500 bg-zinc-900 border border-zinc-800 cursor-not-allowed'}
+                  text-sm font-medium tracking-widest uppercase transition-all duration-200 flex items-center gap-4 px-8 py-4
+                  ${userInput.trim() 
+                    ? 'text-black bg-[#C5A065] hover:bg-[#D4B075] active:bg-[#B89555] cursor-pointer' 
+                    : 'text-zinc-500 bg-zinc-900 border border-zinc-800 cursor-not-allowed opacity-50'}
                 `}
               >
-                <span>Find My Strain</span>
+                <span>Calculate My Outcome</span>
               </button>
             </div>
 
             {/* Clarification questions - part of input state */}
             {guidance?.clarificationNeeded && guidance.clarificationNeeded.length > 0 && (
               <div className="mt-12">
-                <div className="space-y-16">
+                <div className="space-y-12">
                   {guidance.clarificationNeeded.map((q, idx) => (
                     <div key={idx} className="group">
-                      <p className="text-2xl text-[#E5E5E5] mb-6 font-light leading-snug">{q.question}</p>
-                      <div className="flex flex-col items-start gap-4">
+                      <p className="text-xl font-sans text-white mb-6 leading-relaxed">{q.question}</p>
+                      <div className="flex flex-col items-start gap-3">
                         {q.options.map((option) => {
                           const isSelected = clarificationAnswers[q.type] === option ||
                             (Array.isArray(clarificationAnswers[q.type]) && (clarificationAnswers[q.type] as string[]).includes(option));
@@ -486,12 +541,12 @@ export default function Home() {
                             <button
                               key={option}
                               onClick={() => handleClarificationAnswer(q.type, option, q.type === 'tolerance' || q.type === 'priority')}
-                              className={`text-base transition-all duration-500 text-left relative py-1 ${isSelected
-                                ? 'text-[#C5A065] font-medium pl-6'
-                                : 'text-zinc-600 hover:text-zinc-300 pl-0 hover:pl-2'
+                              className={`text-sm font-sans transition-all duration-200 text-left relative py-2 px-0 ${isSelected
+                                ? 'text-white font-medium pl-6'
+                                : 'text-zinc-400 hover:text-zinc-200 pl-0 hover:pl-2'
                                 }`}
                             >
-                              <span className={`absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-[#C5A065] transition-all duration-500 ${isSelected ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`} />
+                              <span className={`absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-white transition-all duration-200 ${isSelected ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`} />
                               {option}
                             </button>
                           );
@@ -504,8 +559,8 @@ export default function Home() {
             )}
           </section>
         ) : (
-          /* RESOLVED STATE: Header, stack visualization, composition breakdown, adjustment sliders */
-          <section className="max-w-5xl mx-auto">
+          /* RESOLVED STATE: Header, blend visualization, composition breakdown, adjustment sliders */
+          <section className="max-w-5xl mx-auto min-h-0">
             <ResolutionPanel
               blend={resolvedBlend}
               intent={intent ? {
@@ -514,6 +569,9 @@ export default function Home() {
                 anxietySensitivity: intent.anxietySensitivity || 0.5,
               } : undefined}
               isComputing={isProcessing}
+              onRefineOutcome={handleRefineOutcome}
+              onShowUsageProtocol={handleShowUsageProtocol}
+              onAdjustment={handleAdjustment}
             />
           </section>
         )}
@@ -531,6 +589,11 @@ export default function Home() {
           <div className={`w-3 h-3 rounded-full transition-all duration-500 ${isListening ? 'bg-current scale-125' : 'border border-current'}`} />
         </button>
       </div>
+
+      {/* Usage Protocol Modal */}
+      {showUsageProtocol && (
+        <UsageProtocol onClose={() => setShowUsageProtocol(false)} />
+      )}
     </div>
   );
 }

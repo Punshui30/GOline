@@ -42,3 +42,12 @@
     background-image: linear-gradient(to right, #C5A065, #E5C590);
   }
 }
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

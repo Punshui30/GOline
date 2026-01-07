@@ -4,11 +4,26 @@
 
 'use client';
 
+import { useState, useEffect } from 'react';
 import { OutcomeResult } from '@/lib/goOutcomeEngine';
 import BlendVisualizer from './BlendVisualizer';
 
 // Interfaces matching the new "Editorial" data structure
 export type CultivarRole = 'Anchor' | 'Modifier' | 'Synergist';
+
+// Map internal role names to consumer-friendly display names
+export function getRoleDisplayName(role: CultivarRole): string {
+  switch (role) {
+    case 'Anchor':
+      return 'Primary Contributor';
+    case 'Modifier':
+      return 'Supporting Contributor';
+    case 'Synergist':
+      return 'Weighted Influence';
+    default:
+      return role;
+  }
+}
 
 export interface ResolvedCultivar {
   id: string;
@@ -45,9 +60,43 @@ interface ResolutionPanelProps {
     anxietySensitivity: number;
   } | null;
   isComputing?: boolean;
+  onRefineOutcome?: () => void;
+  onShowUsageProtocol?: () => void;
+  onAdjustment?: (adjustedIntent: {
+    activationTarget: number;
+    cognitiveEndurance: number;
+    anxietySensitivity: number;
+  }) => void;
 }
 
-export default function ResolutionPanel({ blend, intent, isComputing }: ResolutionPanelProps) {
+export default function ResolutionPanel({ blend, intent, isComputing, onRefineOutcome, onShowUsageProtocol, onAdjustment }: ResolutionPanelProps) {
+  const [showAdjustments, setShowAdjustments] = useState(false);
+  const [localIntent, setLocalIntent] = useState(intent || {
+    activationTarget: 0.5,
+    cognitiveEndurance: 0.5,
+    anxietySensitivity: 0.5,
+  });
+
+  useEffect(() => {
+    if (intent) {
+      setLocalIntent(intent);
+    }
+  }, [intent]);
+
+  const handleAdjustmentChange = (field: 'activationTarget' | 'cognitiveEndurance' | 'anxietySensitivity', value: number) => {
+    const updated = { ...localIntent, [field]: value };
+    setLocalIntent(updated);
+    if (onAdjustment) {
+      onAdjustment(updated);
+    }
+  };
+
+  const handleRefineOutcome = () => {
+    setShowAdjustments(true);
+    if (onRefineOutcome) {
+      onRefineOutcome();
+    }
+  };
 
   // IDLE STATE (Presented as potential)
   if (!blend) {
@@ -66,55 +115,55 @@ export default function ResolutionPanel({ blend, intent, isComputing }: Resoluti
     <div className="flex flex-col gap-24 lg:gap-32 mb-32 text-[#E5E5E5]">
 
       {/* 1. Header: Primary Conclusion */}
-      <section className="animate-in fade-in slide-in-from-bottom-2 duration-700">
+      <section className="opacity-0 animate-[fadeIn_0.6s_ease-out_0.2s_forwards]">
         <div className="flex flex-col gap-6">
-          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#C5A065]">Tonights Selection</span>
-          <h2 className="font-serif text-3xl lg:text-5xl font-normal leading-tight tracking-tight text-white">
+          <span className="text-[10px] font-sans font-medium uppercase tracking-[0.2em] text-zinc-500">Recommended Blend</span>
+          <h2 className="font-serif text-3xl lg:text-5xl font-light leading-tight tracking-tight text-white">
             {blend.rationaleSummary}
           </h2>
         </div>
       </section>
 
-      {/* 2. Composition (The Blend) - ANIMATED VISUALIZER */}
-      <section className="animate-in fade-in slide-in-from-bottom-2 duration-700 delay-100">
-        <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-600 mb-12">Composition Structure</h3>
+      {/* 2. Composition (The Blend) */}
+      <section className="opacity-0 animate-[fadeIn_0.6s_ease-out_0.4s_forwards]">
+        <h3 className="text-[10px] font-sans font-medium uppercase tracking-[0.2em] text-zinc-500 mb-12">Blend Composition</h3>
 
         {/* Animated Visualizer Component */}
         <BlendVisualizer blend={blend} />
 
-        {/* PRODUCT COMPLETION: Stack Justification (Educational) */}
-        <div className="mt-12 p-6 border border-zinc-800/50 bg-white/[0.02]">
-          <h4 className="font-serif text-lg text-[#C5A065] mb-2">Entourage Architecture</h4>
-          <p className="text-sm font-light text-zinc-400 leading-relaxed max-w-xl">
-            This blend is stacked to manage the duration of effect. The <span className="text-white">Anchor</span> strain provides the biochemical foundation, while the <span className="text-white">Modifier</span> shapes the initial onset. The <span className="text-white">Synergist</span> bridges the two, ensuring a smooth transition rather than a jagged peak.
+        {/* Blend Explanation */}
+        <div className="mt-12 p-6 border border-zinc-800 bg-zinc-900/30">
+          <h4 className="font-sans text-sm font-medium text-white mb-3">Blend Formulation</h4>
+          <p className="text-sm font-sans text-zinc-400 leading-relaxed max-w-xl">
+            This is a blended formulation where all components are mixed together. The <span className="text-white font-medium">Primary Contributor</span> provides the main effect profile. The <span className="text-white font-medium">Supporting Contributor</span> fine-tunes the experience. The <span className="text-white font-medium">Weighted Influence</span> adds complementary effects. All components work together simultaneously in a single blended product.
           </p>
         </div>
 
       </section>
 
-      {/* 3. Metrics (Editorial Grid) */}
-      <section className="animate-in fade-in slide-in-from-bottom-2 duration-700 delay-200">
-        <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-600 mb-12">Signal Architecture</h3>
+      {/* 3. Metrics */}
+      <section className="opacity-0 animate-[fadeIn_0.6s_ease-out_0.6s_forwards]">
+        <h3 className="text-[10px] font-sans font-medium uppercase tracking-[0.2em] text-zinc-500 mb-12">Match Confidence</h3>
 
         <div className="grid grid-cols-2 gap-x-12 gap-y-16">
           <div>
-            <span className="block text-[9px] uppercase tracking-widest text-[#C5A065] mb-2">Confidence</span>
-            <div className="text-5xl font-serif text-white tracking-tight">
-              {(blend.confidenceScore * 100).toFixed(0)}<span className="text-lg font-sans text-zinc-700">%</span>
+            <span className="block text-[9px] font-sans uppercase tracking-widest text-zinc-500 mb-2">Confidence</span>
+            <div className="text-5xl font-serif font-light text-white tracking-tight">
+              {(blend.confidenceScore * 100).toFixed(0)}<span className="text-lg font-sans text-zinc-500">%</span>
             </div>
           </div>
 
           {intent && (
             <>
               <div>
-                <span className="block text-[9px] uppercase tracking-widest text-zinc-600 mb-2">Activation</span>
-                <div className="text-5xl font-serif text-white tracking-tight">
+                <span className="block text-[9px] font-sans uppercase tracking-widest text-zinc-500 mb-2">Energy Level</span>
+                <div className="text-5xl font-serif font-light text-white tracking-tight">
                   {(intent.activationTarget * 10).toFixed(1)}
                 </div>
               </div>
               <div>
-                <span className="block text-[9px] uppercase tracking-widest text-zinc-600 mb-2">Endurance</span>
-                <div className="text-5xl font-serif text-white tracking-tight">
+                <span className="block text-[9px] font-sans uppercase tracking-widest text-zinc-500 mb-2">Duration</span>
+                <div className="text-5xl font-serif font-light text-white tracking-tight">
                   {(intent.cognitiveEndurance * 10).toFixed(1)}
                 </div>
               </div>
@@ -123,29 +172,91 @@ export default function ResolutionPanel({ blend, intent, isComputing }: Resoluti
         </div>
       </section>
 
+      {/* Adjustment Controls */}
+      {showAdjustments && onAdjustment && (
+        <section className="opacity-0 animate-[fadeIn_0.6s_ease-out_0.8s_forwards] border-t border-zinc-800 pt-8">
+          <h3 className="text-[10px] font-sans font-medium uppercase tracking-[0.2em] text-zinc-500 mb-8">Adjust Blend</h3>
+          <div className="space-y-8">
+            {/* Energy ↔ Calm */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <div className="text-xs font-sans text-white uppercase tracking-wider">Energy ↔ Calm</div>
+                <div className="text-xs font-mono text-zinc-400">{Math.round(localIntent.activationTarget * 100)}</div>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={Math.round(localIntent.activationTarget * 100)}
+                onChange={(e) => handleAdjustmentChange('activationTarget', parseInt(e.target.value) / 100)}
+                className="w-full h-1 bg-zinc-800 appearance-none cursor-pointer accent-[#C5A065] hover:accent-[#D4B075] transition-colors"
+              />
+            </div>
+
+            {/* Duration ↔ Intensity */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <div className="text-xs font-sans text-white uppercase tracking-wider">Duration ↔ Intensity</div>
+                <div className="text-xs font-mono text-zinc-400">{Math.round(localIntent.cognitiveEndurance * 100)}</div>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={Math.round(localIntent.cognitiveEndurance * 100)}
+                onChange={(e) => handleAdjustmentChange('cognitiveEndurance', parseInt(e.target.value) / 100)}
+                className="w-full h-1 bg-zinc-800 appearance-none cursor-pointer accent-[#C5A065] hover:accent-[#D4B075] transition-colors"
+              />
+            </div>
+
+            {/* Anxiety Sensitivity */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <div className="text-xs font-sans text-white uppercase tracking-wider">Anxiety Sensitivity</div>
+                <div className="text-xs font-mono text-zinc-400">{Math.round(localIntent.anxietySensitivity * 100)}</div>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={Math.round(localIntent.anxietySensitivity * 100)}
+                onChange={(e) => handleAdjustmentChange('anxietySensitivity', parseInt(e.target.value) / 100)}
+                className="w-full h-1 bg-zinc-800 appearance-none cursor-pointer accent-[#C5A065] hover:accent-[#D4B075] transition-colors"
+              />
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* 4. Tradeoffs & Follow Up */}
-      <section className="animate-in fade-in slide-in-from-bottom-2 duration-700 delay-300">
+      <section className="opacity-0 animate-[fadeIn_0.6s_ease-out_1s_forwards]">
         {blend.tradeoffs.length > 0 && (
           <div className="mb-12">
-            <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-600 mb-8">Notes</h3>
+            <h3 className="text-[10px] font-sans font-medium uppercase tracking-[0.2em] text-zinc-500 mb-8">Notes</h3>
             <ul className="space-y-4">
               {blend.tradeoffs.map((tradeoff, i) => (
-                <li key={i} className="text-sm text-zinc-400 font-light flex gap-3 italic">
-                  <span className="text-[#C5A065] not-italic">•</span> {tradeoff}
+                <li key={i} className="text-sm font-sans text-zinc-400 leading-relaxed flex gap-3">
+                  <span className="text-zinc-600">•</span> <span>{tradeoff}</span>
                 </li>
               ))}
             </ul>
           </div>
         )}
 
-        {/* PRODUCT COMPLETION: Follow-Up Actions */}
+        {/* Follow-Up Actions */}
         <div className="border-t border-zinc-800 pt-8 flex flex-col gap-4">
-          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-600">Next Steps</span>
+          <span className="text-[10px] font-sans font-medium uppercase tracking-[0.2em] text-zinc-500">Actions</span>
           <div className="flex flex-wrap gap-4">
-            <button className="px-6 py-3 border border-[#C5A065] text-[#C5A065] text-xs uppercase tracking-widest hover:bg-[#C5A065] hover:text-black transition-colors">
+            <button 
+              onClick={handleRefineOutcome}
+              className="px-6 py-3 border border-[#C5A065] text-[#C5A065] text-xs font-sans uppercase tracking-widest hover:bg-[#C5A065] hover:text-black active:bg-[#B89555] transition-all duration-200 cursor-pointer"
+            >
               Refine Outcome
             </button>
-            <button className="px-6 py-3 border border-zinc-800 text-zinc-400 text-xs uppercase tracking-widest hover:border-white hover:text-white transition-colors">
+            <button 
+              onClick={onShowUsageProtocol}
+              className="px-6 py-3 border border-zinc-700 text-zinc-400 text-xs font-sans uppercase tracking-widest hover:border-zinc-500 hover:text-zinc-300 active:border-zinc-400 active:text-zinc-200 transition-all duration-200 cursor-pointer"
+            >
               Usage Protocol
             </button>
           </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ResolvedBlend } from './ResolutionPanel';
+import { ResolvedBlend, getRoleDisplayName } from './ResolutionPanel';
 
 interface BlendVisualizerProps {
     blend: ResolvedBlend;
@@ -11,10 +11,10 @@ export default function BlendVisualizer({ blend }: BlendVisualizerProps) {
     const [visible, setVisible] = useState(false);
 
     useEffect(() => {
-        // Trigger animation on mount
-        const timer = setTimeout(() => setVisible(true), 100);
-        return () => clearTimeout(timer); // Cleanup
-    }, [blend]); // Re-run if blend changes
+        // Subtle fade-in animation
+        const timer = setTimeout(() => setVisible(true), 50);
+        return () => clearTimeout(timer);
+    }, [blend]);
 
     // Sort by percentage descent for visual hierarchy
     // (Optional: keep original order if semantic, but visual sorting often looks better)
@@ -22,12 +22,12 @@ export default function BlendVisualizer({ blend }: BlendVisualizerProps) {
     const sortedStrains = blend.primaryBlend;
 
     return (
-        <div className="w-full mb-16 overflow-hidden">
+        <div className="w-full mb-16 overflow-visible">
             <div className="flex flex-col gap-1">
                 {sortedStrains.map((strain, index) => (
                     <div
                         key={strain.id || index}
-                        className="relative h-16 lg:h-24 w-full flex items-center"
+                        className="relative h-20 lg:h-28 w-full flex items-center mb-2"
                     >
                         {/* 
               Background/Context Track (Subtle) 
@@ -43,27 +43,26 @@ export default function BlendVisualizer({ blend }: BlendVisualizerProps) {
             */}
                         <div
                             className={`
-                h-full bg-zinc-900 border-l-2 border-[#D6A84A] relative overflow-hidden
-                transition-all duration-1000 cubic-bezier(0.2, 0.8, 0.2, 1)
+                h-full bg-zinc-900 border-l border-[#C5A065] relative overflow-visible
+                transition-all duration-500 ease-out
               `}
                             style={{
                                 width: `${strain.percentage}%`,
-                                transform: visible ? 'translateX(0%)' : 'translateX(100%)',
                                 opacity: visible ? 1 : 0,
-                                transitionDelay: `${index * 150}ms`
+                                transitionDelay: `${index * 100}ms`,
+                                minWidth: '80px'
                             }}
                         >
-                            {/* Texture/Noise overlay for depth (optional) */}
-                            <div className="absolute inset-0 opacity-20 bg-[url('/noise.png')] mix-blend-overlay" />
-
-                            {/* Percentage Label inside the bar (Swiss Typography) */}
-                            <span className={`
-                absolute bottom-2 right-4 text-[4rem] leading-none font-bold text-white/5 select-none
-                transition-opacity duration-1000 delay-500
-                ${visible ? 'opacity-100' : 'opacity-0'}
-              `}>
-                                {Math.round(strain.percentage)}
-                            </span>
+                            {/* Blend Ratio Label - Always visible and clearly labeled */}
+                            {strain.percentage >= 10 && (
+                              <span className={`
+                  absolute top-2 left-3 text-xs font-sans font-medium text-white select-none
+                  transition-opacity duration-500 whitespace-nowrap z-10
+                  ${visible ? 'opacity-100' : 'opacity-0'}
+                `} style={{ transitionDelay: `${(index * 100) + 300}ms` }}>
+                                  Blend Ratio: {Math.round(strain.percentage)}%
+                              </span>
+                            )}
                         </div>
 
                         {/* 
@@ -72,19 +71,26 @@ export default function BlendVisualizer({ blend }: BlendVisualizerProps) {
             */}
                         <div
                             className={`
-                ml-6 flex flex-col justify-center
-                transition-all duration-1000
+                ml-6 flex flex-col justify-center min-w-0 flex-1
+                transition-opacity duration-500
               `}
                             style={{
                                 opacity: visible ? 1 : 0,
-                                transform: visible ? 'translateX(0)' : 'translateX(20px)',
-                                transitionDelay: `${(index * 150) + 600}ms`
+                                transitionDelay: `${(index * 100) + 400}ms`
                             }}
                         >
-                            <span className="text-xs font-bold uppercase tracking-widest text-[#D6A84A]">
-                                {strain.role}
-                            </span>
-                            <span className="text-xl lg:text-3xl font-light text-white leading-tight">
+                            <div className="flex items-baseline gap-3 mb-1">
+                              <span className="text-xs font-sans font-medium uppercase tracking-wider text-zinc-400">
+                                  {getRoleDisplayName(strain.role)}
+                              </span>
+                              {/* Show percentage here if bar is too small */}
+                              {strain.percentage < 10 && (
+                                <span className="text-xs font-sans font-medium text-white">
+                                  Blend Ratio: {Math.round(strain.percentage)}%
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-xl lg:text-3xl font-serif font-light text-white leading-tight">
                                 {strain.name}
                             </span>
                         </div>
