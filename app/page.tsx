@@ -9,7 +9,6 @@
  */
 
 import { useState, useEffect, useRef } from 'react';
-import Image from 'next/image';
 import { OutcomeIntent, OutcomeResult } from '@/lib/goOutcomeEngine';
 import { resolveOutcome } from '@/lib/goOutcomeEngine';
 import { resolveToNamedStrains, type NamedResolutionResult } from '@/lib/namedResolution';
@@ -408,61 +407,37 @@ export default function Home() {
     });
   };
 
-  // PART 2: Render Layer - Swiss Editorial / Flat
-  // Strict Grid, Typography Dominant
-  // Added Elevation: Visual Anchor, Deep Layering, Micro-motion
-  // ALIGNMENT REPAIR: High Contrast, Visible Input Structure
-  // REFERENCE ALIGN: Serif Headings, Texture, Bronze
-  // PRODUCT COMPLETION: Concrete Imagery, Clear Instructions
+  // Two mutually exclusive states: Input and Resolved
+  const isResolved = resolvedBlend !== null;
+
   return (
-    <div className={`min-h-screen bg-noise text-[#E5E5E5] font-sans selection:bg-[#C5A065]/30 overflow-x-hidden flex flex-col relative transition-colors duration-1000 ${isProcessing || userInput.length > 20 ? 'bg-black' : ''}`}>
-
-      {/* Visual Anchor: Concrete Cannabis Context (Fixed, Deep Layer) */}
-      <div className="fixed bottom-0 right-[-5%] w-[50vw] h-[50vw] z-0 pointer-events-none opacity-[0.4] select-none mix-blend-overlay">
-        <Image
-          src="/context_anchor.png"
-          alt="Cannabis Context"
-          fill
-          className="object-contain grayscale contrast-125"
-          priority
-        />
-      </div>
-
-      {/* Header - Strictly Typographic, Top-Left Anchor */}
-      <header className="relative z-50 pt-16 px-6 lg:px-12 xl:px-24 flex justify-between items-baseline pointer-events-none">
+    <div className="min-h-screen bg-noise text-[#E5E5E5] font-sans selection:bg-[#C5A065]/30 overflow-x-hidden flex flex-col">
+      {/* Header */}
+      <header className="pt-16 px-6 lg:px-12 xl:px-24 flex justify-between items-baseline">
         <div className="flex flex-col gap-2">
-          {/* Extremely subtle anchor */}
           <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">GO // 2.1</span>
         </div>
-
-        {/* Status - Only visible when active */}
-        <div className={`transition-opacity duration-700 ${isProcessing ? 'opacity-100' : 'opacity-0'}`}>
+        {isProcessing && (
           <span className="text-[10px] font-mono tracking-widest text-[#C5A065] animate-pulse">THINKING...</span>
-        </div>
+        )}
       </header>
 
-      <main className="flex-1 relative z-10 w-full max-w-[1920px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-x-12 px-6 lg:px-12 xl:px-24 pb-32 pt-16 lg:pt-32">
+      <main className="flex-1 w-full max-w-[1920px] mx-auto px-6 lg:px-12 xl:px-24 pb-32 pt-16 lg:pt-32">
+        {!isResolved ? (
+          /* INPUT STATE: Header, textarea, submit button */
+          <section className="max-w-3xl mx-auto">
+            <div className="mb-8">
+              <h1 className="font-serif text-5xl lg:text-7xl text-[#E5E5E5] leading-tight mb-6">
+                How would you <br />
+                <span className="italic text-zinc-400">like to feel?</span>
+              </h1>
+              <p className="text-sm lg:text-base font-light text-zinc-400 max-w-md border-l-2 border-[#C5A065] pl-4">
+                Describe your desired physical and mental state. <br />
+                <span className="text-zinc-500">We will precisely formulate a terpene blend to match.</span>
+              </p>
+            </div>
 
-        {/* LEFT REGION: DOMINANT INPUT (Cols 1-7) */}
-        <section className="lg:col-span-7 flex flex-col justify-center">
-
-          {/* REFERENCE HEADER & INSTRUCTION */}
-          <div className="mb-4">
-            <h1 className="font-serif text-5xl lg:text-7xl text-[#E5E5E5] leading-tight mb-6">
-              How would you <br />
-              <span className="italic text-zinc-400">like to feel?</span>
-            </h1>
-
-            {/* PRODUCT COMPLETION: Clear Instruction */}
-            <p className="text-sm lg:text-base font-light text-zinc-400 max-w-md border-l-2 border-[#C5A065] pl-4">
-              Describe your desired physical and mental state. <br />
-              <span className="text-zinc-500">We will precisely formulate a terpene blend to match.</span>
-            </p>
-          </div>
-
-          {/* The Prompt */}
-          <div className="mb-24 lg:mb-32 relative mt-12">
-            <div className={`relative group transition-all duration-700`}>
+            <div className="mb-8">
               <textarea
                 value={userInput}
                 onChange={(e) => {
@@ -474,6 +449,7 @@ export default function Home() {
                   }
                 }}
                 placeholder=""
+                aria-label="Describe your desired physical and mental state"
                 className="w-full bg-transparent text-2xl lg:text-3xl font-light leading-relaxed tracking-wide text-white placeholder-zinc-600 outline-none resize-none border-b border-zinc-700 focus:border-[#C5A065] py-4 transition-colors duration-300 overflow-y-hidden min-h-[80px]"
                 rows={2}
                 disabled={isProcessing}
@@ -481,7 +457,6 @@ export default function Home() {
               />
             </div>
 
-            {/* Simpler Interaction / Action */}
             <div className="mt-8 flex items-center gap-8">
               <button
                 onClick={handleAnalyze}
@@ -494,79 +469,58 @@ export default function Home() {
                 <span>Find My Strain</span>
               </button>
             </div>
-          </div>
 
-          {/* Clarification (Swiss List Style) */}
-          {guidance?.clarificationNeeded && guidance.clarificationNeeded.length > 0 && !resolvedBlend && (
-            <div className="animate-in fade-in slide-in-from-bottom-2 duration-700 mt-12">
-              <div className="space-y-16">
-                {guidance.clarificationNeeded.map((q, idx) => (
-                  <div key={idx} className="group">
-                    <p className="text-2xl text-[#E5E5E5] mb-6 font-light leading-snug">{q.question}</p>
-                    <div className="flex flex-col items-start gap-4">
-                      {q.options.map((option) => {
-                        const isSelected = clarificationAnswers[q.type] === option ||
-                          (Array.isArray(clarificationAnswers[q.type]) && (clarificationAnswers[q.type] as string[]).includes(option));
+            {/* Clarification questions - part of input state */}
+            {guidance?.clarificationNeeded && guidance.clarificationNeeded.length > 0 && (
+              <div className="mt-12">
+                <div className="space-y-16">
+                  {guidance.clarificationNeeded.map((q, idx) => (
+                    <div key={idx} className="group">
+                      <p className="text-2xl text-[#E5E5E5] mb-6 font-light leading-snug">{q.question}</p>
+                      <div className="flex flex-col items-start gap-4">
+                        {q.options.map((option) => {
+                          const isSelected = clarificationAnswers[q.type] === option ||
+                            (Array.isArray(clarificationAnswers[q.type]) && (clarificationAnswers[q.type] as string[]).includes(option));
 
-                        return (
-                          <button
-                            key={option}
-                            onClick={() => handleClarificationAnswer(q.type, option, q.type === 'tolerance' || q.type === 'priority')}
-                            className={`text-base transition-all duration-500 text-left relative py-1 ${isSelected
-                              ? 'text-[#C5A065] font-medium pl-6'
-                              : 'text-zinc-600 hover:text-zinc-300 pl-0 hover:pl-2'
-                              }`}
-                          >
-                            <span className={`absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-[#C5A065] transition-all duration-500 ${isSelected ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`} />
-                            {option}
-                          </button>
-                        );
-                      })}
+                          return (
+                            <button
+                              key={option}
+                              onClick={() => handleClarificationAnswer(q.type, option, q.type === 'tolerance' || q.type === 'priority')}
+                              className={`text-base transition-all duration-500 text-left relative py-1 ${isSelected
+                                ? 'text-[#C5A065] font-medium pl-6'
+                                : 'text-zinc-600 hover:text-zinc-300 pl-0 hover:pl-2'
+                                }`}
+                            >
+                              <span className={`absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-[#C5A065] transition-all duration-500 ${isSelected ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`} />
+                              {option}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
-        </section>
-
-        {/* RIGHT REGION: PROGRESSIVE RESOLUTION (Cols 9-12) */}
-        {/* Added subtle elevation drop-shadow to lift it off the background slightly */}
-        <section className="lg:col-start-9 lg:col-span-4 mt-24 lg:mt-0 relative border-l border-zinc-800/50 pl-12 min-h-[60vh]">
-          {resolvedBlend && (
-            <div className="animate-in fade-in duration-1000 fill-mode-forwards">
-              <div className="sticky top-32 drop-shadow-2xl">
-                <ResolutionPanel
-                  blend={resolvedBlend}
-                  intent={guidance ? {
-                    activationTarget: 0.5,
-                    cognitiveEndurance: 0.5,
-                    anxietySensitivity: 0.5,
-                    ...intent
-                  } : undefined}
-                  isComputing={isProcessing}
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Reference-style Empty State Placeholder */}
-          {!resolvedBlend && !isProcessing && (
-            <div className="hidden lg:flex h-full flex-col justify-center items-start opacity-20">
-              <span className="font-serif text-3xl text-zinc-500 mb-2">Tonight, try...</span>
-              <div className="w-16 h-px bg-zinc-700 mb-4"></div>
-              <p className="text-zinc-600 text-sm max-w-xs">
-                Awaits your input.
-              </p>
-            </div>
-          )}
-
-        </section>
-
+            )}
+          </section>
+        ) : (
+          /* RESOLVED STATE: Header, stack visualization, composition breakdown, adjustment sliders */
+          <section className="max-w-5xl mx-auto">
+            <ResolutionPanel
+              blend={resolvedBlend}
+              intent={intent ? {
+                activationTarget: intent.activationTarget || 0.5,
+                cognitiveEndurance: intent.cognitiveEndurance || 0.5,
+                anxietySensitivity: intent.anxietySensitivity || 0.5,
+              } : undefined}
+              isComputing={isProcessing}
+            />
+          </section>
+        )}
       </main>
 
-      {/* Microphone - Fixed Bottom Right, Minimal Text/Icon */}
-      <div className="fixed bottom-12 right-12 z-50 mix-blend-difference">
+      {/* Microphone - Fixed Bottom Right */}
+      <div className="fixed bottom-12 right-12 z-50">
         <button
           onClick={isListening ? stopListening : startListening}
           className={`flex items-center gap-4 transition-colors duration-500 ${isListening ? 'text-[#C5A065]' : 'text-zinc-600 hover:text-white'}`}
@@ -577,7 +531,6 @@ export default function Home() {
           <div className={`w-3 h-3 rounded-full transition-all duration-500 ${isListening ? 'bg-current scale-125' : 'border border-current'}`} />
         </button>
       </div>
-
     </div>
   );
 }

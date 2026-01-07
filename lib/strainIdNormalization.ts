@@ -18,3 +18,4 @@ export function normalizeCultivarId(id: string): string {
     .replace(/[^a-z0-9-]/g, '');  // Remove all non-alphanumeric characters except hyphens
 }
 
+
