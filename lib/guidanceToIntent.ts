@@ -23,10 +23,10 @@ export function translateGuidanceToIntent(
   const getActivationFromPriorities = (priorities: string[]): number => {
     const energyKeywords = ['energy', 'energizing', 'stimulation', 'alert', 'active', 'upbeat', 'social'];
     const calmKeywords = ['calm', 'relaxed', 'chill', 'wind down', 'rest'];
-    
+
     const hasEnergy = priorities.some(p => energyKeywords.some(k => p.toLowerCase().includes(k)));
     const hasCalm = priorities.some(p => calmKeywords.some(k => p.toLowerCase().includes(k)));
-    
+
     if (hasEnergy && !hasCalm) return 0.75;
     if (hasCalm && !hasEnergy) return 0.35;
     if (hasEnergy && hasCalm) return 0.55;
@@ -42,10 +42,10 @@ export function translateGuidanceToIntent(
   const getCognitiveEnduranceFromPriorities = (priorities: string[]): number => {
     const enduranceKeywords = ['endurance', 'sustained', 'stability', 'consistent', 'steady'];
     const intensityKeywords = ['peak', 'intense', 'strong', 'powerful'];
-    
+
     const hasEndurance = priorities.some(p => enduranceKeywords.some(k => p.toLowerCase().includes(k)));
     const hasIntensity = priorities.some(p => intensityKeywords.some(k => p.toLowerCase().includes(k)));
-    
+
     if (hasEndurance && !hasIntensity) return 0.7;
     if (hasIntensity && !hasEndurance) return 0.3;
     return 0.5;
@@ -92,14 +92,14 @@ export function translateGuidanceToIntent(
   const activation = getActivationFromPriorities(resolvedPriorities);
   const anxietySensitivity = getAnxietySensitivityFromAvoidances(resolvedAvoidances);
   const cognitiveEndurance = getCognitiveEnduranceFromPriorities(resolvedPriorities);
-  
+
   // Determine avoidSedation from avoidances and priorities
   const sedationKeywords = ['sedation', 'sleepy', 'drowsy', 'tired'];
   const alertKeywords = ['alert', 'awake', 'focused', 'energizing'];
-  const hasSedationAvoidance = resolvedAvoidances.some(a => 
+  const hasSedationAvoidance = resolvedAvoidances.some(a =>
     sedationKeywords.some(k => a.toLowerCase().includes(k))
   );
-  const hasAlertPriority = resolvedPriorities.some(p => 
+  const hasAlertPriority = resolvedPriorities.some(p =>
     alertKeywords.some(k => p.toLowerCase().includes(k))
   );
   const avoidSedation = hasSedationAvoidance || hasAlertPriority;
@@ -137,10 +137,10 @@ export function translateGuidanceToIntent(
     // Check priorities for temporal hints
     const onsetKeywords = ['fast', 'quick', 'immediate', 'rapid'];
     const durationKeywords = ['long', 'sustained', 'endurance', 'extended'];
-    const hasFastOnset = guidance.dominantPriorities.some(p => 
+    const hasFastOnset = guidance.dominantPriorities.some(p =>
       onsetKeywords.some(k => p.toLowerCase().includes(k))
     );
-    const hasLongDuration = guidance.dominantPriorities.some(p => 
+    const hasLongDuration = guidance.dominantPriorities.some(p =>
       durationKeywords.some(k => p.toLowerCase().includes(k))
     );
     return {
@@ -155,10 +155,10 @@ export function translateGuidanceToIntent(
   // Higher anxiety sensitivity = lower tolerance for overshooting
   // Preference for intensity/peak = higher tolerance
   const intensityKeywords = ['peak', 'intense', 'strong', 'powerful', 'rush'];
-  const hasIntensityPreference = resolvedPriorities.some(p => 
+  const hasIntensityPreference = resolvedPriorities.some(p =>
     intensityKeywords.some(k => p.toLowerCase().includes(k))
   );
-  const overshootTolerance = hasIntensityPreference 
+  const overshootTolerance = hasIntensityPreference
     ? Math.max(0.4, 0.7 - (anxietySensitivity * 0.3)) // Higher tolerance if intensity preferred
     : Math.max(0.3, 0.6 - (anxietySensitivity * 0.4)); // Lower tolerance if balanced/gentle
 
@@ -172,8 +172,8 @@ export function translateGuidanceToIntent(
     physicalRelief: getPhysicalReliefFromPriorities(resolvedPriorities),
     cognitiveClarity: getCognitiveClarityFromPriorities(resolvedPriorities),
     functionalEnergy: getFunctionalEnergyFromPriorities(resolvedPriorities),
-    temporalOnset: temporal.onset,
-    temporalDuration: temporal.duration,
+    temporalOnset: temporal.onset?.toString(),
+    durationPreference: temporal.duration,
   };
 }
 
