@@ -14,6 +14,7 @@ import { resolveOutcome } from '@/lib/goOutcomeEngine';
 import { resolveToNamedStrains, type NamedResolutionResult } from '@/lib/namedResolution';
 import ResolutionPanel, { type ResolvedBlend, type ResolvedCultivar, type CultivarRole } from '@/components/ResolutionPanel';
 import UsageProtocol from '@/components/UsageProtocol';
+import AgeGate from '@/components/AgeGate';
 import { StrategicGuidance } from '@/lib/strategicGuidance';
 import { translateGuidanceToIntent } from '@/lib/guidanceToIntent';
 import { ReferenceProfile, referenceProfileToIntent } from '@/lib/referenceProfile';
@@ -74,11 +75,18 @@ export default function Home() {
   const interimTranscriptRef = useRef<string>('');
   const explicitStopRef = useRef<boolean>(false); // Track explicit user stop vs auto-end
 
+  // Age gate and onboarding
+  const [ageGateComplete, setAgeGateComplete] = useState(false);
+
   // Phase management
   const [phase, setPhase] = useState<InteractionPhase>('FREE');
   const [guidance, setGuidance] = useState<StrategicGuidance | null>(null);
   // Clarification answers
   const [clarificationAnswers, setClarificationAnswers] = useState<Record<string, string | string[]>>({});
+  // Track resolved axes to prevent re-asking
+  const [resolvedAxes, setResolvedAxes] = useState<Set<string>>(new Set());
+  // Current clarification question (only one at a time)
+  const [currentClarification, setCurrentClarification] = useState<{ type: string; question: string; options: string[] } | null>(null);
 
   // Phase 3 (LOCKED): Engine inputs and outputs
   const [intent, setIntent] = useState<OutcomeIntent | null>(null);
@@ -302,20 +310,35 @@ export default function Home() {
       const filteredQuestions = guidanceData.guidance.clarificationNeeded
         ? filterRedundantQuestions(guidanceData.guidance.clarificationNeeded, confidence)
         : [];
-      const needsClarification = shouldClarify(confidence) && filteredQuestions.length > 0;
+      
+      // Filter out questions for already-resolved axes
+      const unresolvedQuestions = filteredQuestions.filter(q => {
+        const axis = getAxisFromQuestionType(q.type);
+        return !resolvedAxes.has(axis);
+      });
+
+      const needsClarification = shouldClarify(confidence) && unresolvedQuestions.length > 0;
 
       if (needsClarification) {
+        // Show only the first unresolved question
+        const firstQuestion = unresolvedQuestions[0];
+        setCurrentClarification({
+          type: firstQuestion.type,
+          question: firstQuestion.question,
+          options: firstQuestion.options,
+        });
         setGuidance({
           ...guidanceData.guidance,
-          clarificationNeeded: filteredQuestions,
+          clarificationNeeded: [firstQuestion],
         });
         setPhase('GUIDED');
       } else {
+        setCurrentClarification(null);
         setGuidance({
           ...guidanceData.guidance,
           clarificationNeeded: [],
         });
-        handleLock(guidanceData.guidance, {});
+        handleLock(guidanceData.guidance, clarificationAnswers);
       }
     } catch (err) {
       console.error('Analysis error:', err);
@@ -436,34 +459,95 @@ export default function Home() {
     setShowUsageProtocol(true);
   };
 
+  // Map question type to axis for tracking resolved dimensions
+  const getAxisFromQuestionType = (questionType: string): string => {
+    switch (questionType) {
+      case 'tradeoff':
+        return 'energy-anxiety'; // Energy vs calm, anxiety sensitivity
+      case 'tolerance':
+        return 'intensity'; // Intensity vs endurance
+      case 'priority':
+        return 'priority'; // Overall priority
+      case 'temporal':
+        return 'duration'; // Duration/temporal profile
+      default:
+        return questionType;
+    }
+  };
+
   const handleClarificationAnswer = (questionType: string, answer: string, isMultiSelect: boolean = false) => {
+    // Mark this axis as resolved
+    const axis = getAxisFromQuestionType(questionType);
+    const updatedResolvedAxes = new Set([...resolvedAxes, axis]);
+    setResolvedAxes(updatedResolvedAxes);
+
     setClarificationAnswers(prev => {
       const isSensitivityQuestion = questionType === 'tradeoff' &&
         ['Anxiety', 'Overstimulation', 'Mental drift', 'None / Balanced'].includes(answer);
 
-      if (isSensitivityQuestion || isMultiSelect) {
-        const current = prev[questionType];
-        const currentArray = Array.isArray(current) ? current : (current ? [current] : []);
+      const updatedAnswers = isSensitivityQuestion || isMultiSelect
+        ? (() => {
+            const current = prev[questionType];
+            const currentArray = Array.isArray(current) ? current : (current ? [current] : []);
 
-        if (answer === 'None / Balanced') {
-          return { ...prev, [questionType]: ['None / Balanced'] };
+            if (answer === 'None / Balanced') {
+              return { ...prev, [questionType]: ['None / Balanced'] };
+            } else {
+              let newArray = currentArray.filter(item => item !== 'None / Balanced');
+              if (newArray.includes(answer)) {
+                newArray = newArray.filter(item => item !== answer);
+              } else {
+                newArray.push(answer);
+              }
+              return { ...prev, ...(newArray.length > 0 ? { [questionType]: newArray } : {}) };
+            }
+          })()
+        : { ...prev, [questionType]: answer };
+
+      // After answering, check if we need more clarification or can proceed
+      if (guidance) {
+        const confidence = computeIntentConfidence(guidance);
+        const filteredQuestions = guidance.clarificationNeeded
+          ? filterRedundantQuestions(guidance.clarificationNeeded, confidence)
+          : [];
+        
+        const unresolvedQuestions = filteredQuestions.filter(q => {
+          const qAxis = getAxisFromQuestionType(q.type);
+          return !updatedResolvedAxes.has(qAxis);
+        });
+
+        // Clear current clarification
+        setCurrentClarification(null);
+
+        if (unresolvedQuestions.length > 0 && shouldClarify(confidence)) {
+          // Show next question immediately
+          const nextQuestion = unresolvedQuestions[0];
+          setCurrentClarification({
+            type: nextQuestion.type,
+            question: nextQuestion.question,
+            options: nextQuestion.options,
+          });
+          setGuidance({
+            ...guidance,
+            clarificationNeeded: [nextQuestion],
+          });
         } else {
-          let newArray = currentArray.filter(item => item !== 'None / Balanced');
-          if (newArray.includes(answer)) {
-            newArray = newArray.filter(item => item !== answer);
-          } else {
-            newArray.push(answer);
-          }
-          return { ...prev, ...(newArray.length > 0 ? { [questionType]: newArray } : {}) };
+          // All dimensions resolved or confidence is high enough, proceed to calculation
+          handleLock(guidance, updatedAnswers);
         }
-      } else {
-        return { ...prev, [questionType]: answer };
       }
+
+      return updatedAnswers;
     });
   };
 
   // Two mutually exclusive states: Input and Resolved
   const isResolved = resolvedBlend !== null;
+
+  // Show age gate if not complete
+  if (!ageGateComplete) {
+    return <AgeGate onComplete={() => setAgeGateComplete(true)} />;
+  }
 
   return (
     <div className="min-h-screen bg-noise text-[#E5E5E5] font-sans selection:bg-[#C5A065]/30 overflow-x-hidden flex flex-col">
@@ -490,6 +574,41 @@ export default function Home() {
               </p>
             </div>
 
+            {/* Current Clarification Question - Inline above input */}
+            {currentClarification && (
+              <div className="mb-6 p-4 border border-zinc-800 bg-zinc-900/50">
+                <p className="text-sm font-sans text-white mb-4">{currentClarification.question}</p>
+                <div className="flex flex-col items-start gap-2">
+                  {currentClarification.options.map((option) => {
+                    const isSelected = clarificationAnswers[currentClarification.type] === option ||
+                      (Array.isArray(clarificationAnswers[currentClarification.type]) && 
+                       (clarificationAnswers[currentClarification.type] as string[]).includes(option));
+
+                    return (
+                      <button
+                        key={option}
+                        onClick={() => handleClarificationAnswer(
+                          currentClarification.type, 
+                          option, 
+                          currentClarification.type === 'tolerance' || currentClarification.type === 'priority'
+                        )}
+                        className={`text-sm font-sans transition-all duration-200 text-left relative py-2 px-0 ${
+                          isSelected
+                            ? 'text-white font-medium pl-6'
+                            : 'text-zinc-400 hover:text-zinc-200 pl-0 hover:pl-2'
+                        }`}
+                      >
+                        <span className={`absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-white transition-all duration-200 ${
+                          isSelected ? 'opacity-100 scale-100' : 'opacity-0 scale-0'
+                        }`} />
+                        {option}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             <div className="mb-8">
               <textarea
                 value={userInput}
@@ -499,13 +618,22 @@ export default function Home() {
                     setResolvedBlend(null);
                     setPhase('FREE');
                     setGuidance(null);
+                    setCurrentClarification(null);
+                    setResolvedAxes(new Set());
+                    setClarificationAnswers({});
+                  }
+                  // Clear clarification if user starts typing new input
+                  if (currentClarification) {
+                    setCurrentClarification(null);
+                    setResolvedAxes(new Set());
+                    setClarificationAnswers({});
                   }
                 }}
                 placeholder=""
                 aria-label="Describe your desired physical and mental state"
                 className="w-full bg-transparent text-2xl lg:text-3xl font-light leading-relaxed tracking-wide text-white placeholder-zinc-600 outline-none resize-none border-b border-zinc-700 focus:border-[#C5A065] py-4 transition-colors duration-300 overflow-y-hidden min-h-[80px]"
                 rows={2}
-                disabled={isProcessing}
+                disabled={isProcessing || !!currentClarification}
                 spellCheck={false}
               />
             </div>
@@ -525,38 +653,6 @@ export default function Home() {
               </button>
             </div>
 
-            {/* Clarification questions - part of input state */}
-            {guidance?.clarificationNeeded && guidance.clarificationNeeded.length > 0 && (
-              <div className="mt-12">
-                <div className="space-y-12">
-                  {guidance.clarificationNeeded.map((q, idx) => (
-                    <div key={idx} className="group">
-                      <p className="text-xl font-sans text-white mb-6 leading-relaxed">{q.question}</p>
-                      <div className="flex flex-col items-start gap-3">
-                        {q.options.map((option) => {
-                          const isSelected = clarificationAnswers[q.type] === option ||
-                            (Array.isArray(clarificationAnswers[q.type]) && (clarificationAnswers[q.type] as string[]).includes(option));
-
-                          return (
-                            <button
-                              key={option}
-                              onClick={() => handleClarificationAnswer(q.type, option, q.type === 'tolerance' || q.type === 'priority')}
-                              className={`text-sm font-sans transition-all duration-200 text-left relative py-2 px-0 ${isSelected
-                                ? 'text-white font-medium pl-6'
-                                : 'text-zinc-400 hover:text-zinc-200 pl-0 hover:pl-2'
-                                }`}
-                            >
-                              <span className={`absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-white transition-all duration-200 ${isSelected ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`} />
-                              {option}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </section>
         ) : (
           /* RESOLVED STATE: Header, blend visualization, composition breakdown, adjustment sliders */
