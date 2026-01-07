@@ -9,11 +9,12 @@
  */
 
 import { useState, useEffect, useRef } from 'react';
+import Image from 'next/image';
 import { OutcomeIntent, OutcomeResult } from '@/lib/goOutcomeEngine';
 import { resolveOutcome } from '@/lib/goOutcomeEngine';
 import { resolveToNamedStrains, type NamedResolutionResult } from '@/lib/namedResolution';
 import ResolutionPanel, { type ResolvedBlend, type ResolvedCultivar, type CultivarRole } from '@/components/ResolutionPanel';
-import { StrategicGuidance, ClarificationQuestion } from '@/lib/strategicGuidance';
+import { StrategicGuidance } from '@/lib/strategicGuidance';
 import { translateGuidanceToIntent } from '@/lib/guidanceToIntent';
 import { ReferenceProfile, referenceProfileToIntent } from '@/lib/referenceProfile';
 import { convertToResolvedBlend } from '@/lib/convertToResolvedBlend';
@@ -408,20 +409,32 @@ export default function Home() {
   };
 
   // PART 2: Render Layer - Swiss Editorial / Flat
-  // Strict Grid, Typography Dominant, No Texture
+  // Strict Grid, Typography Dominant
+  // Added Elevation: Visual Anchor, Deep Layering, Micro-motion
   return (
-    <div className="min-h-screen bg-[#080808] text-[#E5E5E5] font-sans selection:bg-[#D6A84A]/30 overflow-x-hidden flex flex-col relative">
+    <div className={`min-h-screen bg-[#080808] text-[#E5E5E5] font-sans selection:bg-[#D6A84A]/30 overflow-x-hidden flex flex-col relative transition-colors duration-1000 ${isProcessing || userInput.length > 20 ? 'bg-black' : 'bg-[#080808]'}`}>
+
+      {/* Visual Anchor: Abstract Botanical (Fixed, Deep Layer) */}
+      <div className="fixed bottom-[-10%] right-[-10%] w-[60vw] h-[60vw] z-0 pointer-events-none opacity-[0.03] select-none mix-blend-screen">
+        <Image 
+          src="/botanical_anchor.png" 
+          alt="" 
+          fill 
+          className="object-contain grayscale"
+          priority
+        />
+      </div>
 
       {/* Header - Strictly Typographic, Top-Left Anchor */}
-      <header className="relative z-50 pt-16 px-6 lg:px-12 xl:px-24 flex justify-between items-baseline">
+      <header className="relative z-50 pt-16 px-6 lg:px-12 xl:px-24 flex justify-between items-baseline pointer-events-none">
         <div className="flex flex-col gap-2">
-          <h1 className="text-xs font-bold tracking-[0.2em] uppercase text-[#D6A84A]">Guided Outcome</h1>
-          <span className="text-[10px] text-zinc-500 font-mono tracking-widest">EDITION 2.1</span>
+          {/* Extremely subtle anchor */}
+          <span className="text-[10px] font-bold text-zinc-800 uppercase tracking-widest">GO // 2.1</span>
         </div>
 
-        {/* Status - Text only, no pulsing glows */}
-        <div className={`transition-opacity duration-300 ${isProcessing ? 'opacity-100' : 'opacity-0'}`}>
-          <span className="text-[10px] font-mono tracking-widest text-[#D6A84A]">PROCESSING INTELLIGENCE...</span>
+        {/* Status - Only visible when active */}
+        <div className={`transition-opacity duration-700 ${isProcessing ? 'opacity-100' : 'opacity-0'}`}>
+          <span className="text-[10px] font-mono tracking-widest text-[#D6A84A] animate-pulse">THINKING...</span>
         </div>
       </header>
 
@@ -431,11 +444,8 @@ export default function Home() {
         <section className="lg:col-span-7 flex flex-col">
 
           {/* The Prompt */}
-          <div className="mb-24 lg:mb-32">
-            <label className="block text-xs uppercase tracking-widest text-zinc-600 mb-8">
-              Physiological Intent
-            </label>
-            <div className="relative group">
+          <div className="mb-24 lg:mb-32 relative">
+            <div className={`relative group transition-all duration-1000 ${isProcessing ? 'blur-[2px] opacity-40 grayscale' : ''}`}>
               <textarea
                 value={userInput}
                 onChange={(e) => {
@@ -446,40 +456,35 @@ export default function Home() {
                     setGuidance(null);
                   }
                 }}
-                placeholder="Describe the desired state..."
-                className="w-full bg-transparent text-5xl lg:text-7xl xl:text-8xl font-light leading-[1.05] tracking-tight text-white placeholder-zinc-800 outline-none resize-none border-none p-0 min-h-[30vh]"
+                placeholder="How do you want to feel?"
+                className="w-full bg-transparent text-5xl lg:text-7xl xl:text-8xl font-light leading-[1.05] tracking-tight text-white placeholder-zinc-900 outline-none resize-none border-none p-0 overflow-y-hidden max-h-[400px]"
+                rows={3}
                 disabled={isProcessing}
                 spellCheck={false}
               />
+            </div>
 
-              {/* Minimal Interaction Hints - Textual Only */}
-              <div className={`mt-12 transition-opacity duration-500 flex items-center gap-8 ${userInput.trim() ? 'opacity-100' : 'opacity-0'}`}>
-                <button
-                  onClick={handleAnalyze}
-                  disabled={!userInput.trim()}
-                  className="text-sm font-bold tracking-[0.15em] uppercase text-[#D6A84A] hover:text-white transition-colors disabled:opacity-0 disabled:cursor-default"
-                >
-                  [ Resolve Intent ]
-                </button>
-                <div className="hidden lg:flex items-center gap-3 text-[10px] text-zinc-600 font-mono tracking-widest uppercase">
-                  <span>Press</span>
-                  <span className="border border-zinc-800 px-1 py-0.5 rounded-sm">Cmd</span>
-                  <span>+</span>
-                  <span className="border border-zinc-800 px-1 py-0.5 rounded-sm">Enter</span>
-                </div>
-              </div>
+            {/* Simpler Interaction / Action */}
+            <div className={`mt-12 transition-all duration-700 ease-out flex items-center gap-8 ${userInput.trim() ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+              <button
+                onClick={handleAnalyze}
+                disabled={!userInput.trim() || isProcessing}
+                className="text-lg font-medium text-[#D6A84A] hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-3 group pointer-events-auto"
+              >
+                <span>Resolve</span>
+                <span className="block w-4 h-px bg-current group-hover:w-8 transition-all duration-500" />
+              </button>
             </div>
           </div>
 
           {/* Clarification (Swiss List Style) */}
           {guidance?.clarificationNeeded && guidance.clarificationNeeded.length > 0 && !resolvedBlend && (
-            <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
-              <h3 className="text-[10px] uppercase tracking-widest text-zinc-500 mb-8 border-t border-zinc-800 pt-4 inline-block">Refinement Grid</h3>
+            <div className="animate-in fade-in slide-in-from-bottom-2 duration-700 mt-12">
               <div className="space-y-16">
                 {guidance.clarificationNeeded.map((q, idx) => (
                   <div key={idx} className="group">
                     <p className="text-2xl text-[#E5E5E5] mb-6 font-light leading-snug">{q.question}</p>
-                    <div className="flex flex-col items-start gap-2">
+                    <div className="flex flex-col items-start gap-4">
                       {q.options.map((option) => {
                         const isSelected = clarificationAnswers[q.type] === option ||
                           (Array.isArray(clarificationAnswers[q.type]) && (clarificationAnswers[q.type] as string[]).includes(option));
@@ -488,11 +493,12 @@ export default function Home() {
                           <button
                             key={option}
                             onClick={() => handleClarificationAnswer(q.type, option, q.type === 'tolerance' || q.type === 'priority')}
-                            className={`text-base transition-all duration-200 text-left ${isSelected
-                              ? 'text-[#D6A84A] font-medium pl-4 border-l-2 border-[#D6A84A]'
-                              : 'text-zinc-500 hover:text-zinc-300 pl-0 border-l-2 border-transparent hover:pl-2 hover:border-zinc-700'
+                            className={`text-base transition-all duration-500 text-left relative py-1 ${isSelected
+                              ? 'text-[#D6A84A] font-medium pl-6'
+                              : 'text-zinc-600 hover:text-zinc-300 pl-0 hover:pl-2'
                               }`}
                           >
+                            <span className={`absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-[#D6A84A] transition-all duration-500 ${isSelected ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`} />
                             {option}
                           </button>
                         );
@@ -506,10 +512,11 @@ export default function Home() {
         </section>
 
         {/* RIGHT REGION: PROGRESSIVE RESOLUTION (Cols 9-12) */}
+        {/* Added subtle elevation drop-shadow to lift it off the background slightly */}
         <section className="lg:col-start-9 lg:col-span-4 mt-24 lg:mt-0 relative">
           {resolvedBlend && (
-            <div className="animate-in fade-in duration-700 fill-mode-forwards">
-              <div className="sticky top-32">
+            <div className="animate-in fade-in duration-1000 fill-mode-forwards">
+              <div className="sticky top-32 drop-shadow-2xl">
                 <ResolutionPanel
                   blend={resolvedBlend}
                   intent={guidance ? {
@@ -523,15 +530,6 @@ export default function Home() {
               </div>
             </div>
           )}
-
-          {/* Very Subtle Idle Hint */}
-          {!resolvedBlend && !isProcessing && userInput && (
-            <div className="hidden lg:block sticky top-32 opacity-30 transition-opacity duration-700">
-              <p className="text-xs font-mono text-zinc-500 leading-relaxed max-w-[200px]">
-                AWAITING RESOLUTION SIGNAL...
-              </p>
-            </div>
-          )}
         </section>
 
       </main>
@@ -540,12 +538,12 @@ export default function Home() {
       <div className="fixed bottom-12 right-12 z-50 mix-blend-difference">
         <button
           onClick={isListening ? stopListening : startListening}
-          className={`flex items-center gap-4 transition-colors duration-300 ${isListening ? 'text-[#D6A84A]' : 'text-zinc-500 hover:text-white'}`}
+          className={`flex items-center gap-4 transition-colors duration-500 ${isListening ? 'text-[#D6A84A]' : 'text-zinc-600 hover:text-white'}`}
         >
           <span className="text-[10px] font-bold tracking-[0.2em] uppercase hidden lg:block">
             {isListening ? 'LISTENING' : 'VOICE INPUT'}
           </span>
-          <div className={`w-3 h-3 rounded-full ${isListening ? 'bg-current' : 'border border-current'}`} />
+          <div className={`w-3 h-3 rounded-full transition-all duration-500 ${isListening ? 'bg-current scale-125' : 'border border-current'}`} />
         </button>
       </div>
 
