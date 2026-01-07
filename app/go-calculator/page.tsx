@@ -51,7 +51,7 @@ export default function GOLineCalculator() {
   // Preset selection state
   const [selectedPreset, setSelectedPreset] = useState<Preset | null>(null);
   const [presetSelected, setPresetSelected] = useState(false);
-  
+
   // Baseline calibration (optional, lightweight)
   const [baselineCalibration, setBaselineCalibration] = useState<BaselineCalibration>({});
   const [calibrationComplete, setCalibrationComplete] = useState(false);
@@ -59,46 +59,46 @@ export default function GOLineCalculator() {
   // Conversation state (for parsing/clarification only, NOT visually rendered)
   const [conversationState, setConversationState] = useState<ConversationState>('active');
   const [userInput, setUserInput] = useState('');
-  
+
   // Internal context tracking (structured, not raw chat - not visually rendered)
   const [accumulatedContext, setAccumulatedContext] = useState<string>('');
   const [currentGuidance, setCurrentGuidance] = useState<StrategicGuidance | null>(null);
   const [pendingClarification, setPendingClarification] = useState<ClarificationQuestion | null>(null);
-  
+
   // Clarification axis tracking (prevents asking about same axis twice)
   const [resolvedAxes, setResolvedAxes] = useState<Set<ClarificationAxis>>(new Set());
-  
+
   // Variation tracking (prevents repetitive recommendations)
   const [recentlyUsedCultivarIds, setRecentlyUsedCultivarIds] = useState<string[]>([]);
-  
+
   // Resolution state (for PreRollStack)
   const [intent, setIntent] = useState<OutcomeIntent | null>(null);
   const [stackSegments, setStackSegments] = useState<StackSegment[]>([]);
   const [breakdownComponents, setBreakdownComponents] = useState<BlendComponent[]>([]);
-  
+
   // UI state
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showBreakdown, setShowBreakdown] = useState(false);
-  
+
   // Secret inventory portal state
   const [showInventoryPortal, setShowInventoryPortal] = useState(false);
   const [logoClickCount, setLogoClickCount] = useState(0);
   const [logoClickTimer, setLogoClickTimer] = useState<NodeJS.Timeout | null>(null);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
-  
+
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  
+
   // Logo click detection (6 clicks within 3 seconds)
   const handleLogoClick = () => {
     const newCount = logoClickCount + 1;
     setLogoClickCount(newCount);
-    
+
     // Clear existing timer
     if (logoClickTimer) {
       clearTimeout(logoClickTimer);
     }
-    
+
     if (newCount >= 6) {
       setShowInventoryPortal(true);
       setLogoClickCount(0);
@@ -111,7 +111,7 @@ export default function GOLineCalculator() {
       setLogoClickTimer(timer);
     }
   };
-  
+
   // Cleanup timer on unmount
   useEffect(() => {
     return () => {
@@ -134,7 +134,7 @@ export default function GOLineCalculator() {
   // Handle baseline calibration completion
   const handleCalibrationComplete = () => {
     setCalibrationComplete(true);
-    
+
     // If a preset was selected, send its initial intent text automatically
     if (selectedPreset && selectedPreset.initialIntentText) {
       setTimeout(() => {
@@ -155,9 +155,9 @@ export default function GOLineCalculator() {
       const openAxes: ClarificationAxis[] = currentGuidance.clarificationNeeded
         .map(q => getAxisFromQuestionType(q.type))
         .filter(axis => !resolvedAxes.has(axis));
-      
+
       const newlyResolved = parseResolvedAxes(text.trim(), openAxes);
-      
+
       if (newlyResolved.length > 0) {
         // Mark axes as resolved (never ask about them again)
         setResolvedAxes(prev => {
@@ -212,7 +212,7 @@ export default function GOLineCalculator() {
         // Get the first unresolved clarification question
         const firstQuestion = unresolvedQuestions[0];
         setPendingClarification(firstQuestion);
-        
+
         // Conversation remains active (for clarification - not visually rendered)
         setConversationState('active');
       } else {
@@ -235,12 +235,12 @@ export default function GOLineCalculator() {
     if (outcome.selectedCultivars.length === 0) {
       throw new Error('Resolution without cultivar names is invalid');
     }
-    
+
     const hasUnnamed = outcome.selectedCultivars.some(c => !c.displayName || c.displayName.trim() === '');
     if (hasUnnamed) {
       throw new Error('Resolution contains unnamed cultivars - invalid resolution');
     }
-    
+
     // Assign roles based on ratio order: largest = foundation, second = modulator, rest = accent
     const sorted = outcome.selectedCultivars
       .map((cultivar, index) => ({
@@ -261,7 +261,7 @@ export default function GOLineCalculator() {
         role,
       };
     });
-    
+
     // Also create breakdown components (horizontal bars)
     const components: BlendComponent[] = sorted.map((item, idx) => {
       let role: 'foundation' | 'modulator' | 'accent' = 'accent';
@@ -281,19 +281,19 @@ export default function GOLineCalculator() {
   // Handle resolution (when no clarification questions remain)
   const handleResolution = async (guidance: StrategicGuidance) => {
     setConversationState('resolved');
-    
+
     // Translate StrategicGuidance to OutcomeIntent
     const translatedIntent = translateGuidanceToIntent(guidance, {});
     setIntent(translatedIntent);
 
     // Resolve outcome using deterministic engine (with variation logic)
-    const resolvedOutcome = resolveOutcome(translatedIntent, recentlyUsedCultivarIds);
-    
+    const resolvedOutcome = resolveOutcome(translatedIntent);
+
     // Convert to stack format for PreRollStack
     const { segments, components } = convertToStackFormat(resolvedOutcome);
     setStackSegments(segments);
     setBreakdownComponents(components);
-    
+
     // Track recently used cultivars (for variation logic)
     const newCultivarIds = resolvedOutcome.selectedCultivars.map(c => c.id);
     setRecentlyUsedCultivarIds(prev => {
@@ -322,7 +322,7 @@ export default function GOLineCalculator() {
     setIntent(updatedIntent);
 
     // Re-resolve with updated intent
-    const resolvedOutcome = resolveOutcome(updatedIntent, recentlyUsedCultivarIds);
+    const resolvedOutcome = resolveOutcome(updatedIntent);
     const { segments, components } = convertToStackFormat(resolvedOutcome);
     setStackSegments(segments);
     setBreakdownComponents(components);
@@ -509,7 +509,7 @@ export default function GOLineCalculator() {
                   <h3 className="text-sm font-medium text-white mb-1">Adjustment Controls</h3>
                   <div className="text-xs text-white/50">Fine-tune the outcome parameters</div>
                 </div>
-                
+
                 <div className="space-y-8">
                   {/* Energy ↔ Calm */}
                   <div>
@@ -530,7 +530,7 @@ export default function GOLineCalculator() {
                       className="w-full h-1 bg-white/5 appearance-none cursor-pointer accent-white/20"
                     />
                   </div>
-                  
+
                   {/* Duration ↔ Intensity */}
                   <div>
                     <div className="flex items-center justify-between mb-3">
@@ -550,7 +550,7 @@ export default function GOLineCalculator() {
                       className="w-full h-1 bg-white/5 appearance-none cursor-pointer accent-white/20"
                     />
                   </div>
-                  
+
                   {/* Anxiety Sensitivity */}
                   <div>
                     <div className="flex items-center justify-between mb-3">
@@ -579,15 +579,15 @@ export default function GOLineCalculator() {
                   <div className="mb-8">
                     <h2 className="text-lg font-medium text-white mb-1">GO Line — Resolved Composition</h2>
                     <div className="text-xs text-white/30">
-                      {stackSegments.length === 1 
+                      {stackSegments.length === 1
                         ? 'Single cultivar recommendation'
                         : `${stackSegments.length}-cultivar blend`}
                     </div>
                   </div>
-                  
+
                   {/* Pre-Roll Stack (Primary Visualization) */}
                   <PreRollStack segments={stackSegments} height={400} />
-                  
+
                   {/* Composition Breakdown (Collapsible) */}
                   {breakdownComponents.length > 0 && (
                     <div className="mt-12 w-full max-w-2xl">

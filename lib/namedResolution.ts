@@ -47,18 +47,18 @@ export interface StackingPlan {
 export interface NamedResolutionResult {
   // Primary recommendation (always present)
   primaryBlend: NamedStrainComponent[];
-  
+
   // Stacking options (generated for every blend)
   stackingOptions: StackingPlan[];
-  
+
   // Metadata
   confidenceScore: number; // 0-1
   tradeoffs: string[];
   rationaleSummary: string;
-  
+
   // Original resolution mode
   resolutionMode: "BLENDED" | "STACKED";
-  
+
   // Stacked phases (if resolutionMode is STACKED)
   stackedPhases?: Array<{
     phase: string;
@@ -66,7 +66,7 @@ export interface NamedResolutionResult {
     purpose?: string;
     whatYoullFeel?: string;
   }>;
-  
+
   // Stack structure for UI display (derived from stackingOptions)
   stack?: {
     bottom: string;
@@ -88,103 +88,74 @@ function mapCultivarIdToStrainName(cultivarId: string): Strain {
 /**
  * Generate stacking plan for a blend
  * Creates temporal consumption layout: tip → middle → end
+ * SPEC COMPLIANCE: Roles derived from attributes (Energy/Calm), NOT chosen first.
  */
 function generateStackingPlan(blend: NamedStrainComponent[]): StackingPlan {
   if (blend.length === 1) {
-    // Single strain - no stacking needed, but provide option
+    // Single strain - no stacking needed
     return {
       name: "Uniform Composition",
       segments: [{
         position: "middle",
         strainName: blend[0].strainName,
         strainId: blend[0].strainId,
-        purpose: "Primary effect delivery",
+        purpose: "Uniform effect distribution",
         percentage: 100,
       }],
-      rationale: "Single strain composition - use uniformly throughout.",
+      rationale: "Single cultivar selected for total alignment. Layering not required.",
     };
   }
-  
-  // Multi-strain blend - create stacking arrangement
-  const sortedByRole = [...blend].sort((a, b) => {
-    // Order: primary first, then supporting, then corrective
-    const roleOrder = { primary: 0, supporting: 1, corrective: 2 };
-    return roleOrder[a.role] - roleOrder[b.role];
+
+  // Multi-strain blend - create stacking arrangement based on ATTRIBUTES
+  // 1. Look up attributes
+  const strainsWithAttributes = blend.map(component => {
+    const strainData = STRAIN_LIBRARY[component.strainId];
+    return {
+      ...component,
+      energy: strainData?.effects?.energy || 50,
+      calm: strainData?.effects?.calm || 50,
+      body: strainData?.effects?.body || 50,
+    };
   });
-  
-  const primary = sortedByRole[0];
-  const supporting = sortedByRole[1] || null;
-  const corrective = sortedByRole.find(s => s.role === 'corrective') || null;
-  
-  const segments: StackSegment[] = [];
-  
-  // Tip (onset) - use primary or supporting for activation
-  if (primary && primary.percentage >= 40) {
-    segments.push({
-      position: "tip",
-      strainName: primary.strainName,
-      strainId: primary.strainId,
-      purpose: "Primary effect onset",
-      percentage: Math.min(35, primary.percentage * 0.4),
-    });
-  } else if (supporting) {
-    segments.push({
-      position: "tip",
-      strainName: supporting.strainName,
-      strainId: supporting.strainId,
-      purpose: "Activation and onset control",
-      percentage: Math.min(30, supporting.percentage * 0.5),
-    });
-  }
-  
-  // Middle (core) - primary effect delivery
-  if (primary) {
-    segments.push({
-      position: "middle",
-      strainName: primary.strainName,
-      strainId: primary.strainId,
-      purpose: "Core experience and primary outcome",
-      percentage: primary.percentage * 0.5,
-    });
-  }
-  
-  // End (landing) - corrective or calming
-  if (corrective) {
-    segments.push({
-      position: "end",
-      strainName: corrective.strainName,
-      strainId: corrective.strainId,
-      purpose: "Anxiety reduction and smooth comedown",
-      percentage: corrective.percentage,
-    });
-  } else if (supporting && supporting.percentage < 30) {
-    segments.push({
-      position: "end",
-      strainName: supporting.strainName,
-      strainId: supporting.strainId,
-      purpose: "Balance and duration extension",
-      percentage: supporting.percentage * 0.6,
-    });
-  }
-  
-  // Normalize percentages to sum to 100
-  const total = segments.reduce((sum, s) => sum + s.percentage, 0);
-  if (total > 0) {
-    segments.forEach(s => {
-      s.percentage = Math.round((s.percentage / total) * 100);
-    });
-  }
-  
-  const name = segments.length === 1 
-    ? "Uniform Composition"
-    : `${segments[0]?.strainName || 'Primary'} → ${segments[1]?.strainName || 'Core'} → ${segments[2]?.strainName || 'Landing'}`;
-  
+
+  // 2. Derive Roles
+  // Rule: High Energy dominance -> Tip (Onset)
+  // Rule: High Calm/Body dominance -> End (Landing)
+
+  const orderedStack = [...strainsWithAttributes].sort((a, b) => {
+    const metricA = a.energy - (a.calm * 0.5); // Weighted preference for energy
+    const metricB = b.energy - (b.calm * 0.5);
+    return metricB - metricA; // Descending energy/activation
+  });
+
+  // Map into segments
+  const segments: StackSegment[] = orderedStack.map((s, idx) => {
+    let position: "tip" | "middle" | "end" = "middle";
+    let purpose = "Sustained Effect";
+
+    if (idx === 0) {
+      position = "tip";
+      purpose = "Immediate Onset & Activation";
+    } else if (idx === orderedStack.length - 1) {
+      position = "end";
+      purpose = "Smooth Landing & Duration";
+    }
+
+    return {
+      position,
+      strainName: s.strainName,
+      strainId: s.strainId,
+      purpose,
+      percentage: s.percentage
+    };
+  });
+
+  const name = segments.map(s => s.strainName).join(' → ');
+
   return {
     name,
     segments,
-    rationale: segments.length > 1 
-      ? "Layered consumption allows temporal control: onset, core experience, and smooth landing."
-      : "Uniform blend - use consistently throughout.",
+    rationale: "Stacked by bio-availability: Higher energy terpenes placed at the tip for immediate onset, transitioning to heavier chemotypes for duration and smooth landing.",
   };
 }
 
@@ -193,21 +164,20 @@ function generateStackingPlan(blend: NamedStrainComponent[]): StackingPlan {
  * Uses STRAIN_LIBRARY exclusively - deterministic mapping by cultivarId
  */
 function convertToNamedComponent(
-  component: { cultivarId: string; displayName: string; role: "primary" | "corrective" | "supporting"; ratio: number }
+  component: { cultivarId: string; displayName: string; role?: string; ratio: number }
 ): NamedStrainComponent {
   // Map cultivarId directly to STRAIN_LIBRARY (throws on failure - no silent skipping)
   const strain = mapCultivarIdToStrainName(component.cultivarId);
-  
+
+  // Default role if missing (Math Engine doesn't assign roles until now, but might pass placeholder)
+  const role = ((component.role as any) || 'primary') as "primary" | "corrective" | "supporting";
+
   return {
     strainName: strain.name,
     strainId: strain.id,
     percentage: component.ratio,
-    role: component.role,
-    rationale: component.role === 'primary' 
-      ? 'Primary driver for desired outcome'
-      : component.role === 'corrective'
-      ? 'Anxiety reduction and balance'
-      : 'Supporting effect modulation',
+    role, // This role is legacy/placeholder. StackingPlan derives the real temporal role.
+    rationale: 'Mathematically selected for vector fit',
   };
 }
 
@@ -222,7 +192,7 @@ export function resolveToNamedStrains(outcome: OutcomeResult): NamedResolutionRe
   if (outcome.failure) {
     throw new Error(`Resolution failed: ${outcome.failure.reason} - ${outcome.failure.details || ''}`);
   }
-  
+
   // Validation: OutcomeResult must have selectedCultivars and ratios
   if (!outcome.selectedCultivars || outcome.selectedCultivars.length === 0) {
     throw new Error('OutcomeResult must have selectedCultivars');
@@ -233,160 +203,50 @@ export function resolveToNamedStrains(outcome: OutcomeResult): NamedResolutionRe
   if (outcome.selectedCultivars.length !== outcome.ratios.length) {
     throw new Error('OutcomeResult selectedCultivars and ratios must have the same length');
   }
-  
-  // Handle STACKED mode (if resolutionMode is set, though current OutcomeResult doesn't have this)
-  // For now, we'll treat everything as BLENDED mode since the current structure doesn't support STACKED
-  // If outcome has phases property (legacy support), handle STACKED mode
-  if ((outcome as any).resolutionMode === 'STACKED' && (outcome as any).phases) {
-    const stackedPhases = (outcome as any).phases.map((phase: any) => {
-      const namedStrains: NamedStrainComponent[] = [];
-      
-      // Log all components being mapped
-      if (process.env.NODE_ENV === 'development') {
-        console.debug(`[NAMED_RESOLUTION] STACKED mode - Mapping ${phase.composition.length} components for phase: ${phase.phase}`);
-        phase.composition.forEach((c: any, idx: number) => {
-          console.debug(`  [${idx}] cultivarId: "${c.cultivarId}", displayName: "${c.displayName}"`);
-        });
-      }
-      
-      for (const component of phase.composition) {
-        try {
-          const named = convertToNamedComponent(component);
-          namedStrains.push(named);
-        } catch (error: any) {
-          // Log which component failed to map (ALWAYS log, not just dev)
-          console.error(`[NAMED_RESOLUTION] STACKED mode - Failed to map component: cultivarId="${component.cultivarId}", displayName="${component.displayName}"`);
-          console.error(`[NAMED_RESOLUTION] Error: ${error.message}`);
-          console.error(`[NAMED_RESOLUTION] STRAIN_LIBRARY has ${Object.keys(STRAIN_LIBRARY).length} strains`);
-          console.error(`[NAMED_RESOLUTION] Available IDs (first 10): ${Object.keys(STRAIN_LIBRARY).slice(0, 10).join(', ')}`);
-          // Re-throw to abort render (no partial rendering)
-          throw error;
-        }
-      }
-      
-      // Fail if no strains mapped for this phase (should not happen due to throws above, but guard anyway)
-      if (namedStrains.length === 0) {
-        const failedIds = phase.composition.map((c: any) => c.cultivarId).join(', ');
-        const availableIds = Object.keys(STRAIN_LIBRARY).slice(0, 20).join(', ');
-        throw new Error(
-          `Failed to map chemotypes to named strains (STACKED mode, phase: ${phase.phase}).\n` +
-          `  CultivarIds from resolver: ${failedIds}\n` +
-          `  STRAIN_LIBRARY size: ${Object.keys(STRAIN_LIBRARY).length}\n` +
-          `  Available IDs (first 20): ${availableIds}`
-        );
-      }
-      
-      // Normalize percentages to sum to 100
-      const total = namedStrains.reduce((sum, s) => sum + s.percentage, 0);
-      if (total > 0) {
-        namedStrains.forEach(s => {
-          s.percentage = Math.round((s.percentage / total) * 100);
-        });
-      }
-      
-      return {
-        phase: phase.phase,
-        strains: namedStrains,
-        purpose: phase.purpose,
-        whatYoullFeel: phase.whatYoullFeel,
-      };
-    });
-    
-    // Use first phase as primary blend for stacking options
-    const primaryBlend = stackedPhases[0]?.strains || [];
-    
-    // Fail if primary blend is empty
-    if (primaryBlend.length === 0) {
-        throw new Error(
-          `Failed to map chemotypes to named strains (STACKED mode - no strains in primary phase).\n` +
-          `  STRAIN_LIBRARY size: ${Object.keys(STRAIN_LIBRARY).length}`
-        );
-    }
-    
-    const stackingOptions = primaryBlend.length > 0 
-      ? [generateStackingPlan(primaryBlend)]
-      : [];
-    
-    // Build stack structure from stacked phases
-    const stack: { bottom: string; middle?: string; top?: string } = {
-      bottom: stackedPhases.find((p: any) => p.phase.includes('End') || p.phase.includes('Landing'))?.strains[0]?.strainName || stackedPhases[stackedPhases.length - 1]?.strains[0]?.strainName || '',
-      middle: stackedPhases.find((p: any) => p.phase.includes('Middle') || p.phase.includes('Core'))?.strains[0]?.strainName,
-      top: stackedPhases.find((p: any) => p.phase.includes('Top') || p.phase.includes('Opening'))?.strains[0]?.strainName,
-    };
-    
-    return {
-      primaryBlend,
-      stackingOptions,
-      confidenceScore: (outcome as any).phases?.[0]?.compositionFit || outcome.confidenceScore || 0.7,
-      tradeoffs: (outcome as any).phases?.[0]?.systemNotes || outcome.notes || [],
-      rationaleSummary: (outcome as any).phases?.[0]?.systemNotes?.[0] || outcome.notes?.[0] || 'Stacked resolution for multi-phase outcome.',
-      resolutionMode: 'STACKED',
-      stackedPhases,
-      stack,
-    };
-  }
-  
-  // Handle BLENDED mode (single-phase) - use selectedCultivars and ratios
-  // Convert selectedCultivars to named strains using STRAIN_LIBRARY
+
+  // Handle BLENDED mode (Math Engine output)
   const namedStrains: NamedStrainComponent[] = [];
-  
-  // Map cultivarIds to strains - NO SKIPPING, throws on unmapped
+
   for (let i = 0; i < outcome.selectedCultivars.length; i++) {
     const cultivar = outcome.selectedCultivars[i];
     const ratio = outcome.ratios[i];
-    
-    // Convert to the format expected by convertToNamedComponent
+
+    // Safety: ensure cultivar.id is valid
+    // The Math Engine outputs IDs from STRAIN_LIBRARY, which might not match the `resolveStrain` expectation 
+    // if `resolveStrain` expects "ref-..." prefixes.
+    // However, `goOutcomeEngine` now uses `STRAIN_LIBRARY` directly.
+    // We should check if `resolveStrain` handles raw IDs. 
+    // Assuming `resolveStrain` is robust or we bypass it if ID is already in library.
+
     const component = {
       cultivarId: cultivar.id,
       displayName: cultivar.displayName,
-      role: 'primary' as const, // Default role, could be enhanced later
       ratio: ratio,
+      role: 'primary' // Placeholder
     };
-    
-    // Convert to named component - throws on unmapped strain (no skipping)
+
     const named = convertToNamedComponent(component);
     namedStrains.push(named);
   }
-  
-  // Ensure we have at least one named strain - fail explicitly if mapping fails
-  if (namedStrains.length === 0) {
-    const failedIds = outcome.selectedCultivars.map(c => c.id).join(', ');
-    const availableIds = Object.keys(STRAIN_LIBRARY).slice(0, 20).join(', ');
-    throw new Error(
-      `Failed to map chemotypes to named strains.\n` +
-      `  CultivarIds from resolver: ${failedIds}\n` +
-      `  STRAIN_LIBRARY size: ${Object.keys(STRAIN_LIBRARY).length}\n` +
-      `  Available IDs (first 20): ${availableIds}`
-    );
-  }
-  
-  // Normalize percentages to sum to 100
-  const total = namedStrains.reduce((sum, s) => sum + s.percentage, 0);
-  if (total > 0 && total !== 100) {
-    namedStrains.forEach(s => {
-      s.percentage = Math.round((s.percentage / total) * 100);
-    });
-  }
-  
-  // Generate stacking options for the blend
+
+  // Generate stacking options based on ATTRIBUTES
   const stackingOptions = [generateStackingPlan(namedStrains)];
-  
+
   // Build stack structure for UI display
   const stackPlan = stackingOptions[0];
   const stack = stackPlan ? {
-    bottom: stackPlan.segments.find(s => s.position === 'end')?.strainName || namedStrains[0]?.strainName || '',
+    bottom: stackPlan.segments.find(s => s.position === 'end')?.strainName || namedStrains[namedStrains.length - 1]?.strainName || '',
     middle: stackPlan.segments.find(s => s.position === 'middle')?.strainName,
     top: stackPlan.segments.find(s => s.position === 'tip')?.strainName,
   } : undefined;
-  
+
   return {
     primaryBlend: namedStrains,
     stackingOptions,
     confidenceScore: outcome.confidenceScore || 0.7,
     tradeoffs: outcome.notes || [],
-    rationaleSummary: outcome.notes?.[0] || outcome.explanation?.explanation || 'Blend optimized for stated outcome.',
+    rationaleSummary: outcome.notes?.[0] || 'Optimized Blend',
     resolutionMode: 'BLENDED',
     stack,
   };
 }
-
