@@ -15,6 +15,7 @@ import { resolveToNamedStrains, type NamedResolutionResult } from '@/lib/namedRe
 import ResolutionPanel, { type ResolvedBlend, type ResolvedCultivar, type CultivarRole } from '@/components/ResolutionPanel';
 import UsageProtocol from '@/components/UsageProtocol';
 import AgeGate from '@/components/AgeGate';
+import GoMark from '@/components/GoMark';
 import { StrategicGuidance } from '@/lib/strategicGuidance';
 import { translateGuidanceToIntent } from '@/lib/guidanceToIntent';
 import { ReferenceProfile, referenceProfileToIntent } from '@/lib/referenceProfile';
@@ -349,6 +350,8 @@ export default function Home() {
     }
   };
 
+  const [isResolving, setIsResolving] = useState(false);
+
   const handleLock = (finalGuidance: StrategicGuidance, answers: Record<string, string | string[]>) => {
     if (isListening && recognitionRef.current) {
       try {
@@ -363,47 +366,57 @@ export default function Home() {
     const translatedIntent = translateGuidanceToIntent(finalGuidance, answers);
     setIntent(translatedIntent);
 
-    try {
-      const resolvedOutcome = resolveOutcome(translatedIntent);
-      setOutcome(resolvedOutcome);
+    // Clear previous visualization
+    setResolvedBlend(null);
+    setIsResolving(true);
 
-      if (resolvedOutcome.failure) {
-        const blend = convertToResolvedBlend({ primaryBlend: [], stackingOptions: [], confidenceScore: 0, tradeoffs: [], rationaleSummary: '', resolutionMode: 'BLENDED' }, resolvedOutcome);
-        setResolvedBlend(blend);
+    // Small delay to show clearing, then animate in new result
+    setTimeout(() => {
+      try {
+        const resolvedOutcome = resolveOutcome(translatedIntent);
+        setOutcome(resolvedOutcome);
+
+        if (resolvedOutcome.failure) {
+          const blend = convertToResolvedBlend({ primaryBlend: [], stackingOptions: [], confidenceScore: 0, tradeoffs: [], rationaleSummary: '', resolutionMode: 'BLENDED' }, resolvedOutcome);
+          setResolvedBlend(blend);
+          setIsResolving(false);
+          if (isListening && recognitionRef.current) {
+            try {
+              explicitStopRef.current = true;
+              recognitionRef.current.stop();
+              setIsListening(false);
+            } catch (err) {
+              console.error('Failed to stop recognition on failure:', err);
+            }
+          }
+          return;
+        }
+
         if (isListening && recognitionRef.current) {
           try {
             explicitStopRef.current = true;
             recognitionRef.current.stop();
             setIsListening(false);
           } catch (err) {
-            console.error('Failed to stop recognition on failure:', err);
+            console.error('Failed to stop recognition on success:', err);
           }
         }
-        return;
+
+        const named = resolveToNamedStrains(resolvedOutcome);
+        setNamedResolution(named);
+        const blend = convertToResolvedBlend(named, resolvedOutcome);
+        setResolvedBlend(blend);
+        setIsResolving(false);
+        setPhase('FREE');
+        setGuidance(null);
+        setClarificationAnswers({});
+
+      } catch (err) {
+        console.error('Resolution error:', err);
+        setError('Failed to resolve outcome. Please try again.');
+        setIsResolving(false);
       }
-
-      if (isListening && recognitionRef.current) {
-        try {
-          explicitStopRef.current = true;
-          recognitionRef.current.stop();
-          setIsListening(false);
-        } catch (err) {
-          console.error('Failed to stop recognition on success:', err);
-        }
-      }
-
-      const named = resolveToNamedStrains(resolvedOutcome);
-      setNamedResolution(named);
-      const blend = convertToResolvedBlend(named, resolvedOutcome);
-      setResolvedBlend(blend);
-      setPhase('FREE');
-      setGuidance(null);
-      setClarificationAnswers({});
-
-    } catch (err) {
-      console.error('Resolution error:', err);
-      setError('Failed to resolve outcome. Please try again.');
-    }
+    }, 200); // Small delay for visual clearing
   };
 
   const handleAdjustment = (adjustedIntent: {
@@ -416,38 +429,48 @@ export default function Home() {
     setIsProcessing(true);
     setError(null);
 
-    try {
-      // Create updated intent with adjusted values
-      const updatedIntent: OutcomeIntent = {
-        ...intent,
-        activationTarget: adjustedIntent.activationTarget,
-        cognitiveEndurance: adjustedIntent.cognitiveEndurance,
-        anxietySensitivity: adjustedIntent.anxietySensitivity,
-      };
-      
-      setIntent(updatedIntent);
-      
-      // Re-resolve with adjusted intent
-      const resolvedOutcome = resolveOutcome(updatedIntent);
-      setOutcome(resolvedOutcome);
+    // Clear previous visualization
+    setResolvedBlend(null);
+    setIsResolving(true);
 
-      if (resolvedOutcome.failure) {
-        const blend = convertToResolvedBlend({ primaryBlend: [], stackingOptions: [], confidenceScore: 0, tradeoffs: [], rationaleSummary: '', resolutionMode: 'BLENDED' }, resolvedOutcome);
+    // Small delay to show clearing, then animate in new result
+    setTimeout(() => {
+      try {
+        // Create updated intent with adjusted values
+        const updatedIntent: OutcomeIntent = {
+          ...intent,
+          activationTarget: adjustedIntent.activationTarget,
+          cognitiveEndurance: adjustedIntent.cognitiveEndurance,
+          anxietySensitivity: adjustedIntent.anxietySensitivity,
+        };
+        
+        setIntent(updatedIntent);
+        
+        // Re-resolve with adjusted intent
+        const resolvedOutcome = resolveOutcome(updatedIntent);
+        setOutcome(resolvedOutcome);
+
+        if (resolvedOutcome.failure) {
+          const blend = convertToResolvedBlend({ primaryBlend: [], stackingOptions: [], confidenceScore: 0, tradeoffs: [], rationaleSummary: '', resolutionMode: 'BLENDED' }, resolvedOutcome);
+          setResolvedBlend(blend);
+          setIsResolving(false);
+          setIsProcessing(false);
+          return;
+        }
+
+        const named = resolveToNamedStrains(resolvedOutcome);
+        setNamedResolution(named);
+        const blend = convertToResolvedBlend(named, resolvedOutcome);
         setResolvedBlend(blend);
+        setIsResolving(false);
+      } catch (err) {
+        console.error('Adjustment error:', err);
+        setError('Failed to adjust outcome. Please try again.');
+        setIsResolving(false);
+      } finally {
         setIsProcessing(false);
-        return;
       }
-
-      const named = resolveToNamedStrains(resolvedOutcome);
-      setNamedResolution(named);
-      const blend = convertToResolvedBlend(named, resolvedOutcome);
-      setResolvedBlend(blend);
-    } catch (err) {
-      console.error('Adjustment error:', err);
-      setError('Failed to adjust outcome. Please try again.');
-    } finally {
-      setIsProcessing(false);
-    }
+    }, 200); // Small delay for visual clearing
   };
 
   const handleRefineOutcome = () => {
@@ -553,8 +576,13 @@ export default function Home() {
     <div className="min-h-screen bg-noise text-[#E5E5E5] font-sans selection:bg-[#C5A065]/30 overflow-x-hidden flex flex-col">
       {/* Header */}
       <header className="pt-16 px-6 lg:px-12 xl:px-24 flex justify-between items-baseline">
-        <div className="flex flex-col gap-2">
-          <span className="text-[10px] font-sans font-medium text-zinc-500 uppercase tracking-widest">GO // 2.1</span>
+        <div className="flex items-center gap-4">
+          <GoMark
+            className={`go-mark ${resolvedBlend ? "visible" : "hidden"}`}
+          />
+          <div className="flex flex-col gap-2">
+            <span className="text-[10px] font-sans font-medium text-zinc-500 uppercase tracking-widest">GO // 2.1</span>
+          </div>
         </div>
         {isProcessing && (
           <span className="text-[10px] font-mono font-medium tracking-widest text-zinc-400">PROCESSING...</span>
@@ -576,8 +604,8 @@ export default function Home() {
 
             {/* Current Clarification Question - Inline above input */}
             {currentClarification && (
-              <div className="mb-6 p-4 border border-zinc-800 bg-zinc-900/50">
-                <p className="text-sm font-sans text-white mb-4">{currentClarification.question}</p>
+              <div className="mb-6 p-4 border border-zinc-800 bg-zinc-900/50 overflow-y-auto">
+                <p className="text-sm font-sans text-white mb-4 break-words">{currentClarification.question}</p>
                 <div className="flex flex-col items-start gap-2">
                   {currentClarification.options.map((option) => {
                     const isSelected = clarificationAnswers[currentClarification.type] === option ||
@@ -592,7 +620,7 @@ export default function Home() {
                           option, 
                           currentClarification.type === 'tolerance' || currentClarification.type === 'priority'
                         )}
-                        className={`text-sm font-sans transition-all duration-200 text-left relative py-2 px-0 ${
+                        className={`text-sm font-sans transition-all duration-200 text-left relative py-2 px-0 break-words ${
                           isSelected
                             ? 'text-white font-medium pl-6'
                             : 'text-zinc-400 hover:text-zinc-200 pl-0 hover:pl-2'
@@ -631,7 +659,7 @@ export default function Home() {
                 }}
                 placeholder=""
                 aria-label="Describe your desired physical and mental state"
-                className="w-full bg-transparent text-2xl lg:text-3xl font-light leading-relaxed tracking-wide text-white placeholder-zinc-600 outline-none resize-none border-b border-zinc-700 focus:border-[#C5A065] py-4 transition-colors duration-300 overflow-y-hidden min-h-[80px]"
+                className="w-full bg-transparent text-2xl lg:text-3xl font-light leading-relaxed tracking-wide text-white placeholder-zinc-600 outline-none resize-y border-b border-zinc-700 focus:border-[#C5A065] py-4 transition-colors duration-300 overflow-y-auto min-h-[80px] max-h-[400px]"
                 rows={2}
                 disabled={isProcessing || !!currentClarification}
                 spellCheck={false}
@@ -656,19 +684,26 @@ export default function Home() {
           </section>
         ) : (
           /* RESOLVED STATE: Header, blend visualization, composition breakdown, adjustment sliders */
-          <section className="max-w-5xl mx-auto min-h-0">
-            <ResolutionPanel
-              blend={resolvedBlend}
-              intent={intent ? {
-                activationTarget: intent.activationTarget || 0.5,
-                cognitiveEndurance: intent.cognitiveEndurance || 0.5,
-                anxietySensitivity: intent.anxietySensitivity || 0.5,
-              } : undefined}
-              isComputing={isProcessing}
-              onRefineOutcome={handleRefineOutcome}
-              onShowUsageProtocol={handleShowUsageProtocol}
-              onAdjustment={handleAdjustment}
-            />
+          <section className="max-w-5xl mx-auto min-h-0 overflow-y-auto">
+            {isResolving ? (
+              <div className="flex items-center justify-center min-h-[400px]">
+                <span className="text-sm font-sans text-zinc-400">Calculating...</span>
+              </div>
+            ) : (
+              <ResolutionPanel
+                blend={resolvedBlend}
+                intent={intent ? {
+                  activationTarget: intent.activationTarget || 0.5,
+                  cognitiveEndurance: intent.cognitiveEndurance || 0.5,
+                  anxietySensitivity: intent.anxietySensitivity || 0.5,
+                } : undefined}
+                isComputing={isProcessing}
+                onRefineOutcome={handleRefineOutcome}
+                onShowUsageProtocol={handleShowUsageProtocol}
+                onAdjustment={handleAdjustment}
+                isAnimating={!isProcessing}
+              />
+            )}
           </section>
         )}
       </main>

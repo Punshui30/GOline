@@ -4,7 +4,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { OutcomeResult } from '@/lib/goOutcomeEngine';
 import BlendVisualizer from './BlendVisualizer';
 
@@ -67,15 +67,17 @@ interface ResolutionPanelProps {
     cognitiveEndurance: number;
     anxietySensitivity: number;
   }) => void;
+  isAnimating?: boolean;
 }
 
-export default function ResolutionPanel({ blend, intent, isComputing, onRefineOutcome, onShowUsageProtocol, onAdjustment }: ResolutionPanelProps) {
+export default function ResolutionPanel({ blend, intent, isComputing, onRefineOutcome, onShowUsageProtocol, onAdjustment, isAnimating = true }: ResolutionPanelProps) {
   const [showAdjustments, setShowAdjustments] = useState(false);
   const [localIntent, setLocalIntent] = useState(intent || {
     activationTarget: 0.5,
     cognitiveEndurance: 0.5,
     anxietySensitivity: 0.5,
   });
+  const adjustmentTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (intent) {
@@ -86,9 +88,17 @@ export default function ResolutionPanel({ blend, intent, isComputing, onRefineOu
   const handleAdjustmentChange = (field: 'activationTarget' | 'cognitiveEndurance' | 'anxietySensitivity', value: number) => {
     const updated = { ...localIntent, [field]: value };
     setLocalIntent(updated);
-    if (onAdjustment) {
-      onAdjustment(updated);
+    
+    // Debounce the adjustment callback
+    if (adjustmentTimeoutRef.current) {
+      clearTimeout(adjustmentTimeoutRef.current);
     }
+    
+    adjustmentTimeoutRef.current = setTimeout(() => {
+      if (onAdjustment) {
+        onAdjustment(updated);
+      }
+    }, 300); // 300ms debounce
   };
 
   const handleRefineOutcome = () => {
@@ -112,14 +122,18 @@ export default function ResolutionPanel({ blend, intent, isComputing, onRefineOu
 
   // ACTIVE STATE
   return (
-    <div className="flex flex-col gap-24 lg:gap-32 mb-32 text-[#E5E5E5]">
+    <div className="flex flex-col gap-24 lg:gap-32 mb-32 text-[#E5E5E5] overflow-y-auto">
 
       {/* 1. Header: Primary Conclusion */}
-      <section className="opacity-0 animate-[fadeIn_0.6s_ease-out_0.2s_forwards]">
+      <section className="opacity-0 animate-[fadeIn_0.6s_ease-out_0.2s_forwards] overflow-y-auto">
         <div className="flex flex-col gap-6">
-          <span className="text-[10px] font-sans font-medium uppercase tracking-[0.2em] text-zinc-500">Recommended Blend</span>
-          <h2 className="font-serif text-3xl lg:text-5xl font-light leading-tight tracking-tight text-white">
-            {blend.rationaleSummary}
+          <span className="text-[10px] font-sans font-medium uppercase tracking-[0.2em] text-zinc-500">
+            {blend.resolutionMode === 'SINGLE_TARGET' ? 'Best Match' : 'Best Match for Your Goal'}
+          </span>
+          <h2 className="font-serif text-3xl lg:text-5xl font-light leading-tight tracking-tight text-white break-words">
+            {blend.resolutionMode === 'SINGLE_TARGET' 
+              ? 'One strain already matches what you want'
+              : blend.rationaleSummary}
           </h2>
         </div>
       </section>
@@ -129,15 +143,17 @@ export default function ResolutionPanel({ blend, intent, isComputing, onRefineOu
         <h3 className="text-[10px] font-sans font-medium uppercase tracking-[0.2em] text-zinc-500 mb-12">Blend Composition</h3>
 
         {/* Animated Visualizer Component */}
-        <BlendVisualizer blend={blend} />
+        <BlendVisualizer blend={blend} isAnimating={isAnimating} />
 
         {/* Blend Explanation */}
-        <div className="mt-12 p-6 border border-zinc-800 bg-zinc-900/30">
-          <h4 className="font-sans text-sm font-medium text-white mb-3">Blend Formulation</h4>
-          <p className="text-sm font-sans text-zinc-400 leading-relaxed max-w-xl">
-            This is a blended formulation where all components are mixed together. The <span className="text-white font-medium">Primary Contributor</span> provides the main effect profile. The <span className="text-white font-medium">Supporting Contributor</span> fine-tunes the experience. The <span className="text-white font-medium">Weighted Influence</span> adds complementary effects. All components work together simultaneously in a single blended product.
-          </p>
-        </div>
+        {blend.resolutionMode === 'BLENDED' && (
+          <div className="mt-12 p-6 border border-zinc-800 bg-zinc-900/30 overflow-y-auto">
+            <h4 className="font-sans text-sm font-medium text-white mb-3">Blend Formulation</h4>
+            <p className="text-sm font-sans text-zinc-400 leading-relaxed max-w-xl">
+              This is a blended formulation where all components are mixed together. The <span className="text-white font-medium">Primary Contributor</span> provides the main effect profile. The <span className="text-white font-medium">Supporting Contributor</span> fine-tunes the experience. The <span className="text-white font-medium">Weighted Influence</span> adds complementary effects. All components work together simultaneously in a single blended product.
+            </p>
+          </div>
+        )}
 
       </section>
 
@@ -231,12 +247,12 @@ export default function ResolutionPanel({ blend, intent, isComputing, onRefineOu
       {/* 4. Tradeoffs & Follow Up */}
       <section className="opacity-0 animate-[fadeIn_0.6s_ease-out_1s_forwards]">
         {blend.tradeoffs.length > 0 && (
-          <div className="mb-12">
+          <div className="mb-12 overflow-y-auto">
             <h3 className="text-[10px] font-sans font-medium uppercase tracking-[0.2em] text-zinc-500 mb-8">Notes</h3>
             <ul className="space-y-4">
               {blend.tradeoffs.map((tradeoff, i) => (
                 <li key={i} className="text-sm font-sans text-zinc-400 leading-relaxed flex gap-3">
-                  <span className="text-zinc-600">•</span> <span>{tradeoff}</span>
+                  <span className="text-zinc-600">•</span> <span className="break-words">{tradeoff}</span>
                 </li>
               ))}
             </ul>
