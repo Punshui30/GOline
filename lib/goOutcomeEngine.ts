@@ -79,12 +79,13 @@ function getStrainVector(strain: Strain) {
   };
 }
 
+
 /**
  * Calculate Weighted Euclidean Distance between Blend and Intent
  * Lower is Better.
  */
 function calculateDistance(
-  blendVector: { activation: number; anxietyRisk: number; body: number; focus: number },
+  blendVector: { activation: number; anxietyRisk: number; body: number; focus: number; calm: number },
   intent: OutcomeIntent
 ): number {
   let distanceSq = 0;
@@ -115,6 +116,17 @@ function calculateDistance(
   const focusDiff = blendVector.focus - intent.cognitiveEndurance;
   distanceSq += (focusDiff * focusDiff) * WEIGHTS.focus;
 
+  // 5. Calm (New Dimension)
+  // If calm is not explicitly in intent, treat it as inverse of activation or check intent fields?
+  // User spec: "If calm is inverse activation but independently reported, then penalize activation–calm mismatch"
+  // Or "const targetCalm = 1 - intent.activation;"
+  // We will Use Target Calm = 1 - activation.
+  const targetCalm = 1 - intent.activation;
+  const calmDiff = blendVector.calm - targetCalm;
+  // Weight 0.75 as per user suggestion
+  distanceSq += (calmDiff * calmDiff) * 0.75;
+
+
   return Math.sqrt(distanceSq);
 }
 
@@ -122,16 +134,17 @@ function calculateDistance(
  * Compute the aggregate vector of a blend
  */
 function computeBlendVector(strains: Strain[], ratios: number[]) {
-  const vector = { activation: 0, anxietyRisk: 0, body: 0, focus: 0 };
+  const vector = { activation: 0, anxietyRisk: 0, body: 0, focus: 0, calm: 0 };
 
   for (let i = 0; i < strains.length; i++) {
     const sVec = getStrainVector(strains[i]);
     const weight = ratios[i] / 100;
 
     vector.activation += sVec.activation * weight;
-    vector.anxietyRisk += sVec.anxietyRisk * weight; // Additive risk assumption for simplistic vector model
+    vector.anxietyRisk += sVec.anxietyRisk * weight;
     vector.body += sVec.body * weight;
     vector.focus += sVec.focus * weight;
+    vector.calm += sVec.calm * weight;
   }
   return vector;
 }
@@ -153,10 +166,16 @@ export function resolveOutcome(intent: OutcomeIntent): OutcomeResult {
   // Sort by Distance ASC (Lowest is best)
   scoredStrains.sort((a, b) => a.distance - b.distance);
 
-  // Optimization Window: Take Top 8 strains.
-  // N=40 -> Combinations of 3 is too large (40C3 = 9880) * Ratios.
-  // N=8 -> 8C3 = 56. Very fast.
-  const candidateStrains = scoredStrains.slice(0, 8).map(s => s.strain);
+  // Optimization Window: Dynamic Best + 15% Tolerance (Max 12)
+  // This prevents arbitrary cutoffs and allows mathematically viable candidates
+  // even if they aren't #1.
+  const bestDistance = scoredStrains[0].distance;
+  const cutoffDistance = bestDistance > 0 ? bestDistance * 1.15 : 0.1; // Allow small window if 0
+
+  const candidateStrains = scoredStrains
+    .filter(s => s.distance <= cutoffDistance || s.distance < 0.15) // Keep good matches
+    .slice(0, 12) // Cap at 12 to keep 8C3 / 12C3 reasonable
+    .map(s => s.strain);
 
   let bestSolution = {
     strains: [] as Strain[],
@@ -195,7 +214,7 @@ export function resolveOutcome(intent: OutcomeIntent): OutcomeResult {
   }
 
   // Strategy C: 3-Strain Blend
-  // Ratios: Step 20% to save cycles? No, step 10% is fine for 8 candidates.
+  // Ratios: Step 20% to save cycles.
   // (i, j, k)
   // r1 from 10 to 80
   // r2 from 10 to (90 - r1)
@@ -228,13 +247,14 @@ export function resolveOutcome(intent: OutcomeIntent): OutcomeResult {
   // The solution is the mathematical optimum within the search space.
 
   // Convert to Result Schema
-  // Calculate Confidence: 1.0 - (MinDistance / MaxDistanceReference). 
-  // Arbitrary scale mapping: Dist 0 = 100% confidence. Dist 1.0 = 0% confidence.
-  const confidenceScore = Math.max(0, 1 - bestSolution.distance);
+  // Calculate Confidence: Exponential Decay (Higher distance = Rapidly lower confidence)
+  // exp(-distance) -> Dist 0 = 1.0, Dist 1 = 0.36, Dist 0.5 = 0.6
+  const confidenceScore = Math.exp(-bestSolution.distance);
 
   const notes: string[] = [];
-  if (confidenceScore < 0.7) notes.push("Complex intent match - result is approximate.");
+  if (confidenceScore < 0.6) notes.push("Complex intent match - result is approximate.");
   if (bestSolution.strains.length === 1) notes.push("Single cultivar provides optimal mathematical fit.");
+
 
   // Generate Additive Explanation (Brain Layers)
   // We map the Strain objects back to a format the Brain Analyzers generally expect (or mock it if needed)

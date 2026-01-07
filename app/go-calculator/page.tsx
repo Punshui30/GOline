@@ -47,6 +47,25 @@ interface OutcomeResult {
   notes: string[];
 }
 
+// Canonical intent normalization
+function normalizeIntent(intent: OutcomeIntent): OutcomeIntent {
+  return {
+    activation: intent.activation ?? 0.5,
+    anxietySensitivity: intent.anxietySensitivity ?? 0.5,
+    cognitiveEndurance: intent.cognitiveEndurance ?? 0.5,
+    bodyLoadPreference: intent.bodyLoadPreference ?? 0.5,
+    temporalOnset: intent.temporalOnset ?? 0.5,
+    activationTarget: intent.activationTarget ?? intent.activation ?? 0.5,
+    physicalRelief: intent.physicalRelief ?? 0.5,
+    cognitiveClarity: intent.cognitiveClarity ?? 0.5,
+    functionalEnergy: intent.functionalEnergy ?? 0.5,
+    // Preserve others if present
+    avoidSedation: intent.avoidSedation,
+    overshootTolerance: intent.overshootTolerance,
+    durationPreference: intent.durationPreference,
+  };
+}
+
 export default function GOLineCalculator() {
   // Preset selection state
   const [selectedPreset, setSelectedPreset] = useState<Preset | null>(null);
@@ -66,7 +85,7 @@ export default function GOLineCalculator() {
   const [pendingClarification, setPendingClarification] = useState<ClarificationQuestion | null>(null);
 
   // Clarification axis tracking (prevents asking about same axis twice)
-  const [resolvedAxes, setResolvedAxes] = useState<Set<ClarificationAxis>>(new Set());
+  const [resolvedAxes, setResolvedAxes] = new Set<ClarificationAxis>();
 
 
 
@@ -283,10 +302,11 @@ export default function GOLineCalculator() {
 
     // Translate StrategicGuidance to OutcomeIntent
     const translatedIntent = translateGuidanceToIntent(guidance, {});
-    setIntent(translatedIntent);
+    const normalized = normalizeIntent(translatedIntent);
+    setIntent(normalized);
 
     // Resolve outcome using deterministic engine (with variation logic)
-    const resolvedOutcome = resolveOutcome(translatedIntent);
+    const resolvedOutcome = resolveOutcome(normalized);
 
     // Convert to stack format for PreRollStack
     const { segments, components } = convertToStackFormat(resolvedOutcome);
@@ -306,14 +326,16 @@ export default function GOLineCalculator() {
     const updatedIntent: OutcomeIntent = {
       ...intent,
       activation: adjustments.activationTarget,
+      activationTarget: adjustments.activationTarget, // Ensure target matches
       cognitiveEndurance: adjustments.cognitiveEndurance,
       anxietySensitivity: adjustments.anxietySensitivity,
     };
 
-    setIntent(updatedIntent);
+    const normalized = normalizeIntent(updatedIntent);
+    setIntent(normalized);
 
     // Re-resolve with updated intent
-    const resolvedOutcome = resolveOutcome(updatedIntent);
+    const resolvedOutcome = resolveOutcome(normalized);
     const { segments, components } = convertToStackFormat(resolvedOutcome);
     setStackSegments(segments);
     setBreakdownComponents(components);
@@ -624,8 +646,11 @@ export default function GOLineCalculator() {
           <p className="text-xs text-white/40 leading-relaxed text-center">
             This prototype uses canonical terpene distributions derived from commonly reported profiles.
             Live GO systems operate exclusively on QR-verified batch data from accredited testing laboratories.
-            <span className="block mt-2 font-mono text-[9px] text-[#C5A065]/50">v2.0 (Math-Spec Enforced)</span>
+            <span className="block mt-2 font-mono text-[9px] text-[#C5A065]/50">v2.1 (Math-Spec Enforced)</span>
           </p>
+          <div className="text-xs text-white/40 mt-2 text-center">
+            Deterministic result — identical inputs will always resolve to the same composition.
+          </div>
         </div>
       </div>
 
