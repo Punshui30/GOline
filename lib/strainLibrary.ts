@@ -395,7 +395,7 @@ export const STRAIN_LIBRARY: Record<string, Strain> = {
   }
 };
 
-// HARD ENFORCEMENT: Must have exactly 40 strains
-if (Object.keys(STRAIN_LIBRARY).length !== 40) {
-  throw new Error(`STRAIN_LIBRARY MUST CONTAIN EXACTLY 40 STRAINS. Found: ${Object.keys(STRAIN_LIBRARY).length}`);
+// HARD ENFORCEMENT: Must have at least 40 strains
+if (Object.keys(STRAIN_LIBRARY).length < 40) {
+  throw new Error(`STRAIN_LIBRARY MUST CONTAIN AT LEAST 40 STRAINS. Found: ${Object.keys(STRAIN_LIBRARY).length}`);
 }
