@@ -4,6 +4,9 @@
 
 'use client';
 
+import { OutcomeResult } from '@/lib/goOutcomeEngine';
+import BlendVisualizer from './BlendVisualizer';
+
 // Interfaces matching the new "Editorial" data structure
 export type CultivarRole = 'Anchor' | 'Modifier' | 'Synergist';
 
@@ -72,28 +75,13 @@ export default function ResolutionPanel({ blend, intent, isComputing }: Resoluti
         </div>
       </section>
 
-      {/* 2. Composition (The Blend) */}
+      {/* 2. Composition (The Blend) - ANIMATED VISUALIZER */}
       <section className="animate-in fade-in slide-in-from-bottom-2 duration-700 delay-100">
         <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-600 mb-12">Composition Structure</h3>
 
-        <div className="grid grid-cols-1 gap-12">
-          {blend.primaryBlend.map((cultivar, idx) => (
-            <div key={cultivar.id || idx} className="relative group">
-              {/* Massive Typographic Percentage */}
-              <div className="text-[6rem] lg:text-[8rem] xl:text-[10rem] font-bold text-white leading-[0.8] tracking-tighter -ml-2 mb-4">
-                {Math.round(cultivar.percentage)}<span className="text-2xl lg:text-4xl align-top text-zinc-700 font-normal">%</span>
-              </div>
+        {/* Animated Visualizer Component */}
+        <BlendVisualizer blend={blend} />
 
-              <div className="flex flex-col gap-2 pl-2 border-l-2 border-[#D6A84A] ml-2">
-                <h4 className="text-xl font-medium text-white tracking-tight">{cultivar.name}</h4>
-                <div className="flex items-center gap-4 text-xs font-mono tracking-wide text-zinc-500">
-                  <span className="uppercase text-[#D6A84A]">{cultivar.role}</span>
-                  <span>{cultivar.weightGrams?.toFixed(2)}g</span>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
       </section>
 
       {/* 3. Metrics (Editorial Grid) */}

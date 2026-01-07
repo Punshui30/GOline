@@ -411,15 +411,16 @@ export default function Home() {
   // PART 2: Render Layer - Swiss Editorial / Flat
   // Strict Grid, Typography Dominant
   // Added Elevation: Visual Anchor, Deep Layering, Micro-motion
+  // ALIGNMENT REPAIR: High Contrast, Visible Input Structure
   return (
     <div className={`min-h-screen bg-[#080808] text-[#E5E5E5] font-sans selection:bg-[#D6A84A]/30 overflow-x-hidden flex flex-col relative transition-colors duration-1000 ${isProcessing || userInput.length > 20 ? 'bg-black' : 'bg-[#080808]'}`}>
 
       {/* Visual Anchor: Abstract Botanical (Fixed, Deep Layer) */}
       <div className="fixed bottom-[-10%] right-[-10%] w-[60vw] h-[60vw] z-0 pointer-events-none opacity-[0.03] select-none mix-blend-screen">
-        <Image 
-          src="/botanical_anchor.png" 
-          alt="" 
-          fill 
+        <Image
+          src="/botanical_anchor.png"
+          alt=""
+          fill
           className="object-contain grayscale"
           priority
         />
@@ -438,14 +439,14 @@ export default function Home() {
         </div>
       </header>
 
-      <main className="flex-1 relative z-10 w-full max-w-[1920px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-x-12 px-6 lg:px-12 xl:px-24 pb-32 pt-24 lg:pt-32">
+      <main className="flex-1 relative z-10 w-full max-w-[1920px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-x-12 px-6 lg:px-12 xl:px-24 pb-32 pt-16 lg:pt-32">
 
         {/* LEFT REGION: DOMINANT INPUT (Cols 1-7) */}
         <section className="lg:col-span-7 flex flex-col">
 
           {/* The Prompt */}
           <div className="mb-24 lg:mb-32 relative">
-            <div className={`relative group transition-all duration-1000 ${isProcessing ? 'blur-[2px] opacity-40 grayscale' : ''}`}>
+            <div className={`relative group transition-all duration-700`}>
               <textarea
                 value={userInput}
                 onChange={(e) => {
@@ -457,7 +458,7 @@ export default function Home() {
                   }
                 }}
                 placeholder="How do you want to feel?"
-                className="w-full bg-transparent text-5xl lg:text-7xl xl:text-8xl font-light leading-[1.05] tracking-tight text-white placeholder-zinc-900 outline-none resize-none border-none p-0 overflow-y-hidden max-h-[400px]"
+                className="w-full bg-transparent text-5xl lg:text-7xl xl:text-8xl font-light leading-[1.05] tracking-tight text-white placeholder-zinc-500 outline-none resize-none border-b border-zinc-800 focus:border-[#D6A84A] py-8 transition-colors duration-300 overflow-y-hidden max-h-[400px]"
                 rows={3}
                 disabled={isProcessing}
                 spellCheck={false}
@@ -465,14 +466,17 @@ export default function Home() {
             </div>
 
             {/* Simpler Interaction / Action */}
-            <div className={`mt-12 transition-all duration-700 ease-out flex items-center gap-8 ${userInput.trim() ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+            <div className="mt-12 flex items-center gap-8">
               <button
                 onClick={handleAnalyze}
                 disabled={!userInput.trim() || isProcessing}
-                className="text-lg font-medium text-[#D6A84A] hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-3 group pointer-events-auto"
+                className={`
+                  text-lg font-medium transition-all duration-300 flex items-center gap-4 group px-6 py-3 border border-transparent
+                  ${userInput.trim() ? 'text-[#080808] bg-[#D6A84A] hover:bg-white' : 'text-zinc-500 bg-zinc-900 border-zinc-800 cursor-not-allowed'}
+                `}
               >
-                <span>Resolve</span>
-                <span className="block w-4 h-px bg-current group-hover:w-8 transition-all duration-500" />
+                <span>RESOLVE</span>
+                {userInput.trim() && <span className="block w-2 h-2 bg-current rounded-full" />}
               </button>
             </div>
           </div>
