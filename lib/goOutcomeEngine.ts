@@ -34,6 +34,10 @@ export interface OutcomeIntent {
   durationPreference?: number; // 0-1 (0 = Short, 1 = Long)
   avoidSedation?: boolean;
   overshootTolerance?: number;
+  physicalRelief?: number; // 0-1
+  cognitiveClarity?: number; // 0-1
+  functionalEnergy?: number; // 0-1
+  temporalOnset?: string; // e.g. "rapid", "creeper"
 }
 
 export interface SelectedCultivar {
