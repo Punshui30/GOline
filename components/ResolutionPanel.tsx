@@ -82,6 +82,14 @@ export default function ResolutionPanel({ blend, intent, isComputing }: Resoluti
         {/* Animated Visualizer Component */}
         <BlendVisualizer blend={blend} />
 
+        {/* PRODUCT COMPLETION: Stack Justification (Educational) */}
+        <div className="mt-12 p-6 border border-zinc-800/50 bg-white/[0.02]">
+          <h4 className="font-serif text-lg text-[#C5A065] mb-2">Entourage Architecture</h4>
+          <p className="text-sm font-light text-zinc-400 leading-relaxed max-w-xl">
+            This blend is stacked to manage the duration of effect. The <span className="text-white">Anchor</span> strain provides the biochemical foundation, while the <span className="text-white">Modifier</span> shapes the initial onset. The <span className="text-white">Synergist</span> bridges the two, ensuring a smooth transition rather than a jagged peak.
+          </p>
+        </div>
+
       </section>
 
       {/* 3. Metrics (Editorial Grid) */}
@@ -115,19 +123,34 @@ export default function ResolutionPanel({ blend, intent, isComputing }: Resoluti
         </div>
       </section>
 
-      {/* 4. Tradeoffs (Minimal List) */}
-      {blend.tradeoffs.length > 0 && (
-        <section className="animate-in fade-in slide-in-from-bottom-2 duration-700 delay-300">
-          <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-600 mb-8">Notes</h3>
-          <ul className="space-y-4">
-            {blend.tradeoffs.map((tradeoff, i) => (
-              <li key={i} className="text-sm text-zinc-400 font-light flex gap-3 italic">
-                <span className="text-[#C5A065] not-italic">•</span> {tradeoff}
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+      {/* 4. Tradeoffs & Follow Up */}
+      <section className="animate-in fade-in slide-in-from-bottom-2 duration-700 delay-300">
+        {blend.tradeoffs.length > 0 && (
+          <div className="mb-12">
+            <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-600 mb-8">Notes</h3>
+            <ul className="space-y-4">
+              {blend.tradeoffs.map((tradeoff, i) => (
+                <li key={i} className="text-sm text-zinc-400 font-light flex gap-3 italic">
+                  <span className="text-[#C5A065] not-italic">•</span> {tradeoff}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* PRODUCT COMPLETION: Follow-Up Actions */}
+        <div className="border-t border-zinc-800 pt-8 flex flex-col gap-4">
+          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-600">Next Steps</span>
+          <div className="flex flex-wrap gap-4">
+            <button className="px-6 py-3 border border-[#C5A065] text-[#C5A065] text-xs uppercase tracking-widest hover:bg-[#C5A065] hover:text-black transition-colors">
+              Refine Outcome
+            </button>
+            <button className="px-6 py-3 border border-zinc-800 text-zinc-400 text-xs uppercase tracking-widest hover:border-white hover:text-white transition-colors">
+              Usage Protocol
+            </button>
+          </div>
+        </div>
+      </section>
 
     </div>
   );

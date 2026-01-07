@@ -413,16 +413,17 @@ export default function Home() {
   // Added Elevation: Visual Anchor, Deep Layering, Micro-motion
   // ALIGNMENT REPAIR: High Contrast, Visible Input Structure
   // REFERENCE ALIGN: Serif Headings, Texture, Bronze
+  // PRODUCT COMPLETION: Concrete Imagery, Clear Instructions
   return (
     <div className={`min-h-screen bg-noise text-[#E5E5E5] font-sans selection:bg-[#C5A065]/30 overflow-x-hidden flex flex-col relative transition-colors duration-1000 ${isProcessing || userInput.length > 20 ? 'bg-black' : ''}`}>
 
-      {/* Visual Anchor: Abstract Botanical (Fixed, Deep Layer) */}
-      <div className="fixed bottom-[-10%] right-[-10%] w-[60vw] h-[60vw] z-0 pointer-events-none opacity-[0.05] select-none mix-blend-overlay">
+      {/* Visual Anchor: Concrete Cannabis Context (Fixed, Deep Layer) */}
+      <div className="fixed bottom-0 right-[-5%] w-[50vw] h-[50vw] z-0 pointer-events-none opacity-[0.4] select-none mix-blend-overlay">
         <Image
-          src="/botanical_anchor.png"
-          alt=""
+          src="/context_anchor.png"
+          alt="Cannabis Context"
           fill
-          className="object-contain grayscale"
+          className="object-contain grayscale contrast-125"
           priority
         />
       </div>
@@ -445,17 +446,22 @@ export default function Home() {
         {/* LEFT REGION: DOMINANT INPUT (Cols 1-7) */}
         <section className="lg:col-span-7 flex flex-col justify-center">
 
-          {/* REFERENCE HEADER */}
-          <h1 className="font-serif text-5xl lg:text-7xl text-[#E5E5E5] mb-4 leading-tight">
-            How would you <br />
-            <span className="italic text-zinc-400">like to feel?</span>
-          </h1>
-          <p className="text-sm font-light text-zinc-500 mb-12 max-w-md">
-            Describe your desired experience (e.g. relaxed, focused, creative...)
-          </p>
+          {/* REFERENCE HEADER & INSTRUCTION */}
+          <div className="mb-4">
+            <h1 className="font-serif text-5xl lg:text-7xl text-[#E5E5E5] leading-tight mb-6">
+              How would you <br />
+              <span className="italic text-zinc-400">like to feel?</span>
+            </h1>
+
+            {/* PRODUCT COMPLETION: Clear Instruction */}
+            <p className="text-sm lg:text-base font-light text-zinc-400 max-w-md border-l-2 border-[#C5A065] pl-4">
+              Describe your desired physical and mental state. <br />
+              <span className="text-zinc-500">We will precisely formulate a terpene blend to match.</span>
+            </p>
+          </div>
 
           {/* The Prompt */}
-          <div className="mb-24 lg:mb-32 relative">
+          <div className="mb-24 lg:mb-32 relative mt-12">
             <div className={`relative group transition-all duration-700`}>
               <textarea
                 value={userInput}
