@@ -12,11 +12,12 @@ import { useState, useEffect, useRef } from 'react';
 import { OutcomeIntent, OutcomeResult } from '@/lib/goOutcomeEngine';
 import { resolveOutcome } from '@/lib/goOutcomeEngine';
 import { resolveToNamedStrains, type NamedResolutionResult } from '@/lib/namedResolution';
-import ResolutionPanel, { type ResolvedBlend, type ResolvedCultivar, type CultivarRole } from '@/components/ResolutionPanel';
+import { type ResolvedBlend } from '@/components/ResolutionPanel';
 import UsageProtocol from '@/components/UsageProtocol';
 import AgeGate from '@/components/AgeGate';
-import OutcomeIntentInput from '@/components/OutcomeIntentInput';
-import OutcomeTransitionBanner from '@/components/OutcomeTransitionBanner';
+import OutcomeInputPanel from '@/components/OutcomeInputPanel';
+import ResolvingPanel from '@/components/ResolvingPanel';
+import ResultPanel from '@/components/ResultPanel';
 import { generateDeterministicExplanation, type DeterministicExplanation } from '@/lib/outcomeBrain/deterministicExplanation';
 import { StrategicGuidance } from '@/lib/strategicGuidance';
 import { translateGuidanceToIntent } from '@/lib/guidanceToIntent';
@@ -25,6 +26,7 @@ import { convertToResolvedBlend } from '@/lib/convertToResolvedBlend';
 import { computeIntentConfidence, filterRedundantQuestions, shouldClarify } from '@/lib/intentConfidence';
 
 type InteractionPhase = 'FREE' | 'GUIDED' | 'LOCKED';
+type OutcomePhase = 'input' | 'resolving' | 'result';
 
 interface GuidanceResponse {
   ok: boolean;
@@ -90,6 +92,9 @@ export default function Home() {
   const [resolvedAxes, setResolvedAxes] = useState<Set<string>>(new Set());
   // Current clarification question (only one at a time)
   const [currentClarification, setCurrentClarification] = useState<{ type: string; question: string; options: string[] } | null>(null);
+
+  // Outcome Phase (controls main UI mount/unmount) - Single source of truth
+  const [outcomePhase, setOutcomePhase] = useState<OutcomePhase>('input');
 
   // Phase 3 (LOCKED): Engine inputs and outputs
   const [intent, setIntent] = useState<OutcomeIntent | null>(null);
@@ -238,27 +243,35 @@ export default function Home() {
         setPhase('LOCKED');
         const referenceIntent = referenceProfileToIntent(referenceProfile);
         setIntent(referenceIntent);
-        const resolvedOutcome = resolveOutcome(referenceIntent);
-        setOutcome(resolvedOutcome);
-        setDeterministicExplanation(generateDeterministicExplanation(referenceIntent, resolvedOutcome));
+        
+        // Transition to resolving phase
+        setOutcomePhase('resolving');
+        
+        setTimeout(() => {
+          const resolvedOutcome = resolveOutcome(referenceIntent);
+          setOutcome(resolvedOutcome);
+          setDeterministicExplanation(generateDeterministicExplanation(referenceIntent, resolvedOutcome));
 
-        if (resolvedOutcome.failure) {
-          const blend = convertToResolvedBlend(
-            { primaryBlend: [], stackingOptions: [], confidenceScore: 0, tradeoffs: [], rationaleSummary: '', resolutionMode: 'BLENDED' },
-            resolvedOutcome
-          );
+          if (resolvedOutcome.failure) {
+            const blend = convertToResolvedBlend(
+              { primaryBlend: [], stackingOptions: [], confidenceScore: 0, tradeoffs: [], rationaleSummary: '', resolutionMode: 'BLENDED' },
+              resolvedOutcome
+            );
+            setResolvedBlend(blend);
+            setDeterministicExplanation(generateDeterministicExplanation(referenceIntent, resolvedOutcome));
+            setOutcomePhase('result');
+            setIsProcessing(false);
+            return;
+          }
+
+          const named = resolveToNamedStrains(resolvedOutcome);
+          setNamedResolution(named);
+          const blend = convertToResolvedBlend(named, resolvedOutcome);
           setResolvedBlend(blend);
           setDeterministicExplanation(generateDeterministicExplanation(referenceIntent, resolvedOutcome));
+          setOutcomePhase('result');
           setIsProcessing(false);
-          return;
-        }
-
-        const named = resolveToNamedStrains(resolvedOutcome);
-        setNamedResolution(named);
-        const blend = convertToResolvedBlend(named, resolvedOutcome);
-        setResolvedBlend(blend);
-        setDeterministicExplanation(generateDeterministicExplanation(referenceIntent, resolvedOutcome));
-        setIsProcessing(false);
+        }, 200);
       } catch (err) {
         console.error('Reference profile resolution error:', err);
         setError('Failed to resolve reference profile. Please check your input values.');
@@ -357,8 +370,6 @@ export default function Home() {
     }
   };
 
-  const [isResolving, setIsResolving] = useState(false);
-
   const handleLock = (finalGuidance: StrategicGuidance, answers: Record<string, string | string[]>) => {
     if (isListening && recognitionRef.current) {
       try {
@@ -376,9 +387,11 @@ export default function Home() {
     // Clear previous visualization
     setResolvedBlend(null);
     setDeterministicExplanation(null);
-    setIsResolving(true);
+    
+    // CRITICAL: Set phase to 'resolving' BEFORE async call
+    setOutcomePhase('resolving');
 
-    // Small delay to show clearing, then animate in new result
+    // Small delay to ensure resolving panel mounts, then calculate
     setTimeout(() => {
       try {
         const resolvedOutcome = resolveOutcome(translatedIntent);
@@ -389,7 +402,7 @@ export default function Home() {
           const blend = convertToResolvedBlend({ primaryBlend: [], stackingOptions: [], confidenceScore: 0, tradeoffs: [], rationaleSummary: '', resolutionMode: 'BLENDED' }, resolvedOutcome);
           setResolvedBlend(blend);
           setDeterministicExplanation(generateDeterministicExplanation(translatedIntent, resolvedOutcome));
-          setIsResolving(false);
+          setOutcomePhase('result');
           if (isListening && recognitionRef.current) {
             try {
               explicitStopRef.current = true;
@@ -416,8 +429,11 @@ export default function Home() {
         setNamedResolution(named);
         const blend = convertToResolvedBlend(named, resolvedOutcome);
         setResolvedBlend(blend);
-        setIsResolving(false);
         setHasResolved(true);
+        
+        // CRITICAL: Transition to result phase after calculation completes
+        setOutcomePhase('result');
+        
         setPhase('FREE');
         setGuidance(null);
         setClarificationAnswers({});
@@ -425,9 +441,9 @@ export default function Home() {
       } catch (err) {
         console.error('Resolution error:', err);
         setError('Failed to resolve outcome. Please try again.');
-        setIsResolving(false);
+        setOutcomePhase('input'); // Reset to input on error
       }
-    }, 200); // Small delay for visual clearing
+    }, 200); // Small delay to ensure resolving panel is visible
   };
 
   const handleAdjustment = (adjustedIntent: {
@@ -444,9 +460,11 @@ export default function Home() {
     // Clear previous visualization
     setResolvedBlend(null);
     setDeterministicExplanation(null);
-    setIsResolving(true);
+    
+    // Transition to resolving phase
+    setOutcomePhase('resolving');
 
-    // Small delay to show clearing, then animate in new result
+    // Small delay to show resolving, then calculate
     setTimeout(() => {
       try {
         // Create updated intent with adjusted values
@@ -470,7 +488,7 @@ export default function Home() {
           const blend = convertToResolvedBlend({ primaryBlend: [], stackingOptions: [], confidenceScore: 0, tradeoffs: [], rationaleSummary: '', resolutionMode: 'BLENDED' }, resolvedOutcome);
           setResolvedBlend(blend);
           setDeterministicExplanation(generateDeterministicExplanation(updatedIntent, resolvedOutcome));
-          setIsResolving(false);
+          setOutcomePhase('result');
           setIsProcessing(false);
           return;
         }
@@ -479,16 +497,17 @@ export default function Home() {
         setNamedResolution(named);
         const blend = convertToResolvedBlend(named, resolvedOutcome);
         setResolvedBlend(blend);
-        // Slider refinement hides the transition banner by design
-        setIsResolving(false);
+        
+        // Transition back to result phase
+        setOutcomePhase('result');
       } catch (err) {
         console.error('Adjustment error:', err);
         setError('Failed to adjust outcome. Please try again.');
-        setIsResolving(false);
+        setOutcomePhase('result'); // Keep showing result on error
       } finally {
         setIsProcessing(false);
       }
-    }, 200); // Small delay for visual clearing
+    }, 200); // Small delay for resolving phase
   };
 
   const handleRefineOutcome = () => {
@@ -582,8 +601,26 @@ export default function Home() {
     });
   };
 
-  // Two mutually exclusive states: Input and Resolved
-  const isResolved = resolvedBlend !== null;
+  // Reset outcome phase when user starts new input
+  const handleInputChange = (newValue: string) => {
+    setUserInput(newValue);
+    if (phase === 'LOCKED' || resolvedBlend) {
+      setResolvedBlend(null);
+      setDeterministicExplanation(null);
+      setOutcomePhase('input');
+      setPhase('FREE');
+      setGuidance(null);
+      setCurrentClarification(null);
+      setResolvedAxes(new Set());
+      setClarificationAnswers({});
+    }
+    // Clear clarification if user starts typing new input
+    if (currentClarification) {
+      setCurrentClarification(null);
+      setResolvedAxes(new Set());
+      setClarificationAnswers({});
+    }
+  };
 
   // Show age gate if not complete
   if (!ageGateComplete) {
@@ -592,130 +629,54 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-noise text-[#E5E5E5] font-sans selection:bg-[#C5A065]/30 overflow-x-hidden flex flex-col">
-      {/* Processing status indicator - shown inline with content if needed */}
-      {isProcessing && (
-        <div className="px-6 lg:px-12 xl:px-24 pt-20">
-          <span className="text-[10px] font-mono font-medium tracking-widest text-zinc-400">PROCESSING...</span>
-        </div>
+      {/* PHASED MOUNT/UNMOUNT - Each phase has its own wrapper with distinct styling */}
+      {/* Input Phase - Hero layout with centered input */}
+      {outcomePhase === 'input' && (
+        <main key="input" className="flex-1 w-full max-w-[1920px] mx-auto px-6 lg:px-12 xl:px-24 pb-32 pt-20 lg:pt-28 overflow-y-auto min-h-0 transition-opacity duration-300">
+          {isProcessing && (
+            <div className="mb-4">
+              <span className="text-[10px] font-mono font-medium tracking-widest text-zinc-400">PROCESSING...</span>
+            </div>
+          )}
+          <OutcomeInputPanel
+            userInput={userInput}
+            currentClarification={currentClarification}
+            clarificationAnswers={clarificationAnswers}
+            isProcessing={isProcessing}
+            onInputChange={handleInputChange}
+            onSubmit={handleAnalyze}
+            onClarificationAnswer={handleClarificationAnswer}
+            onClearClarification={() => {
+              setCurrentClarification(null);
+              setResolvedAxes(new Set());
+              setClarificationAnswers({});
+            }}
+          />
+        </main>
       )}
 
-      <main className="flex-1 w-full max-w-[1920px] mx-auto px-6 lg:px-12 xl:px-24 pb-32 pt-20 lg:pt-28 overflow-y-auto min-h-0">
-        {!isResolved ? (
-          /* INPUT STATE: Header, textarea, submit button */
-          <section className="max-w-3xl mx-auto">
-            <div className="mb-8">
-              <h1 className="font-serif text-5xl lg:text-7xl font-light text-white leading-tight mb-6">
-                Calculate Your Outcome
-              </h1>
-              <p className="text-sm lg:text-base font-sans text-zinc-400 max-w-md border-l border-zinc-700 pl-4">
-                Describe your desired physical and mental state. The system will calculate a precise blend formulation to match your needs.
-              </p>
-            </div>
+      {/* Resolving Phase - Distinct background, centered, no input */}
+      {outcomePhase === 'resolving' && (
+        <main key="resolving" className="flex-1 w-full max-w-[1920px] mx-auto px-6 lg:px-12 xl:px-24 pb-32 pt-20 lg:pt-28 overflow-y-auto min-h-0 bg-zinc-950/60 transition-opacity duration-300">
+          <ResolvingPanel />
+        </main>
+      )}
 
-            {/* Current Clarification Question - Inline above input */}
-            {currentClarification && (
-              <div className="mb-6 p-4 border border-zinc-800 bg-zinc-900/50 overflow-y-auto">
-                <p className="text-sm font-sans text-white mb-4 break-words">{currentClarification.question}</p>
-                <div className="flex flex-col items-start gap-2">
-                  {currentClarification.options.map((option) => {
-                    const isSelected = clarificationAnswers[currentClarification.type] === option ||
-                      (Array.isArray(clarificationAnswers[currentClarification.type]) && 
-                       (clarificationAnswers[currentClarification.type] as string[]).includes(option));
-
-                    return (
-                      <button
-                        key={option}
-                        onClick={() => handleClarificationAnswer(
-                          currentClarification.type, 
-                          option, 
-                          currentClarification.type === 'tolerance' || currentClarification.type === 'priority'
-                        )}
-                        className={`text-sm font-sans transition-all duration-200 text-left relative py-2 px-0 break-words ${
-                          isSelected
-                            ? 'text-white font-medium pl-6'
-                            : 'text-zinc-400 hover:text-zinc-200 pl-0 hover:pl-2'
-                        }`}
-                      >
-                        <span className={`absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-white transition-all duration-200 ${
-                          isSelected ? 'opacity-100 scale-100' : 'opacity-0 scale-0'
-                        }`} />
-                        {option}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            <div className="mb-8 border-b border-zinc-700 focus-within:border-[#C5A065] transition-colors duration-300 py-4">
-              <OutcomeIntentInput
-                value={userInput}
-                onChange={(newValue) => {
-                  setUserInput(newValue);
-                  if (phase === 'LOCKED' || resolvedBlend) {
-                    setResolvedBlend(null);
-                    setDeterministicExplanation(null);
-                    setPhase('FREE');
-                    setGuidance(null);
-                    setCurrentClarification(null);
-                    setResolvedAxes(new Set());
-                    setClarificationAnswers({});
-                  }
-                  // Clear clarification if user starts typing new input
-                  if (currentClarification) {
-                    setCurrentClarification(null);
-                    setResolvedAxes(new Set());
-                    setClarificationAnswers({});
-                  }
-                }}
-                onSubmit={handleAnalyze}
-                disabled={isProcessing || !!currentClarification}
-              />
-            </div>
-
-            <div className="mt-8 flex items-center gap-8">
-              <button
-                onClick={handleAnalyze}
-                disabled={!userInput.trim() || isProcessing}
-                className={`
-                  text-sm font-medium tracking-widest uppercase transition-all duration-200 flex items-center gap-4 px-8 py-4
-                  ${userInput.trim() 
-                    ? 'text-black bg-[#C5A065] hover:bg-[#D4B075] active:bg-[#B89555] cursor-pointer' 
-                    : 'text-zinc-500 bg-zinc-900 border border-zinc-800 cursor-not-allowed opacity-50'}
-                `}
-              >
-                <span>Calculate My Outcome</span>
-              </button>
-            </div>
-
-          </section>
-        ) : (
-          /* RESOLVED STATE: Header, blend visualization, composition breakdown, adjustment sliders */
-          <section className="max-w-5xl mx-auto min-h-0 overflow-y-auto">
-            {isResolving ? (
-              <div className="flex items-center justify-center min-h-[400px]">
-                <span className="text-sm font-sans text-zinc-400">Calculating...</span>
-              </div>
-            ) : (
-              <ResolutionPanel
-                blend={resolvedBlend}
-                intent={intent ? {
-                  activationTarget: intent.activationTarget || 0.5,
-                  cognitiveEndurance: intent.cognitiveEndurance || 0.5,
-                  anxietySensitivity: intent.anxietySensitivity || 0.5,
-                } : undefined}
-                isComputing={isProcessing}
-                onRefineOutcome={handleRefineOutcome}
-                onShowUsageProtocol={handleShowUsageProtocol}
-                onAdjustment={handleAdjustment}
-                isAnimating={!isProcessing}
-                hasResolved={hasResolved}
-                deterministicExplanation={deterministicExplanation || undefined}
-              />
-            )}
-          </section>
-        )}
-      </main>
+      {/* Result Phase - Result-focused layout */}
+      {outcomePhase === 'result' && resolvedBlend && (
+        <main key="result" className="flex-1 w-full max-w-[1920px] mx-auto px-6 lg:px-12 xl:px-24 pb-32 pt-20 lg:pt-28 overflow-y-auto min-h-0 transition-opacity duration-300">
+          <ResultPanel
+            blend={resolvedBlend}
+            intent={intent}
+            isProcessing={isProcessing}
+            deterministicExplanation={deterministicExplanation}
+            onRefineOutcome={handleRefineOutcome}
+            onShowUsageProtocol={handleShowUsageProtocol}
+            onAdjustment={handleAdjustment}
+            hasResolved={hasResolved}
+          />
+        </main>
+      )}
 
       {/* Microphone - Fixed Bottom Right */}
       <div className="fixed bottom-12 right-12 z-50">
