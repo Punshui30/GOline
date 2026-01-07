@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 interface AgeGateProps {
   onComplete: () => void;
@@ -13,26 +13,6 @@ export default function AgeGate({ onComplete }: AgeGateProps) {
   const [age, setAge] = useState('');
   const [ageError, setAgeError] = useState<string | null>(null);
   const [isFirstTime, setIsFirstTime] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    // Check if user has already completed onboarding
-    const hasCompleted = localStorage.getItem('go-calculator-onboarding-complete');
-    if (hasCompleted === 'true') {
-      onComplete();
-      return;
-    }
-
-    // Check if user has set experience preference
-    const experience = localStorage.getItem('go-calculator-experience');
-    if (experience === 'returning') {
-      onComplete();
-      return;
-    }
-    if (experience === 'first-time') {
-      setStep('onboarding');
-      setIsFirstTime(true);
-    }
-  }, [onComplete]);
 
   const handleAgeSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,25 +29,19 @@ export default function AgeGate({ onComplete }: AgeGateProps) {
       return;
     }
 
-    // Store age confirmation
-    localStorage.setItem('go-calculator-age-confirmed', 'true');
     setStep('experience');
   };
 
   const handleExperienceChoice = (choice: 'first-time' | 'returning') => {
-    localStorage.setItem('go-calculator-experience', choice);
-    
     if (choice === 'first-time') {
       setIsFirstTime(true);
       setStep('onboarding');
     } else {
-      localStorage.setItem('go-calculator-onboarding-complete', 'true');
       onComplete();
     }
   };
 
   const handleOnboardingComplete = () => {
-    localStorage.setItem('go-calculator-onboarding-complete', 'true');
     onComplete();
   };
 
