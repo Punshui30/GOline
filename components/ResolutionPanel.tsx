@@ -7,6 +7,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { OutcomeResult } from '@/lib/goOutcomeEngine';
 import BlendVisualizer from './BlendVisualizer';
+import OutcomeTransitionBanner from './OutcomeTransitionBanner';
 
 // Interfaces matching the new "Editorial" data structure
 export type CultivarRole = 'Anchor' | 'Modifier' | 'Synergist';
@@ -68,9 +69,10 @@ interface ResolutionPanelProps {
     anxietySensitivity: number;
   }) => void;
   isAnimating?: boolean;
+  hasResolved?: boolean;
 }
 
-export default function ResolutionPanel({ blend, intent, isComputing, onRefineOutcome, onShowUsageProtocol, onAdjustment, isAnimating = true }: ResolutionPanelProps) {
+export default function ResolutionPanel({ blend, intent, isComputing, onRefineOutcome, onShowUsageProtocol, onAdjustment, isAnimating = true, hasResolved = false }: ResolutionPanelProps) {
   const [showAdjustments, setShowAdjustments] = useState(false);
   const [localIntent, setLocalIntent] = useState(intent || {
     activationTarget: 0.5,
@@ -128,19 +130,20 @@ export default function ResolutionPanel({ blend, intent, isComputing, onRefineOu
       <section className="opacity-0 animate-[fadeIn_0.6s_ease-out_0.2s_forwards] overflow-y-auto">
         <div className="flex flex-col gap-6">
           <span className="text-[10px] font-sans font-medium uppercase tracking-[0.2em] text-zinc-500">
-            {blend.resolutionMode === 'SINGLE_TARGET' ? 'Best Match' : 'Best Match for Your Goal'}
+            Best Match
           </span>
           <h2 className="font-serif text-3xl lg:text-5xl font-light leading-tight tracking-tight text-white break-words">
-            {blend.resolutionMode === 'SINGLE_TARGET' 
+            {blend.primaryBlend.length === 1
               ? 'One strain already matches what you want'
-              : blend.rationaleSummary}
+              : 'This blend best matches your desired outcome'}
           </h2>
         </div>
       </section>
 
       {/* 2. Composition (The Blend) */}
       <section className="opacity-0 animate-[fadeIn_0.6s_ease-out_0.4s_forwards]">
-        <h3 className="text-[10px] font-sans font-medium uppercase tracking-[0.2em] text-zinc-500 mb-12">Blend Composition</h3>
+        <OutcomeTransitionBanner visible={hasResolved} />
+        <h3 className="text-[10px] font-sans font-medium uppercase tracking-[0.2em] text-zinc-500 mb-12 mt-6">Blend Composition</h3>
 
         {/* Animated Visualizer Component */}
         <BlendVisualizer blend={blend} isAnimating={isAnimating} />

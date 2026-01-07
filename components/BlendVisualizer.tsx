@@ -83,13 +83,13 @@ export default function BlendVisualizer({ blend, isAnimating = true }: BlendVisu
     return (
         <div className="w-full mb-16 overflow-visible">
             {isSingleCultivar ? (
-                // Single cultivar: full-height single segment
-                <div className="relative h-32 lg:h-40 w-full flex items-center justify-center border border-[#C5A065] bg-zinc-900">
-                    <div className="text-center">
-                        <div className={`font-serif font-light text-white ${getPercentageTextSize(100)} mb-2`}>
+                // Single cultivar: card with vertical flex stack
+                <div className="w-full border border-[#C5A065] bg-zinc-900 p-6">
+                    <div className="flex flex-col gap-3 items-center text-center">
+                        <div className={`font-serif font-light text-white ${getPercentageTextSize(100)}`}>
                             100%
                         </div>
-                        <div className="text-sm font-sans text-zinc-400 uppercase tracking-wider mb-1">
+                        <div className="text-sm font-sans text-zinc-400 uppercase tracking-wider">
                             {getRoleDisplayName(sortedStrains[0].role)}
                         </div>
                         <div className="text-xl lg:text-3xl font-serif font-light text-white">
@@ -98,8 +98,8 @@ export default function BlendVisualizer({ blend, isAnimating = true }: BlendVisu
                     </div>
                 </div>
             ) : (
-                // Multiple cultivars: proportional visualization
-                <div className="flex h-24 lg:h-32 w-full border border-zinc-800 overflow-hidden">
+                // Multiple cultivars: proportional visualization with cards
+                <div className="flex w-full border border-zinc-800 min-h-[120px] items-stretch">
                     {sortedStrains.map((strain, index) => {
                         const animatedWidth = animatedPercentages[strain.id || index] || 0;
                         const displayWidth = isAnimating ? animatedWidth : strain.percentage;
@@ -107,62 +107,27 @@ export default function BlendVisualizer({ blend, isAnimating = true }: BlendVisu
                         return (
                             <div
                                 key={strain.id || index}
-                                className="relative h-full flex items-center justify-center border-r border-zinc-800 last:border-r-0 bg-zinc-900 transition-all duration-300"
+                                className="flex flex-col justify-center items-center border-r border-zinc-800 last:border-r-0 bg-zinc-900 transition-all duration-300 p-4"
                                 style={{
                                     width: `${displayWidth}%`,
-                                    minWidth: displayWidth > 0 ? '60px' : '0px',
+                                    minWidth: displayWidth > 0 ? '120px' : '0px',
                                     opacity: visible && displayWidth > 0 ? 1 : 0,
                                 }}
                             >
-                                {/* Percentage text - scales with ratio */}
-                                {displayWidth >= 5 && (
-                                    <div className="absolute inset-0 flex items-center justify-center">
-                                        <span className={`font-serif font-light text-white ${getPercentageTextSize(strain.percentage)}`}>
-                                            {Math.round(strain.percentage)}%
-                                        </span>
+                                {/* Vertical flex stack: percentage, role, name */}
+                                <div className="flex flex-col gap-2 items-center text-center">
+                                    <div className={`font-serif font-light text-white ${getPercentageTextSize(strain.percentage)}`}>
+                                        {Math.round(strain.percentage)}%
                                     </div>
-                                )}
-                                
-                                {/* Label overlay - appears after animation */}
-                                {displayWidth >= 10 && visible && (
-                                    <div className="absolute bottom-2 left-2 right-2 text-center">
-                                        <div className="text-[10px] font-sans font-medium uppercase tracking-wider text-zinc-400 mb-1 truncate">
-                                            {getRoleDisplayName(strain.role)}
-                                        </div>
-                                        <div className="text-sm lg:text-base font-serif font-light text-white truncate">
-                                            {strain.name}
-                                        </div>
+                                    <div className="text-[10px] font-sans font-medium uppercase tracking-wider text-zinc-400">
+                                        {getRoleDisplayName(strain.role)}
                                     </div>
-                                )}
+                                    <div className="text-sm lg:text-base font-serif font-light text-white break-words">
+                                        {strain.name}
+                                    </div>
+                                </div>
                             </div>
                         );
-                    })}
-                </div>
-            )}
-            
-            {/* Labels for small segments */}
-            {!isSingleCultivar && (
-                <div className="mt-4 space-y-2">
-                    {sortedStrains.map((strain, index) => {
-                        const animatedWidth = animatedPercentages[strain.id || index] || 0;
-                        const displayWidth = isAnimating ? animatedWidth : strain.percentage;
-                        
-                        if (displayWidth < 10) {
-                            return (
-                                <div key={strain.id || index} className="flex items-center gap-3 text-sm">
-                                    <span className="text-zinc-400 font-sans uppercase tracking-wider">
-                                        {getRoleDisplayName(strain.role)}:
-                                    </span>
-                                    <span className="text-white font-serif">
-                                        {strain.name}
-                                    </span>
-                                    <span className="text-zinc-500 font-mono">
-                                        {Math.round(strain.percentage)}%
-                                    </span>
-                                </div>
-                            );
-                        }
-                        return null;
                     })}
                 </div>
             )}

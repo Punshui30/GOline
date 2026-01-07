@@ -17,6 +17,7 @@ import UsageProtocol from '@/components/UsageProtocol';
 import AgeGate from '@/components/AgeGate';
 import GoMark from '@/components/GoMark';
 import OutcomeIntentInput from '@/components/OutcomeIntentInput';
+import OutcomeTransitionBanner from '@/components/OutcomeTransitionBanner';
 import { StrategicGuidance } from '@/lib/strategicGuidance';
 import { translateGuidanceToIntent } from '@/lib/guidanceToIntent';
 import { ReferenceProfile, referenceProfileToIntent } from '@/lib/referenceProfile';
@@ -96,6 +97,7 @@ export default function Home() {
   const [namedResolution, setNamedResolution] = useState<NamedResolutionResult | null>(null);
   const [resolvedBlend, setResolvedBlend] = useState<ResolvedBlend | null>(null);
   const [showUsageProtocol, setShowUsageProtocol] = useState(false);
+  const [hasResolved, setHasResolved] = useState(false);
 
   // Initialize speech recognition
   useEffect(() => {
@@ -408,6 +410,7 @@ export default function Home() {
         const blend = convertToResolvedBlend(named, resolvedOutcome);
         setResolvedBlend(blend);
         setIsResolving(false);
+        setHasResolved(true);
         setPhase('FREE');
         setGuidance(null);
         setClarificationAnswers({});
@@ -429,6 +432,7 @@ export default function Home() {
     
     setIsProcessing(true);
     setError(null);
+    setHasResolved(false);
 
     // Clear previous visualization
     setResolvedBlend(null);
@@ -699,6 +703,7 @@ export default function Home() {
                 onShowUsageProtocol={handleShowUsageProtocol}
                 onAdjustment={handleAdjustment}
                 isAnimating={!isProcessing}
+                hasResolved={hasResolved}
               />
             )}
           </section>
