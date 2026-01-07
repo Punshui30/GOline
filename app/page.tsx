@@ -30,258 +30,6 @@ interface GuidanceResponse {
   message?: string;
 }
 
-interface BlendComponent {
-  cultivarId: string;
-  displayName: string;
-  role: "primary" | "corrective" | "supporting";
-  ratio: number;
-}
-
-interface ResolutionTier {
-  tierLabel: "Optimal" | "Balanced" | "Simplified";
-  compositionStrategy: "single_cultivar" | "homogeneous_blend" | "layered_stack";
-  resolutionType: "BLENDED" | "STACKED";
-  composition: BlendComponent[];
-  compositionFit: number;
-  systemNotes: string[];
-  whyChosen: string[];
-  tradeoffs: string[];
-  instructions: string;
-}
-
-// OutcomeResult is now imported from @/lib/goOutcomeEngine
-
-function generateConservativeExplanations(intent: OutcomeIntent, tier: ResolutionTier): string[] {
-  const explanations: string[] = [];
-  
-  // Energy constrained due to anxiety sensitivity
-  if (intent.activationTarget > 0.6 && intent.anxietySensitivity > 0.5) {
-    explanations.push('Energy was constrained to reduce anxiety risk.');
-  }
-  
-  // Modifier ratio limited
-  const supportingRatio = tier.composition
-    .filter(b => b.role === 'supporting')
-    .reduce((sum, b) => sum + b.ratio, 0);
-  if (supportingRatio > 0 && supportingRatio < 0.25 && intent.overshootTolerance < 0.7) {
-    explanations.push('Supporting ratio was limited to avoid terpene dominance.');
-  }
-  
-  // Overshoot concerns
-  if (intent.overshootTolerance < 0.5) {
-    explanations.push('More aggressive blends increased overshoot risk.');
-  }
-  
-  // Cognitive endurance concerns
-  if (intent.cognitiveEndurance > 0.6 && intent.activationTarget > 0.7) {
-    explanations.push('Stability over time prioritized over peak intensity.');
-  }
-  
-  // Low confidence explanations
-  if (tier.compositionFit < 0.6) {
-    explanations.push('Conservative blending chosen to maintain chemical balance.');
-  }
-  
-  // CBD/CBG corrective explanation
-  const hasCorrective = tier.composition.some(c => c.role === 'corrective');
-  if (hasCorrective) {
-    explanations.push('CBD/CBG introduced to reduce psychoactive load while preserving terpene balance.');
-  }
-  
-  return explanations.slice(0, 3); // Max 3 explanations
-}
-
-// Generate summary from tier data
-function generateBlendSummary(tier: ResolutionTier): string {
-  const primaryStrains = tier.composition.filter(c => c.role === 'primary');
-  const correctiveStrains = tier.composition.filter(c => c.role === 'corrective');
-  
-  const parts: string[] = [];
-  
-  if (primaryStrains.length > 0) {
-    parts.push(`primary target delivery`);
-  }
-  
-  if (correctiveStrains.length > 0) {
-    parts.push(`adjustment for ${correctiveStrains.map(c => c.displayName.toLowerCase()).join(' and ')}`);
-  }
-  
-  if (tier.systemNotes.some(note => note.toLowerCase().includes('anxiety'))) {
-    parts.push('anxiety control');
-  }
-  
-  if (tier.systemNotes.some(note => note.toLowerCase().includes('duration'))) {
-    parts.push('extended duration');
-  }
-  
-  if (parts.length === 0) {
-    return 'Optimized blend based on your stated outcome.';
-  }
-  
-  return `This blend ${parts.join(', ')}, with controlled balance across components.`;
-}
-
-// BlendResolutionPanel Component
-// NOTE: This component only renders structured ResolutionResult objects from resolveOutcome()
-// NO regex parsing or prose extraction is allowed
-
-// Blend data structure for UI display (derived from OutcomeResult only)
-interface BlendDisplayComponent {
-  name: string;
-  percentage: number;
-  rationale?: string;
-}
-
-interface BlendDisplayData {
-  components: BlendDisplayComponent[];
-  isValid: boolean;
-}
-interface BlendResolutionPanelProps {
-  blend: BlendDisplayData;
-  onAdjustment?: (type: 'energy' | 'duration' | 'pain', value: number) => void;
-}
-
-function BlendResolutionPanel({ blend, onAdjustment }: BlendResolutionPanelProps) {
-  const [energyValue, setEnergyValue] = useState(50);
-  const [durationValue, setDurationValue] = useState(50);
-  const [painValue, setPainValue] = useState(50);
-  
-  return (
-    <div className="border-t border-white/10 pt-12 pb-8">
-      <div className="mb-10">
-        <div className="text-xs uppercase tracking-wider text-white/40 mb-1">
-          GO Line — Resolved Composition
-        </div>
-        <div className="text-xs text-white/30 mb-6">
-          Outcome-balanced cultivar blend
-        </div>
-      </div>
-
-      {/* Blend Visualization */}
-      <div className="mb-12 space-y-6">
-        {blend.components.map((component, index) => (
-          <div key={index} className="space-y-2">
-            <div className="flex items-center justify-between mb-1">
-              <div className="text-sm font-medium text-white tracking-tight">
-                {component.name}
-              </div>
-              <div className="text-sm text-white/50 font-mono">
-                {component.percentage}%
-              </div>
-            </div>
-            <div className="relative h-1.5 bg-white/5 overflow-hidden">
-              <div
-                className="h-full bg-white/25 transition-all"
-                style={{ width: `${component.percentage}%` }}
-              />
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* REMOVED: Adjustment Controls - no sliders allowed */}
-    </div>
-  );
-}
-
-// Premium ResolvedBlend Component
-function ResolvedBlend({ tier }: { tier: ResolutionTier }) {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const summary = generateBlendSummary(tier);
-  
-  return (
-    <div className="border-t border-white/10 pt-12 pb-8">
-      <div className="mb-8">
-        <div className="text-xs uppercase tracking-wider text-white/40 mb-2">
-          GO LINE RECOMMENDATION
-        </div>
-        <div className="text-xs text-white/50 mb-6">
-          Optimized blend based on your stated outcome
-        </div>
-        <p className="text-sm text-white/70 leading-relaxed max-w-2xl">
-          {summary}
-        </p>
-      </div>
-
-      <div className="mb-8">
-        <div className="text-xs uppercase tracking-wider text-white/40 mb-6">
-          BLEND BREAKDOWN
-        </div>
-        <div className="space-y-4">
-          {tier.composition.map((component) => (
-            <div key={component.cultivarId} className="space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="text-sm font-medium text-white">
-                  {component.displayName}
-                </div>
-                <div className="text-sm text-white/60 font-mono">
-                  {component.ratio}%
-                </div>
-              </div>
-              <div className="relative h-1 bg-white/5 overflow-hidden">
-                <div
-                  className="h-full bg-white/20 transition-all"
-                  style={{ width: `${component.ratio}%` }}
-                />
-              </div>
-              {component.role === 'primary' && (
-                <div className="text-xs text-white/50 leading-relaxed">
-                  Primary target delivery
-                </div>
-              )}
-              {component.role === 'corrective' && (
-                <div className="text-xs text-white/50 leading-relaxed">
-                  Corrective adjustment
-                </div>
-              )}
-              {component.role === 'supporting' && (
-                <div className="text-xs text-white/50 leading-relaxed">
-                  Supporting balance
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="border-t border-white/5 pt-6">
-        <button
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="flex items-center gap-2 text-xs uppercase tracking-wider text-white/50 hover:text-white/70 transition-colors mb-4"
-        >
-          <span className={`transform transition-transform ${isExpanded ? 'rotate-90' : ''}`}>
-            ▸
-          </span>
-          Why this blend works
-        </button>
-        
-        {isExpanded && (
-          <div className="space-y-3 text-xs text-white/60 leading-relaxed">
-            {tier.whyChosen && tier.whyChosen.length > 0 ? (
-              tier.whyChosen.map((reason, index) => (
-                <div key={index}>{reason}</div>
-              ))
-            ) : (
-              <div>Blend composition optimized for stated outcome constraints.</div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {tier.instructions && (
-        <div className="mt-6 pt-6 border-t border-white/5">
-          <div className="text-xs uppercase tracking-wider text-white/40 mb-3">
-            INSTRUCTIONS
-          </div>
-          <p className="text-xs text-white/60 leading-relaxed">
-            {tier.instructions}
-          </p>
-        </div>
-      )}
-    </div>
-  );
-}
-
 // Browser Speech Recognition types
 interface SpeechRecognition extends EventTarget {
   continuous: boolean;
@@ -314,7 +62,7 @@ interface Window {
 export default function Home() {
   // Phase 1 (FREE): User input
   const [userInput, setUserInput] = useState('');
-  
+
   // Reference Profile Comparison (stateless, session-only)
   const [inputMode, setInputMode] = useState<'outcome' | 'reference'>('outcome');
   const [referenceProfile, setReferenceProfile] = useState<ReferenceProfile | null>(null);
@@ -338,14 +86,6 @@ export default function Home() {
   const [outcome, setOutcome] = useState<OutcomeResult | null>(null);
   const [namedResolution, setNamedResolution] = useState<NamedResolutionResult | null>(null);
   const [resolvedBlend, setResolvedBlend] = useState<ResolvedBlend | null>(null);
-
-  // Conversational state (seam for LLM separation)
-  const [conversation, setConversation] = useState<{ role: 'user' | 'assistant'; content: string }[]>([]);
-  const [intentSummary, setIntentSummary] = useState<string>('');
-  const [axesClosed, setAxesClosed] = useState(false);
-  
-  // Note: All recommendations must come from structured OutcomeResult objects only
-  // No regex parsing or prose-based extraction is allowed
 
   // Initialize speech recognition
   useEffect(() => {
@@ -411,14 +151,12 @@ export default function Home() {
             }
           } else {
             // Auto-ended (silence, etc.) - ignore and keep listening
-            // The continuous mode should handle this, but if it auto-ends, try to restart
             if (recognitionRef.current) {
               setTimeout(() => {
                 if (recognitionRef.current && !explicitStopRef.current) {
                   try {
                     recognitionRef.current.start();
                   } catch (err) {
-                    // Can't restart - user may have stopped, so reset state
                     setIsListening(false);
                   }
                 }
@@ -446,7 +184,6 @@ export default function Home() {
         recognitionRef.current.start();
       } catch (err: any) {
         console.error('Failed to start recognition:', err);
-        // Check if it's already running
         if (err.message && err.message.includes('already started')) {
           setIsListening(true);
         } else {
@@ -461,10 +198,8 @@ export default function Home() {
       try {
         explicitStopRef.current = true; // Mark as explicit stop
         recognitionRef.current.stop();
-        // Transcript will be finalized in onend handler
       } catch (err) {
         console.error('Failed to stop recognition:', err);
-        // Fallback: manually finalize if stop() fails
         explicitStopRef.current = false;
         setIsListening(false);
         if (interimTranscriptRef.current) {
@@ -472,71 +207,6 @@ export default function Home() {
           interimTranscriptRef.current = '';
         }
       }
-    }
-  };
-
-  // LEGACY: Conversational LLM handler (seam for separation)
-  // QUARANTINED: This function is no longer called from main flow
-  // Only kept for potential future "Conversational Mode" feature
-  // Main flow always uses handleAnalyze() which has proper clarification gate
-  const handleConversation = async (input: string) => {
-    if (!input.trim() || isProcessing) return;
-
-    setIsProcessing(true);
-    setError(null);
-
-    try {
-      const updatedConversation = [
-        ...conversation,
-        { role: 'user' as const, content: input.trim() },
-      ];
-
-      const res = await fetch('/api/conversation', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: updatedConversation.map(msg => ({
-            role: msg.role,
-            content: msg.content,
-          })),
-        }),
-      });
-
-      if (!res.ok) {
-        throw new Error('Conversation API failed');
-      }
-
-      const data = await res.json();
-      if (!data.ok || !data.message) {
-        throw new Error('Invalid conversation response');
-      }
-
-      // Add assistant response to conversation
-      // NO parsing of recommendations - all recommendations must come from structured OutcomeResult
-      const newConversation = [
-        ...updatedConversation,
-        { role: 'assistant' as const, content: data.message },
-      ];
-      setConversation(newConversation);
-
-      // Build structured summary from conversation (not raw messages)
-      const summary = updatedConversation
-        .filter(msg => msg.role === 'user')
-        .map(msg => msg.content)
-        .join('\n\n');
-      setIntentSummary(summary);
-
-      // For now, axes closed after 2 user messages (can be refined)
-      if (updatedConversation.filter(msg => msg.role === 'user').length >= 2) {
-        setAxesClosed(true);
-      }
-
-      setUserInput('');
-    } catch (err: any) {
-      console.error('Conversation error:', err);
-      setError('Failed to process conversation');
-    } finally {
-      setIsProcessing(false);
     }
   };
 
@@ -554,34 +224,29 @@ export default function Home() {
       }
     }
 
-    // RESOLUTION CONTRACT: Each Resolve action invalidates and replaces all prior results
     setIsProcessing(true);
     setError(null);
-    setGuidance(null);
-    setClarificationAnswers({});
-    setIntent(null);
-    setOutcome(null);
-    setResolvedBlend(null); // Clear previous resolution
-    setNamedResolution(null); // Clear previous named resolution
     setLlmFailed(false);
-    setPhase('FREE');
-    
+
+    // NOTE: We do NOT clear resolvedBlend immediately to support "State Retention"
+    // Only clear it on confirmed failure or new success
+
     // Reference Profile mode: Convert reference to intent and resolve directly
     if (inputMode === 'reference' && referenceProfile) {
       try {
         setPhase('LOCKED');
-        
+
         // Convert reference profile to OutcomeIntent
         const referenceIntent = referenceProfileToIntent(referenceProfile);
         setIntent(referenceIntent);
-        
+
         console.debug('REFERENCE_PROFILE_INTENT', referenceIntent);
         console.debug('RESOLUTION_ATTEMPTED', true);
-        
+
         // Resolve using the same deterministic engine
         const resolvedOutcome = resolveOutcome(referenceIntent);
         setOutcome(resolvedOutcome);
-        
+
         if (resolvedOutcome.failure) {
           console.debug('RESOLUTION_FAILED_REASON', resolvedOutcome.failure.reason);
           const blend = convertToResolvedBlend(
@@ -592,7 +257,7 @@ export default function Home() {
           setIsProcessing(false);
           return;
         }
-        
+
         // Convert to named resolution
         const named = resolveToNamedStrains(resolvedOutcome);
         setNamedResolution(named);
@@ -606,7 +271,7 @@ export default function Home() {
       }
       return;
     }
-    
+
     // Normal outcome mode: Use LLM-based intent parsing
     if (!userInput.trim()) {
       setError('Please enter your desired outcome');
@@ -623,9 +288,9 @@ export default function Home() {
       });
 
       console.log('[CLIENT] Guidance response status:', guidanceResponse.status);
-      
+
       let guidanceData: GuidanceResponse;
-      
+
       if (!guidanceResponse.ok) {
         try {
           const errorBody = await guidanceResponse.text();
@@ -664,31 +329,15 @@ export default function Home() {
 
       // HARD CLARIFICATION GATE: Compute confidence and enforce threshold
       const confidence = computeIntentConfidence(guidanceData.guidance);
-      
-      // STEP 2: NON-NEGOTIABLE LOGGING
-      console.debug('INTENT_PARSED', guidanceData.guidance);
-      console.debug('INTENT_CONFIDENCE', confidence);
-      console.debug('INTENT_COMPLETE', confidence.overall >= 0.70 || (confidence.energy >= 0.8 && confidence.anxiety >= 0.8));
-      
+
       // Filter out redundant questions that restate already-expressed preferences
-      const originalQuestionCount = guidanceData.guidance.clarificationNeeded?.length || 0;
-      const filteredQuestions = guidanceData.guidance.clarificationNeeded 
+      const filteredQuestions = guidanceData.guidance.clarificationNeeded
         ? filterRedundantQuestions(guidanceData.guidance.clarificationNeeded, confidence)
         : [];
-      
-      console.debug('QUESTIONS_ORIGINAL', originalQuestionCount);
-      console.debug('QUESTIONS_FILTERED', filteredQuestions.length);
-      
+
       // Only ask if confidence is below threshold AND questions remain after filtering
       const needsClarification = shouldClarify(confidence) && filteredQuestions.length > 0;
-      
-      console.debug('FOLLOW_UP_TRIGGERED', needsClarification);
-      console.debug('FOLLOW_UP_REASON', needsClarification ? {
-        confidenceBelowThreshold: confidence.overall < 0.70,
-        criticalAxesUnknown: !(confidence.energy >= 0.8 && confidence.anxiety >= 0.8),
-        questionsRemain: filteredQuestions.length > 0
-      } : 'NONE - proceeding to resolution');
-      
+
       if (needsClarification) {
         // Update guidance with filtered questions
         setGuidance({
@@ -728,9 +377,10 @@ export default function Home() {
         console.error('Failed to stop recognition during resolve:', err);
       }
     }
-    
-    setPhase('LOCKED');
-    
+
+    // Instead of locking, we just update the state
+    // setPhase('LOCKED'); // REMOVED PER AUDIT
+
     // Translate strategic guidance to numeric intent constraints
     const translatedIntent = translateGuidanceToIntent(finalGuidance, answers);
     setIntent(translatedIntent);
@@ -742,7 +392,7 @@ export default function Home() {
     try {
       const resolvedOutcome = resolveOutcome(translatedIntent);
       setOutcome(resolvedOutcome);
-      
+
       // Check for failure state
       if (resolvedOutcome.failure) {
         console.debug('RESOLUTION_FAILED_REASON', resolvedOutcome.failure.reason);
@@ -761,7 +411,7 @@ export default function Home() {
         }
         return;
       }
-      
+
       console.debug('RESOLUTION_SUCCESS', true);
       // VOICE STATE FIX #6: stopListening() must be called automatically on Success
       if (isListening && recognitionRef.current) {
@@ -773,34 +423,39 @@ export default function Home() {
           console.error('Failed to stop recognition on success:', err);
         }
       }
-      
+
       // MANDATORY: Convert to named resolution (maps abstract chemotypes to actual strain names)
       const named = resolveToNamedStrains(resolvedOutcome);
       setNamedResolution(named);
-      
+
       // Convert to ResolvedBlend format for ResolutionPanel
       const blend = convertToResolvedBlend(named, resolvedOutcome);
       setResolvedBlend(blend);
+
+      // If we were in GUIDED phase, reset to FREE so questions disappear (or keep them?)
+      // Better to clear guidance so we return to "Input" state
+      setPhase('FREE');
+      setGuidance(null);
+      setClarificationAnswers({});
+
     } catch (err) {
       console.error('Resolution error:', err);
       setError('Failed to resolve outcome. Please try again.');
     }
   };
-  
-  // REMOVED: handleReResolution - no adjustment sliders, no re-resolution
 
   // Handle clarification answer updates
   // For sensitivity questions (tradeoff type), supports multi-select with mutual exclusivity for "None / Balanced"
   const handleClarificationAnswer = (questionType: string, answer: string, isMultiSelect: boolean = false) => {
     setClarificationAnswers(prev => {
       // Check if this is a sensitivity question (tradeoff type with specific options)
-      const isSensitivityQuestion = questionType === 'tradeoff' && 
+      const isSensitivityQuestion = questionType === 'tradeoff' &&
         ['Anxiety', 'Overstimulation', 'Mental drift', 'None / Balanced'].includes(answer);
-      
+
       if (isSensitivityQuestion || isMultiSelect) {
         const current = prev[questionType];
         const currentArray = Array.isArray(current) ? current : (current ? [current] : []);
-        
+
         // Handle "None / Balanced" mutual exclusivity
         if (answer === 'None / Balanced') {
           // If selecting "None / Balanced", clear all others
@@ -811,7 +466,7 @@ export default function Home() {
         } else {
           // If selecting any other option, remove "None / Balanced" if present
           let newArray = currentArray.filter(item => item !== 'None / Balanced');
-          
+
           // Toggle the selected option
           if (newArray.includes(answer)) {
             // Deselect if already selected
@@ -820,7 +475,7 @@ export default function Home() {
             // Select if not already selected
             newArray.push(answer);
           }
-          
+
           return {
             ...prev,
             ...(newArray.length > 0 ? { [questionType]: newArray } : {}),
@@ -854,354 +509,226 @@ export default function Home() {
 
   return (
     <main className="min-h-screen w-full bg-[#0B0B0D] text-[#EDEDED]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
-      <div className="pt-16 pb-20">
-        <div className="max-w-[900px] mx-auto px-4 sm:px-6 lg:px-8">
-          {/* SECTION 1: LOGO + PRODUCT IDENTITY */}
-          <div className="mb-12 text-center pb-8 border-b border-[rgba(255,255,255,0.06)]">
-            <div className="flex items-center justify-center">
-              <Image 
-                src="/go-logo.png" 
-                alt="GO Line" 
-                width={200} 
-                height={60} 
-                className="w-auto h-auto max-w-[60%] sm:max-w-[50%] md:max-w-[40%] object-contain"
-              />
-            </div>
-          </div>
-
-
-          {/* Input Mode Toggle */}
-          <div className="mb-6 flex gap-4 text-xs">
-            <button
-              onClick={() => {
-                setInputMode('outcome');
-                setReferenceProfile(null);
-                setUserInput('');
-                setResolvedBlend(null);
-                setNamedResolution(null);
-                setPhase('FREE');
-              }}
-              className={`px-3 py-1.5 transition-colors ${
-                inputMode === 'outcome'
-                  ? 'bg-white/10 text-white border border-[#D4AF37]/30'
-                  : 'text-white/50 hover:text-white/70 border border-transparent'
-              }`}
-            >
-              Describe desired outcome
-            </button>
-            <button
-              onClick={() => {
-                setInputMode('reference');
-                setUserInput('');
-                setResolvedBlend(null);
-                setNamedResolution(null);
-                setPhase('FREE');
-              }}
-              className={`px-3 py-1.5 transition-colors ${
-                inputMode === 'reference'
-                  ? 'bg-white/10 text-white border border-[#D4AF37]/30'
-                  : 'text-white/50 hover:text-white/70 border border-transparent'
-              }`}
-            >
-              Compare to known product
-            </button>
-          </div>
-
-          {/* SECTION 2: INPUT PANEL */}
-          <div className="mb-12 border-b border-[rgba(255,255,255,0.06)] pb-8">
-            <div className="text-xs uppercase tracking-wider text-[#A1A1AA] mb-4 font-medium">
-              {inputMode === 'outcome' ? 'OUTCOME INPUT' : 'REFERENCE PROFILE'}
-            </div>
-            
-            {inputMode === 'outcome' ? (
-              <div className="relative">
-                <textarea
-                  id="outcome-input"
-                  value={userInput + (isListening && interimTranscriptRef.current ? interimTranscriptRef.current : '')}
-                  onChange={(e) => setUserInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && phase === 'FREE') {
-                      handleAnalyze();
-                    }
-                  }}
-                placeholder="Describe desired outcome..."
-                className={`w-full h-28 px-3 py-2 pr-20 bg-transparent text-[#EDEDED] placeholder-[#A1A1AA]/30 text-xs focus:outline-none resize-none transition-colors ${
-                    phase === 'LOCKED' 
-                      ? 'opacity-40 cursor-not-allowed' 
-                    : ''
-                  }`}
-                  disabled={isProcessing || phase === 'LOCKED'}
-                />
-              
-              {speechSupported && phase === 'FREE' && !isProcessing && (
-                <div className="absolute right-2 top-2">
-                  {!isListening ? (
-                  <button
-                    type="button"
-                      onClick={startListening}
-                      className="px-2 py-1 text-xs text-white/50 hover:text-white/70 uppercase tracking-wider border border-white/10 hover:border-white/20 transition-colors"
-                      title="Start listening"
-                  >
-                    Voice
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={stopListening}
-                      className="px-2 py-1 text-xs text-white/70 hover:text-white uppercase tracking-wider border border-white/20 hover:border-white/30 transition-colors"
-                      title="Stop listening"
-                    >
-                      Stop
-                    </button>
-                  )}
-                </div>
-              )}
-              
-              {isListening && (
-                <div className="mt-2">
-                  <div className="text-xs text-[#A1A1AA] uppercase tracking-wider">
-                    Listening...
-                  </div>
-                </div>
-              )}
-            </div>
-            ) : (
-              <div className="text-white/50 text-sm">
-                Reference profile input form (to be implemented)
-              </div>
-            )}
-            
-            <div className="flex items-center justify-between mt-6">
-                {phase === 'FREE' && (
-                  <button
-                    onClick={() => {
-                      console.debug('INPUT_SUBMITTED', { text: userInput });
-                      console.debug('CALLING_HANDLE_ANALYZE', true);
-                      // FIXED: Always call handleAnalyze() - never use legacy handleConversation()
-                      // handleAnalyze() already handles confidence checking and clarification logic
-                      handleAnalyze();
-                    }}
-                    disabled={isProcessing || !userInput.trim()}
-                  className="px-4 py-2 text-white/80 text-sm hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors uppercase tracking-wider"
-                  >
-                    {isProcessing ? 'Resolving...' : 'Resolve'}
-                  </button>
-                )}
-              </div>
-            </div>
-
-          {/* SECTION 3: OUTPUT / RESOLUTION PANEL */}
-          {(isProcessing || resolvedBlend || intent) && (
-            <ResolutionPanel
-              blend={resolvedBlend}
-              intent={intent ? {
-                activationTarget: intent.activationTarget,
-                cognitiveEndurance: intent.cognitiveEndurance,
-                anxietySensitivity: intent.anxietySensitivity || 0.5,
-              } : null}
-              isComputing={
-                isProcessing && 
-                phase === 'LOCKED' && 
-                (!resolvedBlend || !intent)
-              }
+      <div className="pt-8 pb-8 h-screen flex flex-col">
+        {/* LOGO HEADER - Always visible, compacted */}
+        <div className="text-center pb-6 border-b border-[rgba(255,255,255,0.06)] flex-shrink-0">
+          <div className="flex items-center justify-center">
+            <Image
+              src="/go-logo.png"
+              alt="GO Line"
+              width={160}
+              height={48}
+              className="w-auto h-8 opacity-80 hover:opacity-100 transition-opacity"
             />
-          )}
-
-          {/* Adjustment Controls are now handled by ResolutionPanel component - no duplicate */}
-
-          {/* Explanatory copy removed per PART 5 - no marketing copy in active states */}
-
-          {/* Error Display */}
-          {error && (
-            <div className="mb-8 text-sm text-white/60">
-              {error}
-            </div>
-          )}
-
-          {/* Phase 2: GUIDED - Clarification Questions & Assumptions */}
-          {phase === 'GUIDED' && guidance && (
-            <div className="mb-8 space-y-6 go-fade-in">
-              {/* Clarification Questions */}
-              {guidance.clarificationNeeded && guidance.clarificationNeeded.length > 0 && (
-                <div className="bg-[#0F1013] border border-white/6 p-8" style={{ boxShadow: '0 1px 3px rgba(0, 0, 0, 0.3)' }}>
-                  <h2 className="text-base font-medium text-white mb-6">
-                    Clarifications Needed
-                  </h2>
-                  <div className="space-y-6">
-                    {guidance.clarificationNeeded.map((question, index) => (
-                      <div key={index} className="space-y-4">
-                        <label className="block text-sm font-medium text-white">
-                          {question.question}
-                        </label>
-                        <div className="flex flex-wrap gap-2">
-                          {question.options.map((option) => {
-                            // Determine if this is a sensitivity question (tradeoff type with specific options)
-                            const isSensitivityQuestion = question.type === 'tradeoff' && 
-                              ['Anxiety', 'Overstimulation', 'Mental drift', 'None / Balanced'].includes(option);
-                            
-                            const answer = clarificationAnswers[question.type];
-                            const isChecked = isSensitivityQuestion
-                              ? Array.isArray(answer) && answer.includes(option)
-                              : answer === option;
-                            
-                            return (
-                              <label
-                                key={option}
-                                className={`inline-flex items-center px-3 py-1.5 cursor-pointer transition-colors ${
-                                  isChecked
-                                    ? 'bg-[#D6A84A]/20 text-[#EDEDED] border border-[#D6A84A]/40'
-                                    : 'bg-white/5 text-white/70 border border-white/10 hover:bg-white/10 hover:border-white/20'
-                                }`}
-                              >
-                                <input
-                                  type={isSensitivityQuestion ? "checkbox" : "radio"}
-                                  name={`clarification-${question.type}`}
-                                  value={option}
-                                  checked={isChecked}
-                                  onChange={(e) => handleClarificationAnswer(question.type, e.target.value, isSensitivityQuestion)}
-                                  className="sr-only"
-                                />
-                                <span className="text-xs uppercase tracking-wider">{option}</span>
-                              </label>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Assumptions Panel */}
-              <div className="bg-[#0F1013] border border-white/6 p-6">
-                <h2 className="text-lg font-medium text-white mb-4">
-                  Assumptions We're Making
-                </h2>
-                <div className="space-y-4">
-                  {guidance.dominantPriorities.length > 0 && (
-                    <div>
-                      <h3 className="text-sm font-medium text-white/80 mb-2">Inferred Priorities</h3>
-                      <ul className="space-y-1">
-                        {guidance.dominantPriorities.map((priority, index) => (
-                          <li key={index} className="text-sm text-white/70">• {priority}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  {guidance.strictAvoidances.length > 0 && (
-                    <div>
-                      <h3 className="text-sm font-medium text-white/80 mb-2">Inferred Avoidances</h3>
-                      <ul className="space-y-1">
-                        {guidance.strictAvoidances.map((avoidance, index) => (
-                          <li key={index} className="text-sm text-white/70">• {avoidance}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  {guidance.acceptableTradeoffs.length > 0 && (
-                    <div>
-                      <h3 className="text-sm font-medium text-white/80 mb-2">Inferred Tradeoffs</h3>
-                      <ul className="space-y-1">
-                        {guidance.acceptableTradeoffs.map((tradeoff, index) => (
-                          <li key={index} className="text-sm text-white/70">• {tradeoff}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  {guidance.suggestedStrategies.length > 0 && (
-                    <div>
-                      <h3 className="text-sm font-medium text-white/80 mb-2">Suggested Strategies</h3>
-                      <ul className="space-y-1">
-                        {guidance.suggestedStrategies.map((strategy, index) => (
-                          <li key={index} className="text-sm text-white/70">• {strategy}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-                <div className="mt-6 pt-4 border-t border-white/10">
-                  <button
-                    onClick={() => handleLock(guidance, clarificationAnswers)}
-                    disabled={!allClarificationsAnswered()}
-                    className="px-6 py-2.5 bg-white text-[#0a0b0e] font-medium text-sm rounded-sm hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    Lock & Resolve
-                  </button>
-                  {!allClarificationsAnswered() && (
-                    <p className="text-xs text-white/50 mt-2">
-                      Please answer all clarification questions to proceed.
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Phase 3: LOCKED - Show locked state indicator */}
-          {phase === 'LOCKED' && (
-            <div className="mb-6 p-4 go-bg-elevated rounded-sm phase-resolving go-expand">
-              <div className="flex items-center gap-3">
-                <svg className="w-5 h-5 go-text-metallic" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                </svg>
-                <span className="text-sm font-light text-white/70">Resolution Complete</span>
-              </div>
-            </div>
-          )}
-
-          {/* LLM Failure State */}
-          {llmFailed && (
-            <div className="mb-8 p-8 bg-[#0F1013] border border-white/6 text-center">
-              <h2 className="text-xl font-medium text-white mb-4">
-                Unable to Resolve Outcome
-              </h2>
-              <p className="text-white/70 mb-2 leading-relaxed">
-                This calculator requires live AI interpretation to resolve nuanced outcomes.
-                The system could not analyze your request at this time.
-              </p>
-              <p className="text-white/50 text-sm mt-4 italic">
-                No results are shown to avoid misleading recommendations.
-              </p>
-              <p className="text-white/40 text-sm mt-6">
-                Try again in a moment.
-              </p>
-            </div>
-          )}
-
-
-          {/* Reference Comparison Entry - Secondary CTA at bottom */}
-          {phase === 'FREE' && !resolvedBlend && (
-            <div className="mt-16 pt-8 border-t border-white/5">
-              <div className="text-xs text-white/50 mb-3">
-                Have a product you liked?
-              </div>
-              <div className="text-xs text-white/40 mb-4">
-                Compare its chemistry to what's available now.
-              </div>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setInputMode('reference')}
-                  className="px-4 py-2 bg-white/5 text-white/70 text-xs uppercase tracking-wider border border-white/10 hover:bg-white/10 hover:border-white/20 transition-colors"
-                >
-                  Scan Label
-                </button>
-                <button
-                  onClick={() => setInputMode('reference')}
-                  className="px-4 py-2 bg-white/5 text-white/70 text-xs uppercase tracking-wider border border-white/10 hover:bg-white/10 hover:border-white/20 transition-colors"
-                >
-                  Enter Manually
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Footer Disclosure */}
-          <div className="mt-32 pt-8 border-t border-white/5">
-            <p className="text-xs text-white/30 leading-relaxed text-center max-w-2xl mx-auto">
-              Demo system using a static dispensary inventory for concept validation.
-            </p>
           </div>
         </div>
+
+        {/* MAIN CONTENT - 2 Column Grid */}
+        <div className="flex-1 max-w-[1400px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 overflow-hidden">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 h-full">
+
+            {/* LEFT COLUMN: CONTROL SURFACE (Input + Settings) */}
+            <div className="lg:col-span-5 flex flex-col h-full overflow-y-auto pr-2">
+
+              {/* Mode Toggles */}
+              <div className="flex gap-4 text-xs mb-6 shrink-0">
+                <button
+                  onClick={() => {
+                    setInputMode('outcome');
+                    setReferenceProfile(null);
+                    setUserInput('');
+                    // Do NOT clear resolvedBlend - keep context
+                    setPhase('FREE');
+                  }}
+                  className={`px-3 py-1.5 transition-colors uppercase tracking-wider ${inputMode === 'outcome'
+                      ? 'bg-white/10 text-white border border-[#D4AF37]/30'
+                      : 'text-white/40 hover:text-white/70 border border-transparent'
+                    }`}
+                >
+                  Describe Outcome
+                </button>
+                <button
+                  onClick={() => {
+                    setInputMode('reference');
+                    // Do NOT clear resolvedBlend
+                    setPhase('FREE');
+                  }}
+                  className={`px-3 py-1.5 transition-colors uppercase tracking-wider ${inputMode === 'reference'
+                      ? 'bg-white/10 text-white border border-[#D4AF37]/30'
+                      : 'text-white/40 hover:text-white/70 border border-transparent'
+                    }`}
+                >
+                  Match Product
+                </button>
+              </div>
+
+              {/* Primary Input */}
+              <div className="mb-0 flex-1 flex flex-col min-h-[200px] lg:min-h-0">
+                {inputMode === 'outcome' ? (
+                  <div className="relative flex-1 flex flex-col">
+                    <div className="relative flex-1">
+                      <textarea
+                        id="outcome-input"
+                        value={userInput + (isListening && interimTranscriptRef.current ? interimTranscriptRef.current : '')}
+                        onChange={(e) => setUserInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                            handleAnalyze();
+                          }
+                        }}
+                        placeholder="Describe the desired effect..."
+                        className="w-full h-full px-5 py-5 pr-20 bg-[#0F1013] border border-white/10 focus:border-[#D6A84A]/40 text-[#EDEDED] placeholder-[#A1A1AA]/30 text-base leading-relaxed focus:outline-none resize-none transition-colors rounded-sm font-mono"
+                        disabled={isProcessing} // Never fully locked, just disabled during processing
+                      />
+
+                      {/* Voice Controls */}
+                      {speechSupported && !isProcessing && (
+                        <div className="absolute right-4 bottom-4">
+                          {!isListening ? (
+                            <button
+                              type="button"
+                              onClick={startListening}
+                              className="p-2 text-white/30 hover:text-white/80 transition-colors"
+                              title="Start listening"
+                            >
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={stopListening}
+                              className="p-2 text-[#D6A84A] animate-pulse transition-colors"
+                              title="Stop listening"
+                            >
+                              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1" /></svg>
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Resolve Action Bar */}
+                    <div className="mt-4 flex justify-end">
+                      <button
+                        onClick={handleAnalyze}
+                        disabled={isProcessing || !userInput.trim()}
+                        className="px-6 py-3 bg-[#D6A84A]/10 hover:bg-[#D6A84A]/20 border border-[#D6A84A]/40 text-[#D6A84A] text-sm uppercase tracking-wider transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-2"
+                      >
+                        {isProcessing ? (
+                          <>
+                            <span className="w-2 h-2 bg-[#D6A84A] rounded-full animate-pulse" />
+                            Resolving...
+                          </>
+                        ) : (
+                          <>
+                            Update Configuration
+                            <span className="text-xs opacity-60 ml-1">⌘↵</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex-1 flex items-center justify-center border border-dashed border-white/10 text-white/30 text-sm">
+                    Reference profile input form (Coming Soon)
+                  </div>
+                )}
+              </div>
+
+              {/* GUIDANCE / CLARIFICATION PANEL - Appears below input when needed */}
+              {phase === 'GUIDED' && guidance && (
+                <div className="mt-8 mb-8 go-fade-in border-t border-white/10 pt-6">
+                  <div className="mb-6">
+                    <h3 className="text-xs uppercase tracking-wider text-[#D6A84A] mb-2">Signal Clarification Required</h3>
+                    <p className="text-sm text-white/60">The resolution engine needs more specificity to ensure safety guarantees.</p>
+                  </div>
+
+                  {/* Clarification Questions */}
+                  {guidance.clarificationNeeded && guidance.clarificationNeeded.length > 0 && (
+                    <div className="space-y-8">
+                      {guidance.clarificationNeeded.map((question, index) => (
+                        <div key={index} className="space-y-3">
+                          <label className="block text-sm font-medium text-white font-mono">
+                            {/* Add number prefix */}
+                            <span className="text-[#D6A84A] mr-2">0{index + 1}.</span>
+                            {question.question}
+                          </label>
+                          <div className="flex flex-wrap gap-2 pl-6">
+                            {question.options.map((option) => {
+                              const isSensitivityQuestion = question.type === 'tradeoff' &&
+                                ['Anxiety', 'Overstimulation', 'Mental drift', 'None / Balanced'].includes(option);
+
+                              const answer = clarificationAnswers[question.type];
+                              const isChecked = isSensitivityQuestion
+                                ? Array.isArray(answer) && answer.includes(option)
+                                : answer === option;
+
+                              return (
+                                <label
+                                  key={option}
+                                  className={`inline-flex items-center px-3 py-2 cursor-pointer transition-all border ${isChecked
+                                      ? 'bg-[#D6A84A]/20 text-[#EDEDED] border-[#D6A84A]/40'
+                                      : 'bg-transparent text-white/50 border-white/10 hover:border-white/30 hover:text-white/80'
+                                    }`}
+                                >
+                                  <input
+                                    type={isSensitivityQuestion ? "checkbox" : "radio"}
+                                    name={`clarification-${question.type}`}
+                                    value={option}
+                                    checked={isChecked}
+                                    onChange={(e) => handleClarificationAnswer(question.type, e.target.value, isSensitivityQuestion)}
+                                    className="sr-only"
+                                  />
+                                  <span className="text-xs uppercase tracking-wider">{option}</span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="mt-8 pl-6">
+                    <button
+                      onClick={() => handleLock(guidance, clarificationAnswers)}
+                      disabled={!allClarificationsAnswered()}
+                      className="w-full px-4 py-3 bg-[#EDEDED] text-[#0B0B0D] font-medium text-sm uppercase tracking-wider hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Confirm & Resolve
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Error Display */}
+              {error && (
+                <div className="mt-6 p-4 bg-red-900/20 border border-red-500/20 text-red-200/80 text-sm">
+                  {error}
+                </div>
+              )}
+            </div>
+
+            {/* RIGHT COLUMN: MONITOR SURFACE (Visualization) */}
+            <div className="lg:col-span-7 h-full bg-[#0F1013]/50 border border-white/5 p-8 relative overflow-hidden">
+              {/* Header Gradient */}
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#D6A84A]/20 to-transparent opacity-50" />
+
+              {/* Persistent Resolution Panel */}
+              <ResolutionPanel
+                blend={resolvedBlend}
+                intent={intent ? {
+                  activationTarget: intent.activationTarget,
+                  cognitiveEndurance: intent.cognitiveEndurance,
+                  anxietySensitivity: intent.anxietySensitivity || 0.5,
+                } : null}
+                isComputing={isProcessing}
+              />
+            </div>
+
+          </div>
+        </div>
+
       </div>
     </main>
   );

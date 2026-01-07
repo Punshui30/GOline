@@ -7,7 +7,7 @@
  * No prose. No chat. No free-form text.
  */
 
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 
 /**
  * Single source of truth for resolution output
@@ -189,19 +189,19 @@ function UsageInstructions({ intent }: { intent: { activationTarget: number; cog
  */
 function PhysicalStackVisualization({ cultivars, stack, totalWeight = 3.5 }: { cultivars: ResolvedCultivar[]; stack?: ResolvedStack; totalWeight?: number }) {
   // Type for layer with deterministic percentage
-  type Layer = { 
-    name: string; 
-    role: CultivarRole; 
+  type Layer = {
+    name: string;
+    role: CultivarRole;
     percentage: number; // Actual resolved percentage (0-100)
     stackPosition: 'bottom' | 'middle' | 'top' | 'blend'; // Stack ordering
   };
-  
+
   // Build layers deterministically from resolved blend data
   const layers: Layer[] = (() => {
     if (stack) {
       // Stacked resolution: order by stack position (bottom → middle → top)
       const stackLayers: Layer[] = [];
-      
+
       // Bottom layer (always present in stack)
       const bottomCultivar = cultivars.find(c => c.name === stack.bottom);
       if (bottomCultivar) {
@@ -212,7 +212,7 @@ function PhysicalStackVisualization({ cultivars, stack, totalWeight = 3.5 }: { c
           stackPosition: 'bottom',
         });
       }
-      
+
       // Middle layer (optional, 3-phase stack)
       if (stack.middle) {
         const middleCultivar = cultivars.find(c => c.name === stack.middle);
@@ -225,7 +225,7 @@ function PhysicalStackVisualization({ cultivars, stack, totalWeight = 3.5 }: { c
           });
         }
       }
-      
+
       // Top layer (optional, 2-phase or 3-phase stack)
       if (stack.top) {
         const topCultivar = cultivars.find(c => c.name === stack.top);
@@ -238,7 +238,7 @@ function PhysicalStackVisualization({ cultivars, stack, totalWeight = 3.5 }: { c
           });
         }
       }
-      
+
       return stackLayers;
     } else {
       // Blended resolution: use cultivar order with actual percentages
@@ -259,7 +259,7 @@ function PhysicalStackVisualization({ cultivars, stack, totalWeight = 3.5 }: { c
     // Hard fail - do not render anything
     return null;
   }
-  
+
   // Check for duplicate names in layers
   const layerNames = layers.map(l => l.name);
   const uniqueLayerNames = new Set(layerNames);
@@ -298,16 +298,16 @@ function PhysicalStackVisualization({ cultivars, stack, totalWeight = 3.5 }: { c
       <div className="text-xs uppercase tracking-wider text-[#A1A1AA] mb-4 font-medium">
         Stacked Consumption Visualization
       </div>
-      
+
       {/* Instructional copy */}
       <div className="text-sm text-[#A1A1AA] mb-6 leading-relaxed" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
         If rolling a {totalWeight}g pre-roll, use:
       </div>
-      
+
       {/* Deterministic vertical pre-roll representation */}
       {/* Uses flex-col-reverse to stack bottom-to-top visually */}
       <div className="flex items-end justify-center mb-6">
-        <div 
+        <div
           className="flex flex-col-reverse items-center w-40 relative"
           style={{ height: `${CONTAINER_HEIGHT}px` }}
         >
@@ -315,12 +315,12 @@ function PhysicalStackVisualization({ cultivars, stack, totalWeight = 3.5 }: { c
             // Calculate height in pixels from percentage
             const heightPx = (layer.percentage / 100) * CONTAINER_HEIGHT;
             const minHeightPx = 40; // Minimum readable height (increased to fit gram weight)
-            
+
             return (
               <div
                 key={`${layer.name}-${idx}`}
                 className={`w-full ${getRoleColor(layer.role)} ${getRoleBorder(layer.role)} border-2 flex-shrink-0`}
-                style={{ 
+                style={{
                   height: `${Math.max(heightPx, minHeightPx)}px`,
                 }}
               >
@@ -330,8 +330,8 @@ function PhysicalStackVisualization({ cultivars, stack, totalWeight = 3.5 }: { c
                       {layer.name}
                     </div>
                     <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] mb-1 font-light">
-                      {layer.role === 'foundation' ? 'Foundation' : 
-                       layer.role === 'modulator' ? 'Modulator' : 'Accent'}
+                      {layer.role === 'foundation' ? 'Foundation' :
+                        layer.role === 'modulator' ? 'Modulator' : 'Accent'}
                     </div>
                     <div className="text-[10px] text-[#A1A1AA] font-mono font-light mb-0.5">
                       {layer.percentage.toFixed(0)}%
@@ -351,71 +351,13 @@ function PhysicalStackVisualization({ cultivars, stack, totalWeight = 3.5 }: { c
 }
 
 /**
- * StackedConsumptionView Component (LEGACY - kept for backward compatibility)
- * Visual blocks for temporal consumption layout
- */
-function StackedConsumptionView({ stack }: { stack?: ResolvedStack }) {
-  if (!stack) return null;
-  
-  return (
-    <div className="mb-12 pt-8 border-t border-white/6">
-      <div className="text-xs uppercase tracking-wider text-white/40 mb-6">
-        Stacked Consumption Layout
-      </div>
-      
-      <div className="space-y-4">
-        {stack.top && (
-          <div className="p-5 bg-white/5 border border-white/10">
-            <div className="text-xs uppercase tracking-wider text-white/40 mb-2">
-              Top Layer
-            </div>
-            <div className="text-base font-medium text-white mb-1">
-              {stack.top}
-            </div>
-            <div className="text-xs text-white/50">
-              Onset / Accent
-            </div>
-          </div>
-        )}
-        
-        {stack.middle && (
-          <div className="p-5 bg-white/5 border border-white/10">
-            <div className="text-xs uppercase tracking-wider text-white/40 mb-2">
-              Middle Layer
-            </div>
-            <div className="text-base font-medium text-white mb-1">
-              {stack.middle}
-            </div>
-            <div className="text-xs text-white/50">
-              Primary Effect
-            </div>
-          </div>
-        )}
-        
-          <div className="p-5 bg-white/5 border border-white/10">
-          <div className="text-xs uppercase tracking-wider text-white/40 mb-2">
-            Bottom Layer
-          </div>
-          <div className="text-base font-medium text-white mb-1">
-            {stack.bottom}
-          </div>
-          <div className="text-xs text-white/50">
-            Duration / Body
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/**
  * Resolved Metrics Component
  * Read-only static bars replacing sliders
  * No knobs, no hover affordance, thin horizontal bars
  */
-function ResolvedMetrics({ 
-  intent 
-}: { 
+function ResolvedMetrics({
+  intent
+}: {
   intent: {
     activationTarget: number;
     cognitiveEndurance: number;
@@ -429,9 +371,9 @@ function ResolvedMetrics({
   ];
 
   return (
-    <div className="mb-8 pt-6 border-t border-white/6">
+    <div className="mb-8 pt-6 border-b border-white/6 pb-6">
       <div className="text-xs uppercase tracking-wider text-[#A1A1AA] mb-4 font-medium">
-        Resolved Metrics
+        Target Metrics
       </div>
       <div className="space-y-4">
         {metrics.map((metric, idx) => (
@@ -460,10 +402,10 @@ function ResolvedMetrics({
  * Invalid Resolution State Component
  * Renders when resolution fails validation
  */
-function InvalidResolutionState({ 
-  failure, 
+function InvalidResolutionState({
+  failure,
   intent
-}: { 
+}: {
   failure: ResolvedBlend['failure'];
   intent?: {
     activationTarget: number;
@@ -477,7 +419,7 @@ function InvalidResolutionState({
 
   const getFailureMessage = () => {
     if (!failure) return 'Unable to resolve a valid blend from the current inventory.';
-    
+
     switch (failure.reason) {
       case 'INSUFFICIENT_DISTINCT_CULTIVARS':
       case 'INVENTORY_TOO_NARROW':
@@ -493,7 +435,7 @@ function InvalidResolutionState({
 
   const getSecondaryMessage = () => {
     if (!failure) return null;
-    
+
     if (failure.reason === 'INSUFFICIENT_DISTINCT_CULTIVARS' || failure.reason === 'INVENTORY_TOO_NARROW') {
       return 'The current settings require multiple distinct cultivars.';
     }
@@ -502,7 +444,7 @@ function InvalidResolutionState({
 
   const getRationalePoints = () => {
     if (!failure) return [];
-    
+
     switch (failure.reason) {
       case 'INSUFFICIENT_DISTINCT_CULTIVARS':
       case 'INVENTORY_TOO_NARROW':
@@ -536,7 +478,7 @@ function InvalidResolutionState({
   // PART 6: Invalid resolutions show no stack, no cultivar list
   // VISUAL CONTRACT: No decorative UI - only text and thin divider lines
   return (
-    <div className="border-t border-white/10 pt-12 pb-8 mb-16">
+    <div className="pt-12 pb-8 mb-16 h-full flex flex-col justify-center">
       {/* Error Header - PART 7: Clean Failure Copy */}
       <div className="mb-8">
         <h2 className="text-lg font-medium text-white mb-3">
@@ -551,9 +493,9 @@ function InvalidResolutionState({
           </div>
         )}
       </div>
-      
+
       {/* PART 6: No stack visualization, no cultivar breakdown in invalid state */}
-      
+
       {/* Action Buttons */}
       <div className="mb-12 flex flex-wrap gap-3">
         <button
@@ -562,7 +504,7 @@ function InvalidResolutionState({
         >
           [ Change inventory ]
         </button>
-          </div>
+      </div>
 
       {/* Resolution Rationale - PART 7: Bullet-only, factual */}
       <div className="mb-8">
@@ -573,7 +515,7 @@ function InvalidResolutionState({
           {getRationalePoints().map((point, idx) => (
             <div key={idx} className="text-xs text-[#A1A1AA] leading-relaxed" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
               • {point}
-          </div>
+            </div>
           ))}
         </div>
       </div>
@@ -589,12 +531,31 @@ function InvalidResolutionState({
  */
 function ComputingState() {
   return (
-    <div className="border-t border-white/10 pt-12 pb-8 mb-16">
-      <div className="text-sm text-white/60 uppercase tracking-wider">
+    <div className="pt-12 pb-8 mb-16 h-full flex flex-col items-center justify-center opacity-70">
+      <div className="text-sm text-white/60 uppercase tracking-wider animate-pulse">
         Evaluating Candidates
       </div>
       <div className="text-xs text-white/40 mt-2">
         Deterministic resolver active
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Idle / Empty State Component
+ * NEW: Persistent "Ghost" visualization indicating readiness
+ */
+function IdleState() {
+  return (
+    <div className="h-full flex flex-col items-center justify-center p-12 opacity-30 select-none">
+      <div className="w-40 h-[400px] border-2 border-dashed border-white/20 flex flex-col items-center justify-center mb-6">
+        <div className="text-xs uppercase tracking-wider text-white/40">
+          Target Blend
+        </div>
+      </div>
+      <div className="text-sm text-white/30 text-center max-w-xs">
+        Describe outcome to resolve formulation
       </div>
     </div>
   );
@@ -613,21 +574,21 @@ export default function ResolutionPanel({ blend, intent, isComputing }: Resoluti
   if (isComputing) {
     return <ComputingState />;
   }
-  
-  // PART 4: Hard Guards - Must have both blend and intent to render
-  // If we have no blend/intent and not computing, don't render anything
+
+  // SUPPORT EMPTY/IDLE MODE
+  // If no blend/intent, render the IdleState instead of null
   if (!blend || !intent) {
-    return null; // No resolution data yet
+    return <IdleState />;
   }
-  
+
   // PART 4: Hard Guards - Check for failure state first
   if (blend.failure) {
     return <InvalidResolutionState failure={blend.failure} intent={intent} />;
   }
-  
+
   // PART 4: Hard Guards - Enforce naming rule
   if (!blend.cultivars || blend.cultivars.length === 0) {
-    return <InvalidResolutionState 
+    return <InvalidResolutionState
       failure={{
         status: 'invalid',
         reason: 'INSUFFICIENT_DISTINCT_CULTIVARS',
@@ -636,11 +597,11 @@ export default function ResolutionPanel({ blend, intent, isComputing }: Resoluti
       intent={intent}
     />;
   }
-  
+
   // PART 4: Hard Guards - Validate all cultivars have names
   const hasUnnamedCultivars = blend.cultivars.some(c => !c.name || c.name.trim() === '');
   if (hasUnnamedCultivars) {
-    return <InvalidResolutionState 
+    return <InvalidResolutionState
       failure={{
         status: 'invalid',
         reason: 'INSUFFICIENT_DISTINCT_CULTIVARS',
@@ -649,12 +610,12 @@ export default function ResolutionPanel({ blend, intent, isComputing }: Resoluti
       intent={intent}
     />;
   }
-  
+
   // PART 4: Hard Guards - Check for duplicate cultivars (SYSTEM AUTHORITY RULE #3)
   // Duplicate cultivars are illegal at render time - even if logic screws up upstream
   const uniqueNames = new Set(blend.cultivars.map(c => c.name));
   if (uniqueNames.size !== blend.cultivars.length) {
-    return <InvalidResolutionState 
+    return <InvalidResolutionState
       failure={{
         status: 'invalid',
         reason: 'INSUFFICIENT_DISTINCT_CULTIVARS',
@@ -663,12 +624,12 @@ export default function ResolutionPanel({ blend, intent, isComputing }: Resoluti
       intent={intent}
     />;
   }
-  
+
   // PART 4: Hard Guards - Check percentage integrity (SYSTEM AUTHORITY RULE #2)
   // Percentages must hard-fail visually - if totalPercentage !== 100, nothing renders except failure state
   const totalPercentage = blend.cultivars.reduce((sum, c) => sum + c.percentage, 0);
   if (Math.abs(totalPercentage - 100) > 0.01) {
-    return <InvalidResolutionState 
+    return <InvalidResolutionState
       failure={{
         status: 'invalid',
         reason: 'PERCENTAGE_INVALID',
@@ -677,51 +638,34 @@ export default function ResolutionPanel({ blend, intent, isComputing }: Resoluti
       intent={intent}
     />;
   }
-  
+
   // SYSTEM AUTHORITY RULE #1: ResolutionPanel is the sole authority for whether any blend, stack, or cultivar data may render
   // All invariants have passed - safe to render
   // VISUAL CONTRACT: Render ONLY from resolvedOutput.cultivars[]
   // No success banners, checkmarks, or decorative UI
   // If blend.cultivars has N entries, render exactly N cultivars
-  
+
   // State for total weight (default 3.5g)
-  const [totalWeight, setTotalWeight] = useState(3.5);
+  // Note: We use a key to force re-render if needed, but here we can just let it persist
+  // const [totalWeight, setTotalWeight] = useState(3.5); // Logic moved to parent or kept local? Keeping local for now
 
   return (
-    <div className="pt-8 pb-8">
+    <div className="h-full flex flex-col">
+      {/* Resolved Metrics - Read-only static bars - MOVED TO TOP */}
+      {intent && <ResolvedMetrics intent={intent} />}
+
       {/* A. Blend Composition Table */}
-      <BlendCompositionTable cultivars={blend.cultivars} totalWeight={totalWeight} />
-      
+      <BlendCompositionTable cultivars={blend.cultivars} totalWeight={3.5} />
+
       {/* B. Visual Blend Bar */}
-      <VisualBlendBar cultivars={blend.cultivars} totalWeight={totalWeight} />
-      
+      <VisualBlendBar cultivars={blend.cultivars} totalWeight={3.5} />
+
       {/* C. Pre-Roll Stack Visualization (vertical) */}
-      <PhysicalStackVisualization cultivars={blend.cultivars} stack={blend.stack} totalWeight={totalWeight} />
-      
+      <PhysicalStackVisualization cultivars={blend.cultivars} stack={blend.stack} totalWeight={3.5} />
+
       {/* D. Usage Instructions (micro copy only) */}
       {intent && <UsageInstructions intent={intent} />}
-      
-      {/* Weight input */}
-      <div className="mb-8 pt-6 border-t border-[rgba(255,255,255,0.06)]">
-        <div className="text-xs uppercase tracking-wider text-[#A1A1AA] mb-2 font-medium">
-          Total weight
-        </div>
-        <input
-          type="number"
-          min="0.1"
-          max="10"
-          step="0.1"
-          value={totalWeight}
-          onChange={(e) => setTotalWeight(parseFloat(e.target.value) || 3.5)}
-          className="w-32 px-3 py-2 bg-[#0F1013] border border-[rgba(255,255,255,0.06)] text-[#EDEDED] text-sm focus:outline-none focus:border-[#D6A84A]/40"
-          style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
-        />
-        <span className="ml-2 text-sm text-[#A1A1AA]">g</span>
-      </div>
-      
-      {/* Resolved Metrics - Read-only static bars */}
-      {intent && <ResolvedMetrics intent={intent} />}
+
     </div>
   );
 }
-
