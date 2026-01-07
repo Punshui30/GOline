@@ -4,8 +4,8 @@
  * Authoritative source for strain-to-chemistry mapping.
  * ALL strain scoring and selection comes exclusively from this library.
  * 
- * MANDATORY: This library MUST contain exactly 40 strains.
- * If count is not 40, the application will throw an error.
+ * MANDATORY: This library MUST contain at least 40 strains.
+ * If count is below 40, the application will throw an error.
  */
 
 export type TerpeneProfile = {
@@ -392,6 +392,196 @@ export const STRAIN_LIBRARY: Record<string, Strain> = {
     cbd: 0,
     terpenes: { myrcene: 0.45, limonene: 0.2, caryophyllene: 0.3, pinene: 0.05, humulene: 0.15, linalool: 0.1, terpinolene: 0.02 },
     effects: { energy: 40, calm: 85, focus: 40, body: 85, anxietyRisk: 25 }
+  },
+
+  // --- Added strains (non-overwriting additions) ---
+  "alkaline": {
+    id: "alkaline",
+    name: "Alkaline",
+    thc: 18,
+    cbd: 0.1,
+    terpenes: { myrcene: 0.25, limonene: 0.32, caryophyllene: 0.18, pinene: 0.3, humulene: 0.1, linalool: 0.05, terpinolene: 0.2 },
+    effects: { energy: 72, calm: 45, focus: 68, body: 38, anxietyRisk: 28 }
+  },
+
+  "jack-the-ripper": {
+    id: "jack-the-ripper",
+    name: "Jack the Ripper",
+    thc: 21,
+    cbd: 0.05,
+    terpenes: { myrcene: 0.22, limonene: 0.38, caryophyllene: 0.12, pinene: 0.42, humulene: 0.1, linalool: 0.04, terpinolene: 0.33 },
+    effects: { energy: 88, calm: 32, focus: 80, body: 28, anxietyRisk: 38 }
+  },
+
+  "acapulco-gold": {
+    id: "acapulco-gold",
+    name: "Acapulco Gold",
+    thc: 19,
+    cbd: 0.1,
+    terpenes: { myrcene: 0.3, limonene: 0.28, caryophyllene: 0.18, pinene: 0.32, humulene: 0.12, linalool: 0.05, terpinolene: 0.22 },
+    effects: { energy: 75, calm: 50, focus: 70, body: 45, anxietyRisk: 25 }
+  },
+
+  "thai": {
+    id: "thai",
+    name: "Thai",
+    thc: 18,
+    cbd: 0.05,
+    terpenes: { myrcene: 0.18, limonene: 0.3, caryophyllene: 0.1, pinene: 0.4, humulene: 0.08, linalool: 0.03, terpinolene: 0.45 },
+    effects: { energy: 90, calm: 25, focus: 85, body: 20, anxietyRisk: 48 }
+  },
+
+  "banana-og": {
+    id: "banana-og",
+    name: "Banana OG",
+    thc: 21,
+    cbd: 0.05,
+    terpenes: { myrcene: 0.45, limonene: 0.25, caryophyllene: 0.28, pinene: 0.12, humulene: 0.15, linalool: 0.1, terpinolene: 0.05 },
+    effects: { energy: 50, calm: 65, focus: 48, body: 70, anxietyRisk: 30 }
+  },
+
+  "bubba-kush": {
+    id: "bubba-kush",
+    name: "Bubba Kush",
+    thc: 18,
+    cbd: 0.15,
+    terpenes: { myrcene: 0.55, limonene: 0.14, caryophyllene: 0.32, pinene: 0.06, humulene: 0.18, linalool: 0.16, terpinolene: 0.02 },
+    effects: { energy: 28, calm: 85, focus: 28, body: 90, anxietyRisk: 18 }
+  },
+
+  "purple-afghan": {
+    id: "purple-afghan",
+    name: "Purple Afghan",
+    thc: 17,
+    cbd: 0.2,
+    terpenes: { myrcene: 0.58, limonene: 0.13, caryophyllene: 0.34, pinene: 0.05, humulene: 0.2, linalool: 0.17, terpinolene: 0.02 },
+    effects: { energy: 25, calm: 90, focus: 25, body: 95, anxietyRisk: 14 }
+  },
+
+  "black-domina": {
+    id: "black-domina",
+    name: "Black Domina",
+    thc: 20,
+    cbd: 0.05,
+    terpenes: { myrcene: 0.6, limonene: 0.1, caryophyllene: 0.4, pinene: 0.04, humulene: 0.25, linalool: 0.18, terpinolene: 0.01 },
+    effects: { energy: 22, calm: 92, focus: 20, body: 96, anxietyRisk: 12 }
+  },
+
+  "critical-mass": {
+    id: "critical-mass",
+    name: "Critical Mass",
+    thc: 16,
+    cbd: 0.25,
+    terpenes: { myrcene: 0.5, limonene: 0.15, caryophyllene: 0.3, pinene: 0.08, humulene: 0.15, linalool: 0.14, terpinolene: 0.03 },
+    effects: { energy: 30, calm: 78, focus: 32, body: 82, anxietyRisk: 16 }
+  },
+
+  "blueberry": {
+    id: "blueberry",
+    name: "Blueberry",
+    thc: 17,
+    cbd: 0.15,
+    terpenes: { myrcene: 0.48, limonene: 0.18, caryophyllene: 0.25, pinene: 0.1, humulene: 0.12, linalool: 0.16, terpinolene: 0.05 },
+    effects: { energy: 38, calm: 75, focus: 40, body: 78, anxietyRisk: 20 }
+  },
+
+  "purple-kush": {
+    id: "purple-kush",
+    name: "Purple Kush",
+    thc: 18,
+    cbd: 0.1,
+    terpenes: { myrcene: 0.6, limonene: 0.12, caryophyllene: 0.35, pinene: 0.04, humulene: 0.22, linalool: 0.18, terpinolene: 0.02 },
+    effects: { energy: 25, calm: 90, focus: 22, body: 95, anxietyRisk: 14 }
+  },
+
+  "mendo-breath": {
+    id: "mendo-breath",
+    name: "Mendo Breath",
+    thc: 21,
+    cbd: 0.05,
+    terpenes: { myrcene: 0.5, limonene: 0.2, caryophyllene: 0.4, pinene: 0.06, humulene: 0.2, linalool: 0.15, terpinolene: 0.03 },
+    effects: { energy: 35, calm: 80, focus: 35, body: 88, anxietyRisk: 22 }
+  },
+
+  "golden-goat": {
+    id: "golden-goat",
+    name: "Golden Goat",
+    thc: 19,
+    cbd: 0.05,
+    terpenes: { myrcene: 0.25, limonene: 0.35, caryophyllene: 0.15, pinene: 0.3, humulene: 0.1, linalool: 0.04, terpinolene: 0.45 },
+    effects: { energy: 88, calm: 32, focus: 82, body: 28, anxietyRisk: 42 }
+  },
+
+  "ghost-train-haze": {
+    id: "ghost-train-haze",
+    name: "Ghost Train Haze",
+    thc: 24,
+    cbd: 0.05,
+    terpenes: { myrcene: 0.2, limonene: 0.38, caryophyllene: 0.12, pinene: 0.42, humulene: 0.08, linalool: 0.03, terpinolene: 0.5 },
+    effects: { energy: 95, calm: 20, focus: 88, body: 18, anxietyRisk: 55 }
+  },
+
+  "chocolope": {
+    id: "chocolope",
+    name: "Chocolope",
+    thc: 18,
+    cbd: 0.1,
+    terpenes: { myrcene: 0.22, limonene: 0.3, caryophyllene: 0.12, pinene: 0.35, humulene: 0.1, linalool: 0.04, terpinolene: 0.48 },
+    effects: { energy: 85, calm: 30, focus: 80, body: 25, anxietyRisk: 45 }
+  },
+
+  "jack-skellington": {
+    id: "jack-skellington",
+    name: "Jack Skellington",
+    thc: 20,
+    cbd: 0.05,
+    terpenes: { myrcene: 0.28, limonene: 0.32, caryophyllene: 0.15, pinene: 0.38, humulene: 0.1, linalool: 0.04, terpinolene: 0.42 },
+    effects: { energy: 90, calm: 28, focus: 85, body: 22, anxietyRisk: 48 }
+  },
+
+  "lemon-skunk": {
+    id: "lemon-skunk",
+    name: "Lemon Skunk",
+    thc: 19,
+    cbd: 0.1,
+    terpenes: { myrcene: 0.25, limonene: 0.45, caryophyllene: 0.18, pinene: 0.3, humulene: 0.1, linalool: 0.04, terpinolene: 0.38 },
+    effects: { energy: 85, calm: 35, focus: 75, body: 30, anxietyRisk: 40 }
+  },
+
+  "super-silver-haze": {
+    id: "super-silver-haze",
+    name: "Super Silver Haze",
+    thc: 23,
+    cbd: 0.05,
+    terpenes: { myrcene: 0.2, limonene: 0.42, caryophyllene: 0.15, pinene: 0.4, humulene: 0.1, linalool: 0.03, terpinolene: 0.48 },
+    effects: { energy: 92, calm: 25, focus: 88, body: 22, anxietyRisk: 55 }
+  },
+
+  "thai-lights": {
+    id: "thai-lights",
+    name: "Thai Lights",
+    thc: 18,
+    cbd: 0.05,
+    terpenes: { myrcene: 0.15, limonene: 0.3, caryophyllene: 0.1, pinene: 0.5, humulene: 0.08, linalool: 0.03, terpinolene: 0.55 },
+    effects: { energy: 93, calm: 20, focus: 90, body: 18, anxietyRisk: 60 }
+  },
+
+  "orange-creamsicle": {
+    id: "orange-creamsicle",
+    name: "Orange Creamsicle",
+    thc: 20,
+    cbd: 0.1,
+    terpenes: { myrcene: 0.3, limonene: 0.5, caryophyllene: 0.2, pinene: 0.25, humulene: 0.1, linalool: 0.06, terpinolene: 0.3 },
+    effects: { energy: 75, calm: 45, focus: 70, body: 40, anxietyRisk: 35 }
+  },
+
+  "pineapple-fields": {
+    id: "pineapple-fields",
+    name: "Pineapple Fields",
+    thc: 19,
+    cbd: 0.1,
+    terpenes: { myrcene: 0.28, limonene: 0.4, caryophyllene: 0.15, pinene: 0.3, humulene: 0.1, linalool: 0.05, terpinolene: 0.35 },
+    effects: { energy: 80, calm: 40, focus: 75, body: 35, anxietyRisk: 38 }
   }
 };
 

@@ -8,6 +8,7 @@ import { useState, useEffect, useRef } from 'react';
 import { OutcomeResult } from '@/lib/goOutcomeEngine';
 import BlendVisualizer from './BlendVisualizer';
 import OutcomeTransitionBanner from './OutcomeTransitionBanner';
+import type { DeterministicExplanation } from '@/lib/outcomeBrain/deterministicExplanation';
 
 // Interfaces matching the new "Editorial" data structure
 export type CultivarRole = 'Anchor' | 'Modifier' | 'Synergist';
@@ -70,10 +71,12 @@ interface ResolutionPanelProps {
   }) => void;
   isAnimating?: boolean;
   hasResolved?: boolean;
+  deterministicExplanation?: DeterministicExplanation;
 }
 
-export default function ResolutionPanel({ blend, intent, isComputing, onRefineOutcome, onShowUsageProtocol, onAdjustment, isAnimating = true, hasResolved = false }: ResolutionPanelProps) {
+export default function ResolutionPanel({ blend, intent, isComputing, onRefineOutcome, onShowUsageProtocol, onAdjustment, isAnimating = true, hasResolved = false, deterministicExplanation }: ResolutionPanelProps) {
   const [showAdjustments, setShowAdjustments] = useState(false);
+  const [showWhy, setShowWhy] = useState(false);
   const [localIntent, setLocalIntent] = useState(intent || {
     activationTarget: 0.5,
     cognitiveEndurance: 0.5,
@@ -147,6 +150,39 @@ export default function ResolutionPanel({ blend, intent, isComputing, onRefineOu
 
         {/* Animated Visualizer Component */}
         <BlendVisualizer blend={blend} isAnimating={isAnimating} />
+
+        {deterministicExplanation && (
+          <div className="mt-10 border border-zinc-800 bg-zinc-900/30 overflow-y-auto">
+            <button
+              type="button"
+              onClick={() => setShowWhy((v) => !v)}
+              className="w-full flex items-center justify-between px-6 py-4 text-left"
+            >
+              <span className="text-sm font-sans font-medium text-white">
+                {deterministicExplanation.headline}
+              </span>
+              <span className="text-xs font-sans text-zinc-400">
+                {showWhy ? 'Hide' : 'Why this result'}
+              </span>
+            </button>
+            {showWhy && (
+              <div className="px-6 pb-6">
+                <ul className="space-y-3">
+                  {deterministicExplanation.bullets.map((b, i) => (
+                    <li key={i} className="text-sm font-sans text-zinc-400 leading-relaxed break-words">
+                      - {b}
+                    </li>
+                  ))}
+                </ul>
+                {deterministicExplanation.confidenceNote && (
+                  <p className="mt-4 text-sm font-sans text-zinc-400 leading-relaxed break-words">
+                    {deterministicExplanation.confidenceNote}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Blend Explanation */}
         {blend.resolutionMode === 'BLENDED' && (

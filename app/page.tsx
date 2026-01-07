@@ -18,6 +18,7 @@ import AgeGate from '@/components/AgeGate';
 import { GOLogo } from '@/components/GOLogo';
 import OutcomeIntentInput from '@/components/OutcomeIntentInput';
 import OutcomeTransitionBanner from '@/components/OutcomeTransitionBanner';
+import { generateDeterministicExplanation, type DeterministicExplanation } from '@/lib/outcomeBrain/deterministicExplanation';
 import { StrategicGuidance } from '@/lib/strategicGuidance';
 import { translateGuidanceToIntent } from '@/lib/guidanceToIntent';
 import { ReferenceProfile, referenceProfileToIntent } from '@/lib/referenceProfile';
@@ -98,6 +99,7 @@ export default function Home() {
   const [resolvedBlend, setResolvedBlend] = useState<ResolvedBlend | null>(null);
   const [showUsageProtocol, setShowUsageProtocol] = useState(false);
   const [hasResolved, setHasResolved] = useState(false);
+  const [deterministicExplanation, setDeterministicExplanation] = useState<DeterministicExplanation | null>(null);
 
   // Initialize speech recognition
   useEffect(() => {
@@ -239,6 +241,7 @@ export default function Home() {
         setIntent(referenceIntent);
         const resolvedOutcome = resolveOutcome(referenceIntent);
         setOutcome(resolvedOutcome);
+        setDeterministicExplanation(generateDeterministicExplanation(referenceIntent, resolvedOutcome));
 
         if (resolvedOutcome.failure) {
           const blend = convertToResolvedBlend(
@@ -246,6 +249,7 @@ export default function Home() {
             resolvedOutcome
           );
           setResolvedBlend(blend);
+          setDeterministicExplanation(generateDeterministicExplanation(referenceIntent, resolvedOutcome));
           setIsProcessing(false);
           return;
         }
@@ -254,6 +258,7 @@ export default function Home() {
         setNamedResolution(named);
         const blend = convertToResolvedBlend(named, resolvedOutcome);
         setResolvedBlend(blend);
+        setDeterministicExplanation(generateDeterministicExplanation(referenceIntent, resolvedOutcome));
         setIsProcessing(false);
       } catch (err) {
         console.error('Reference profile resolution error:', err);
@@ -371,6 +376,7 @@ export default function Home() {
 
     // Clear previous visualization
     setResolvedBlend(null);
+    setDeterministicExplanation(null);
     setIsResolving(true);
 
     // Small delay to show clearing, then animate in new result
@@ -378,10 +384,12 @@ export default function Home() {
       try {
         const resolvedOutcome = resolveOutcome(translatedIntent);
         setOutcome(resolvedOutcome);
+        setDeterministicExplanation(generateDeterministicExplanation(translatedIntent, resolvedOutcome));
 
         if (resolvedOutcome.failure) {
           const blend = convertToResolvedBlend({ primaryBlend: [], stackingOptions: [], confidenceScore: 0, tradeoffs: [], rationaleSummary: '', resolutionMode: 'BLENDED' }, resolvedOutcome);
           setResolvedBlend(blend);
+          setDeterministicExplanation(generateDeterministicExplanation(translatedIntent, resolvedOutcome));
           setIsResolving(false);
           if (isListening && recognitionRef.current) {
             try {
@@ -436,6 +444,7 @@ export default function Home() {
 
     // Clear previous visualization
     setResolvedBlend(null);
+    setDeterministicExplanation(null);
     setIsResolving(true);
 
     // Small delay to show clearing, then animate in new result
@@ -444,6 +453,8 @@ export default function Home() {
         // Create updated intent with adjusted values
         const updatedIntent: OutcomeIntent = {
           ...intent,
+          // Keep activation and activationTarget in sync (engine uses intent.activation)
+          activation: adjustedIntent.activationTarget,
           activationTarget: adjustedIntent.activationTarget,
           cognitiveEndurance: adjustedIntent.cognitiveEndurance,
           anxietySensitivity: adjustedIntent.anxietySensitivity,
@@ -454,10 +465,12 @@ export default function Home() {
         // Re-resolve with adjusted intent
         const resolvedOutcome = resolveOutcome(updatedIntent);
         setOutcome(resolvedOutcome);
+        setDeterministicExplanation(generateDeterministicExplanation(updatedIntent, resolvedOutcome));
 
         if (resolvedOutcome.failure) {
           const blend = convertToResolvedBlend({ primaryBlend: [], stackingOptions: [], confidenceScore: 0, tradeoffs: [], rationaleSummary: '', resolutionMode: 'BLENDED' }, resolvedOutcome);
           setResolvedBlend(blend);
+          setDeterministicExplanation(generateDeterministicExplanation(updatedIntent, resolvedOutcome));
           setIsResolving(false);
           setIsProcessing(false);
           return;
@@ -467,6 +480,7 @@ export default function Home() {
         setNamedResolution(named);
         const blend = convertToResolvedBlend(named, resolvedOutcome);
         setResolvedBlend(blend);
+        // Slider refinement hides the transition banner by design
         setIsResolving(false);
       } catch (err) {
         console.error('Adjustment error:', err);
@@ -647,6 +661,7 @@ export default function Home() {
                   setUserInput(newValue);
                   if (phase === 'LOCKED' || resolvedBlend) {
                     setResolvedBlend(null);
+                    setDeterministicExplanation(null);
                     setPhase('FREE');
                     setGuidance(null);
                     setCurrentClarification(null);
@@ -702,6 +717,7 @@ export default function Home() {
                 onAdjustment={handleAdjustment}
                 isAnimating={!isProcessing}
                 hasResolved={hasResolved}
+                deterministicExplanation={deterministicExplanation || undefined}
               />
             )}
           </section>
