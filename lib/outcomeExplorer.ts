@@ -81,8 +81,11 @@ function evaluateOutcome(
       };
     }
     
+    // Handle new format with primary + alternates
+    const primary = result.primary;
+    
     // Check if we have valid selectedCultivars
-    if (!result.selectedCultivars || result.selectedCultivars.length === 0) {
+    if (!primary.selectedCultivars || primary.selectedCultivars.length === 0) {
       return {
         outcome,
         status: 'not_achievable',
@@ -92,7 +95,7 @@ function evaluateOutcome(
     
     // Validate that all cultivars in result are in inventory
     const inventoryIds = new Set(inventory.map(c => c.id));
-    const compositionIds = result.selectedCultivars.map(c => c.id).filter(Boolean);
+    const compositionIds = primary.selectedCultivars.map(c => c.id).filter(Boolean);
     
     if (compositionIds.length === 0) {
       return {

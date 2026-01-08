@@ -16,7 +16,7 @@ export const dynamic = 'force-dynamic';
  */
 
 import { useState, useRef, useEffect } from 'react';
-import { OutcomeIntent } from '@/lib/goOutcomeEngine';
+import { OutcomeIntent, OutcomeResult } from '@/lib/goOutcomeEngine';
 import { resolveOutcome } from '@/lib/goOutcomeEngine';
 import { StrategicGuidance, ClarificationQuestion } from '@/lib/strategicGuidance';
 import { translateGuidanceToIntent } from '@/lib/guidanceToIntent';
@@ -42,12 +42,6 @@ interface GuidanceResponse {
   message?: string;
 }
 
-interface OutcomeResult {
-  selectedCultivars: Array<{ id: string; displayName: string }>;
-  ratios: number[];
-  confidenceScore: number;
-  notes: string[];
-}
 
 // Canonical intent normalization
 function normalizeIntent(intent: OutcomeIntent): OutcomeIntent {
@@ -250,22 +244,30 @@ export default function GOLineCalculator() {
   };
 
   // Convert OutcomeResult to StackSegment and BlendComponent format
+  // IMPORTANT: Uses the new OutcomeResult format with primary + alternates
   const convertToStackFormat = (outcome: OutcomeResult) => {
+    // Handle new format with primary + alternates
+    if (outcome.failure) {
+      throw new Error(`Resolution failed: ${outcome.failure.reason || 'Unknown error'}`);
+    }
+    
+    const primary = outcome.primary;
+    
     // Validate: must have named strains
-    if (outcome.selectedCultivars.length === 0) {
+    if (!primary.selectedCultivars || primary.selectedCultivars.length === 0) {
       throw new Error('Resolution without cultivar names is invalid');
     }
 
-    const hasUnnamed = outcome.selectedCultivars.some(c => !c.displayName || c.displayName.trim() === '');
+    const hasUnnamed = primary.selectedCultivars.some(c => !c.displayName || c.displayName.trim() === '');
     if (hasUnnamed) {
       throw new Error('Resolution contains unnamed cultivars - invalid resolution');
     }
 
     // Assign roles based on ratio order: largest = foundation, second = modulator, rest = accent
-    const sorted = outcome.selectedCultivars
+    const sorted = primary.selectedCultivars
       .map((cultivar, index) => ({
         cultivar,
-        ratio: outcome.ratios[index],
+        ratio: primary.ratios[index],
         index,
       }))
       .sort((a, b) => b.ratio - a.ratio);
