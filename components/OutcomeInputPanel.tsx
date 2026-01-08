@@ -91,7 +91,7 @@ export default function OutcomeInputPanel({
         <div className="max-w-md mt-6 pt-4 border-t border-zinc-800/50">
           <p className="text-xs lg:text-sm font-sans text-zinc-500 leading-relaxed">
             <span className="font-medium text-zinc-400">How results stay accurate.</span>{' '}
-            Outcomes are calculated using the actual strains available at GLEAF, based on their lab-tested terpene and cannabinoid profiles. When inventory changes, recommendations adjust automatically, using real percentage data rather than averages or strain names alone. This keeps outcomes consistent with what's actually on the menu where you're shopping.
+            Outcomes are calculated using actual strains available from participating dispensaries, based on lab-tested terpene and cannabinoid profiles. When inventory changes, recommendations adjust automatically, using real percentage data rather than averages or strain names alone. This keeps outcomes consistent with what's actually on the menu where you're shopping.
           </p>
         </div>
       </div>

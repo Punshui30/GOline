@@ -193,7 +193,7 @@ export default function ResolutionPanel({ blend, intent, isComputing, onRefineOu
             </h2>
             {/* Source indicator - Subtle, secondary */}
             <span className="text-[9px] font-sans text-zinc-600 uppercase tracking-wider">
-              Source: <span className="text-gleaf-muted font-medium">GLEAF</span>
+              Source: <span className="text-zinc-500 font-medium">Dispensary inventory</span>
             </span>
           </div>
 
