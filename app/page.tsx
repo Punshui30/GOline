@@ -930,7 +930,7 @@ export default function Home() {
         <div className="flex-1 min-h-0 overflow-hidden grid grid-cols-12 gap-4 p-4">
           {/* Input Panel - Left Column */}
           {ageGateComplete && !showOnboarding && (
-            <div className="col-span-12 lg:col-span-4 overflow-y-auto">
+            <div className="col-span-12 lg:col-span-4 overflow-y-auto" style={{ outline: '1px solid red' }}>
               <div className="h-full bg-glass-elevated border border-go rounded-xl p-6">
                 <OutcomeInputPanel
                   userInput={userInput}
@@ -954,9 +954,10 @@ export default function Home() {
 
           {/* Visualization Panel - Center Column */}
           {ageGateComplete && !showOnboarding && (
-            <div className="col-span-12 lg:col-span-4 overflow-hidden">
+            <div className="col-span-12 lg:col-span-4 overflow-hidden" style={{ outline: '1px solid red' }}>
               <VisualizationPanel
                 mode={consumptionMode}
+                // ... props
                 state={
                   outcomePhase === 'input' ? 'idle' :
                     outcomePhase === 'resolving' ? 'calculating' :
@@ -969,7 +970,7 @@ export default function Home() {
 
           {/* Results Panel - Right Column */}
           {ageGateComplete && !showOnboarding && outcomePhase === 'result' && resolvedBlend && (
-            <div className="col-span-12 lg:col-span-4 overflow-y-auto">
+            <div className="col-span-12 lg:col-span-4 overflow-y-auto" style={{ outline: '1px solid red' }}>
               <div className="h-full bg-glass-elevated border border-go rounded-xl p-6">
                 <ResultPanel
                   blend={resolvedBlend}
