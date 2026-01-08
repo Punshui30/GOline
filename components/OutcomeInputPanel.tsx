@@ -2,7 +2,6 @@
 
 import { motion } from 'framer-motion';
 import OutcomeIntentInput from './OutcomeIntentInput';
-import InventorySourceSplash from './InventorySourceSplash';
 
 interface OutcomeInputPanelProps {
   userInput: string;
@@ -27,8 +26,6 @@ export default function OutcomeInputPanel({
 }: OutcomeInputPanelProps) {
   return (
     <section className="max-w-3xl mx-auto">
-      {/* Inventory Source Splash - Contextual dispensary logos */}
-      <InventorySourceSplash />
 
       {/* Logo - Hero Element with Strengthened Animation */}
       <motion.div

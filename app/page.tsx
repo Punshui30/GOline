@@ -18,6 +18,7 @@ import { resolveToNamedStrains, type NamedResolutionResult } from '@/lib/namedRe
 import { type ResolvedBlend } from '@/components/ResolutionPanel';
 import UsageProtocol from '@/components/UsageProtocol';
 import AgeGate from '@/components/AgeGate';
+import DispensarySourceSplash from '@/components/DispensarySourceSplash';
 import OutcomeInputPanel from '@/components/OutcomeInputPanel';
 import ResolvingPanel from '@/components/ResolvingPanel';
 import ResultPanel from '@/components/ResultPanel';
@@ -85,6 +86,28 @@ export default function Home() {
 
   // Age gate and onboarding
   const [ageGateComplete, setAgeGateComplete] = useState(false);
+  
+  // Dispensary source splash (shows once per session after age gate)
+  const [showSourceSplash, setShowSourceSplash] = useState<boolean | null>(null);
+  
+  useEffect(() => {
+    // Check if user has seen splash in this session
+    if (ageGateComplete) {
+      const seen = typeof window !== 'undefined' ? sessionStorage.getItem('dispensary-splash-seen') : null;
+      if (!seen) {
+        setShowSourceSplash(true);
+      } else {
+        setShowSourceSplash(false);
+      }
+    }
+  }, [ageGateComplete]);
+  
+  const handleContinueSplash = () => {
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('dispensary-splash-seen', 'true');
+    }
+    setShowSourceSplash(false);
+  };
 
   // Phase management
   const [phase, setPhase] = useState<InteractionPhase>('FREE');
@@ -731,6 +754,20 @@ export default function Home() {
   // Show age gate if not complete
   if (!ageGateComplete) {
     return <AgeGate onComplete={() => setAgeGateComplete(true)} />;
+  }
+
+  // Show dispensary source splash if needed (once per session)
+  if (showSourceSplash === null) {
+    // Still checking sessionStorage, don't render yet
+    return null;
+  }
+
+  if (showSourceSplash) {
+    return (
+      <div className="min-h-screen bg-noise text-[#E5E5E5] font-sans selection:bg-accent/30 overflow-x-hidden flex flex-col">
+        <DispensarySourceSplash onContinue={handleContinueSplash} />
+      </div>
+    );
   }
 
   return (
