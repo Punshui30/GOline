@@ -25,9 +25,9 @@
     overflow: hidden;
     background: #0d0d0d;
     background-image: 
-      radial-gradient(at 0% 0%, rgba(212, 175, 55, 0.03) 0px, transparent 50%),
-      radial-gradient(at 100% 100%, rgba(212, 175, 55, 0.02) 0px, transparent 50%);
-    color: #e5e5e5;
+      radial-gradient(at 0% 0%, rgba(212, 175, 55, 0.015) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, rgba(212, 175, 55, 0.01) 0px, transparent 50%);
+    color: #f5f5f5;
     font-family: 'Inter', sans-serif;
   }
 
@@ -68,7 +68,7 @@
     background-color: var(--go-bg);
   }
 
-  /* Glass Morphism Surfaces - Increased Contrast */
+  /* Glass Morphism Surfaces - Full Text Opacity */
   .bg-glass {
     background: var(--go-surface);
     backdrop-filter: blur(12px);
@@ -76,11 +76,19 @@
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05);
   }
 
+  .bg-glass * {
+    opacity: 1 !important;
+  }
+
   .bg-glass-elevated {
     background: var(--go-surface-elevated);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 0 0 1px rgba(212, 175, 55, 0.05);
+  }
+
+  .bg-glass-elevated * {
+    opacity: 1 !important;
   }
 
   /* Borders */

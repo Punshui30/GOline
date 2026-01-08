@@ -969,20 +969,21 @@ export default function Home() {
               <motion.main
                 key="skeleton"
                 initial={{ opacity: 0 }}
-                animate={{ opacity: 0.3 }}
+                animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.3 }}
                 className="h-full overflow-y-auto"
+                style={{ opacity: 0.4 }}
               >
                 <div className="w-full max-w-[1920px] mx-auto px-6 lg:px-12 xl:px-24 pb-32 pt-20 lg:pt-28">
                   {/* Visible App Structure Skeleton */}
                   <div className="space-y-8">
                     {/* Title Section */}
                     <div className="border-b border-go-strong pb-8 transition-go">
-                      <h1 className="font-serif text-4xl lg:text-5xl font-light text-go mb-2">
+                      <h1 className="font-serif text-4xl lg:text-5xl font-light text-go mb-2" style={{ opacity: 1 }}>
                         GO — Guided Outcome Calculator
                       </h1>
-                      <p className="text-sm font-sans text-go-muted">
+                      <p className="text-sm font-sans text-go-muted" style={{ opacity: 1 }}>
                         Translate your intent into structured cannabis blends
                       </p>
                     </div>
@@ -991,11 +992,11 @@ export default function Home() {
                     <div className="bg-glass-elevated border border-go-strong rounded-xl p-8 lg:p-12 transition-go hover:border-amber-subtle hover:shadow-amber-sm">
                       <div className="space-y-6">
                         <div>
-                          <label className="block text-xs font-sans font-medium text-go-muted uppercase tracking-wider mb-3">
+                          <label className="block text-xs font-sans font-medium text-go-muted uppercase tracking-wider mb-3" style={{ opacity: 1 }}>
                             Desired Outcome
                           </label>
                           <div className="h-12 bg-glass border border-go rounded-lg flex items-center px-4 transition-go hover:border-amber-subtle focus-within:border-amber-strong focus-within:shadow-amber-sm">
-                            <span className="text-go text-sm">
+                            <span className="text-go text-sm" style={{ opacity: 1 }}>
                               Waiting for age verification...
                             </span>
                           </div>
