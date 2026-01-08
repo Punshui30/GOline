@@ -927,11 +927,12 @@ export default function Home() {
       {/* App Shell Content - Always renders, owns viewport */}
       <div className="h-full flex flex-col">
         {/* Main Workspace - Three panel layout */}
-        <div className="flex-1 min-h-0 overflow-hidden grid grid-cols-12 gap-4 p-4">
+        {/* Main Workspace - Single Glass container with dividers */}
+        <div className="flex-1 min-h-0 overflow-hidden grid grid-cols-12 bg-glass-elevated border border-go rounded-xl shadow-2xl m-4 divide-y lg:divide-y-0 lg:divide-x divide-white/10">
           {/* Input Panel - Left Column */}
           {ageGateComplete && (
             <div className="col-span-12 lg:col-span-4 overflow-y-auto">
-              <div className="h-full bg-glass-elevated border border-go rounded-xl p-6">
+              <div className="h-full p-6">
                 <OutcomeInputPanel
                   userInput={userInput}
                   mode={consumptionMode}
@@ -970,7 +971,7 @@ export default function Home() {
           {/* Results Panel - Right Column */}
           {ageGateComplete && outcomePhase === 'result' && resolvedBlend && (
             <div className="col-span-12 lg:col-span-4 overflow-y-auto">
-              <div className="h-full bg-glass-elevated border border-go rounded-xl p-6">
+              <div className="h-full p-6">
                 <ResultPanel
                   blend={resolvedBlend}
                   intent={intent}

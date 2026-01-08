@@ -28,7 +28,7 @@ export default function VisualizationPanel({ mode, state, blendData }: Visualiza
   // Idle State
   if (state === 'idle') {
     return (
-      <div className="h-full flex items-center justify-center bg-glass border border-go rounded-2xl shadow-lg">
+      <div className="h-full flex items-center justify-center p-6">
         <p className="text-go-muted text-sm font-sans tracking-wide">Enter your desired outcome to begin</p>
       </div>
     );
@@ -37,7 +37,7 @@ export default function VisualizationPanel({ mode, state, blendData }: Visualiza
   // Calculating State
   if (state === 'calculating') {
     return (
-      <div className="h-full flex items-center justify-center bg-glass border border-go rounded-2xl relative overflow-hidden shadow-lg">
+      <div className="h-full flex items-center justify-center relative overflow-hidden p-6">
         {/* Abstract motion: numbers, symbols, molecules formulating */}
         <motion.div
           className="absolute inset-0 flex items-center justify-center"
@@ -109,7 +109,7 @@ export default function VisualizationPanel({ mode, state, blendData }: Visualiza
   // Resolved State - Blend Visualization
   if (state === 'resolved' && mode === 'blend') {
     return (
-      <div className="h-full bg-glass border border-go rounded-2xl p-6 shadow-2xl relative overflow-hidden flex flex-col items-center justify-center">
+      <div className="h-full p-6 relative overflow-hidden flex flex-col items-center justify-center">
         {/* Subtle internal glow for depth */}
         <motion.div
           initial={{ opacity: 0 }}
@@ -187,7 +187,7 @@ export default function VisualizationPanel({ mode, state, blendData }: Visualiza
   // Resolved State - Stack Visualization
   if (state === 'resolved' && mode === 'stack') {
     return (
-      <div className="h-full bg-glass border border-go rounded-2xl p-6 shadow-2xl relative overflow-hidden flex flex-col items-center justify-center">
+      <div className="h-full p-6 relative overflow-hidden flex flex-col items-center justify-center">
         {/* Subtle internal glow for depth */}
         <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none" />
 
