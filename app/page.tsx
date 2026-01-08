@@ -929,7 +929,7 @@ export default function Home() {
         {/* Main Workspace - Three panel layout */}
         <div className="flex-1 min-h-0 overflow-hidden grid grid-cols-12 gap-4 p-4">
           {/* Input Panel - Left Column */}
-          {ageGateComplete && !showOnboarding && (
+          {ageGateComplete && (
             <div className="col-span-12 lg:col-span-4 overflow-y-auto">
               <div className="h-full bg-glass-elevated border border-go rounded-xl p-6">
                 <OutcomeInputPanel
@@ -953,7 +953,7 @@ export default function Home() {
           )}
 
           {/* Visualization Panel - Center Column */}
-          {ageGateComplete && !showOnboarding && (
+          {ageGateComplete && (
             <div className="col-span-12 lg:col-span-4 overflow-hidden">
               <VisualizationPanel
                 mode={consumptionMode}
@@ -968,7 +968,7 @@ export default function Home() {
           )}
 
           {/* Results Panel - Right Column */}
-          {ageGateComplete && !showOnboarding && outcomePhase === 'result' && resolvedBlend && (
+          {ageGateComplete && outcomePhase === 'result' && resolvedBlend && (
             <div className="col-span-12 lg:col-span-4 overflow-y-auto">
               <div className="h-full bg-glass-elevated border border-go rounded-xl p-6">
                 <ResultPanel

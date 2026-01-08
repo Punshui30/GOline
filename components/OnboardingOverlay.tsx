@@ -37,10 +37,9 @@ export default function OnboardingOverlay({ onComplete, onSkip }: OnboardingOver
   return (
     <AnimatePresence>
       <motion.div
-        initial={{ opacity: 0 }}
+        initial={{ opacity: 1 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        transition={{ duration: 0.3 }}
         className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#0A0A0A] text-white"
       >
         <motion.div
