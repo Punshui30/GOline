@@ -856,25 +856,22 @@ export default function Home() {
     }
   };
 
-  // Show age gate if not complete
-  if (!ageGateComplete) {
-    return (
-      <div className="h-full overflow-hidden">
+  return (
+    <div className="h-full bg-noise text-[#E5E5E5] font-sans selection:bg-accent/30 overflow-hidden flex flex-col relative">
+      {/* Age Gate Overlay - Blocks interaction but doesn't control layout */}
+      {!ageGateComplete && (
         <AgeGate
           onComplete={(age) => {
             setUserAge(age);
             setAgeGateComplete(true);
           }}
         />
-      </div>
-    );
-  }
-
-  return (
-    <div className="h-full bg-noise text-[#E5E5E5] font-sans selection:bg-accent/30 overflow-hidden flex flex-col">
+      )}
+      
+      {/* App Shell - Always renders, owns the viewport */}
       {/* PHASED MOUNT/UNMOUNT - Each phase has its own wrapper with distinct styling */}
       {/* Input Phase - Hero layout with centered input */}
-      {outcomePhase === 'input' && (
+      {ageGateComplete && outcomePhase === 'input' && (
         <main key="input" className="flex-1 min-h-0 w-full max-w-[1920px] mx-auto px-6 lg:px-12 xl:px-24 pb-32 pt-20 lg:pt-28 overflow-y-auto transition-opacity duration-300">
           {isProcessing && (
             <div className="mb-4">
@@ -899,14 +896,14 @@ export default function Home() {
       )}
 
       {/* Resolving Phase - Distinct background, centered, no input */}
-      {outcomePhase === 'resolving' && (
+      {ageGateComplete && outcomePhase === 'resolving' && (
         <main key="resolving" className="flex-1 min-h-0 w-full max-w-[1920px] mx-auto px-6 lg:px-12 xl:px-24 pb-32 pt-20 lg:pt-28 overflow-y-auto bg-zinc-950/60 transition-opacity duration-300">
           <ResolvingPanel />
         </main>
       )}
 
       {/* Result Phase - Result-focused layout */}
-      {outcomePhase === 'result' && resolvedBlend && (
+      {ageGateComplete && outcomePhase === 'result' && resolvedBlend && (
         <main key="result" className="flex-1 min-h-0 w-full max-w-[1920px] mx-auto px-6 lg:px-12 xl:px-24 pb-32 pt-20 lg:pt-28 overflow-y-auto transition-opacity duration-300">
           <ResultPanel
             blend={resolvedBlend}
@@ -927,6 +924,7 @@ export default function Home() {
       )}
 
       {/* Microphone - Fixed Bottom Right */}
+      {ageGateComplete && (
       <div className="fixed bottom-12 right-12 z-50">
         <button
           onClick={isListening ? stopListening : startListening}
@@ -938,6 +936,7 @@ export default function Home() {
           <div className={`w-3 h-3 rounded-full transition-all duration-500 ${isListening ? 'bg-current scale-125' : 'border border-current'}`} />
         </button>
       </div>
+      )}
 
       {/* Usage Protocol Modal */}
       {showUsageProtocol && (
