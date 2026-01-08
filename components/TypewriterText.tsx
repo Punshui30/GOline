@@ -11,35 +11,37 @@ type Props = {
 /**
  * TypewriterText Component
  * 
- * Renders text progressively character-by-character to create a typewriter effect.
+ * Renders text progressively using safe slice-based reveal to create a typewriter effect.
  * Used for LLM-generated explanations and instructions to make them feel alive and intentional.
  */
 export default function TypewriterText({ text, speed = 20, onComplete }: Props) {
-  const [visible, setVisible] = useState('');
+  const [count, setCount] = useState(0);
 
   useEffect(() => {
-    if (!text) {
-      setVisible('');
-      return;
-    }
+    setCount(0);
 
-    setVisible('');
-    let i = 0;
+    if (!text) return;
+
     const interval = setInterval(() => {
-      if (i < text.length) {
-        setVisible(prev => prev + text[i]);
-        i++;
-      } else {
-        clearInterval(interval);
-        if (onComplete) {
-          onComplete();
+      setCount(prev => {
+        if (prev >= text.length) {
+          clearInterval(interval);
+          if (onComplete) {
+            onComplete();
+          }
+          return prev;
         }
-      }
+        return prev + 1;
+      });
     }, speed);
 
     return () => clearInterval(interval);
   }, [text, speed, onComplete]);
 
-  return <div className="whitespace-pre-line">{visible}</div>;
+  return (
+    <p className="whitespace-pre-line">
+      {text.slice(0, count)}
+    </p>
+  );
 }
 

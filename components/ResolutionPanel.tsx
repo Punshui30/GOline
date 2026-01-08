@@ -187,9 +187,15 @@ export default function ResolutionPanel({ blend, intent, isComputing, onRefineOu
         <OutcomeTransitionBanner visible={hasResolved} />
         
         <div className="mt-6">
-          <h2 className="text-[10px] font-sans font-medium uppercase tracking-[0.2em] text-zinc-500 mb-8">
-            Blend Composition
-          </h2>
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="text-[10px] font-sans font-medium uppercase tracking-[0.2em] text-zinc-500">
+              Blend Composition
+            </h2>
+            {/* Source indicator - Subtle, secondary */}
+            <span className="text-[9px] font-sans text-zinc-600 uppercase tracking-wider">
+              Source: <span className="text-gleaf-muted font-medium">GLEAF</span>
+            </span>
+          </div>
 
           {/* Animated Visualizer Component */}
           <BlendVisualizer blend={blend} isAnimating={isAnimating} />

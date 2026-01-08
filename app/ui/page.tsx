@@ -106,7 +106,7 @@ export default function UISandbox() {
   return (
     <div className="min-h-screen bg-noise text-[#E5E5E5] font-sans selection:bg-accent/30 overflow-x-hidden flex flex-col">
       {/* Main content area - scrollable */}
-      <main className="flex-1 w-full max-w-[1920px] mx-auto px-6 lg:px-12 xl:px-24 pb-32 pt-20 lg:pt-28 overflow-y-auto min-h-0">
+      <main className="flex-1 w-full max-w-[1920px] mx-auto px-6 lg:px-12 xl:px-24 pb-32 pt-[112px] lg:pt-[120px] overflow-y-auto min-h-0">
         {/* Phase transitions with Framer Motion */}
         <AnimatePresence mode="wait">
           {/* Input Phase */}

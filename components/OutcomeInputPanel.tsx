@@ -26,50 +26,50 @@ export default function OutcomeInputPanel({
 }: OutcomeInputPanelProps) {
   return (
     <section className="max-w-3xl mx-auto">
-      {/* Logo - Hero Element with Intentional Animation */}
+      {/* Logo - Hero Element with Strengthened Animation */}
       <motion.div
-        initial={{ opacity: 0, y: 8, scale: 0.98 }}
+        initial={{ opacity: 0, y: 12, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ 
-          duration: 0.5,
+          duration: 0.65,
           ease: 'easeOut',
-          delay: 0.1
+          delay: 0.05
         }}
         className="mb-10 flex flex-col items-start"
       >
         <div className="relative">
-          {/* Subtle ambient glow behind logo (very low opacity) */}
+          {/* Subtle ambient glow behind logo (slightly more visible) */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.8, ease: 'easeOut', delay: 0.3 }}
-            className="absolute -inset-8 -z-10 bg-accent/3 blur-3xl rounded-full"
+            transition={{ duration: 0.9, ease: 'easeOut', delay: 0.2 }}
+            className="absolute -inset-10 -z-10 bg-accent/5 blur-3xl rounded-full"
           />
           
-          {/* Logo */}
+          {/* Logo - Increased prominence */}
           <img
             src="/brand/go-mark.png"
             srcSet="/brand/go-mark@2x.png 2x"
             alt="GO Line"
             width={144}
             height={80}
-            className="h-14 lg:h-16 max-h-[56px] lg:max-h-[64px] w-auto object-contain"
+            className="h-16 lg:h-20 max-h-[64px] lg:max-h-[80px] w-auto object-contain brightness-110"
             style={{
               display: "block",
               objectFit: "contain"
             }}
           />
           
-          {/* Subtle divider line that draws in */}
+          {/* Visual anchor divider - more prominent */}
           <motion.div
             initial={{ width: 0, opacity: 0 }}
-            animate={{ width: '100%', opacity: 0.2 }}
+            animate={{ width: '100%', opacity: 0.35 }}
             transition={{
-              duration: 0.6,
+              duration: 0.75,
               ease: 'easeOut',
-              delay: 0.6
+              delay: 0.7
             }}
-            className="h-px bg-gradient-to-r from-accent/20 via-accent/10 to-transparent mt-6"
+            className="h-[1.5px] bg-gradient-to-r from-accent/30 via-accent/15 to-transparent mt-7"
           />
         </div>
       </motion.div>
@@ -79,9 +79,17 @@ export default function OutcomeInputPanel({
         <h1 className="font-serif text-5xl lg:text-7xl font-light text-white leading-tight mb-6">
           Calculate Your Outcome
         </h1>
-        <p className="text-sm lg:text-base font-sans text-zinc-400 max-w-md border-l border-zinc-700 pl-4">
+        <p className="text-sm lg:text-base font-sans text-zinc-400 max-w-md border-l border-zinc-700 pl-4 mb-6">
           Describe your desired physical and mental state. The system will calculate a precise blend formulation to match your needs.
         </p>
+        
+        {/* Inventory-based accuracy explanation */}
+        <div className="max-w-md mt-6 pt-4 border-t border-zinc-800/50">
+          <p className="text-xs lg:text-sm font-sans text-zinc-500 leading-relaxed">
+            <span className="font-medium text-zinc-400">How results stay accurate.</span>{' '}
+            Outcomes are calculated using the actual strains available at GLEAF, based on their lab-tested terpene and cannabinoid profiles. When inventory changes, recommendations adjust automatically, using real percentage data rather than averages or strain names alone. This keeps outcomes consistent with what's actually on the menu where you're shopping.
+          </p>
+        </div>
       </div>
 
       {/* Current Clarification Question - Inline above input */}

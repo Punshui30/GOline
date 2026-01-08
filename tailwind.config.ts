@@ -24,6 +24,11 @@ const config: Config = {
           active: "#B89555",
           light: "#C5A065",
         },
+        // GLEAF brand color - use very sparingly, only for GLEAF name/source indicators
+        gleaf: {
+          DEFAULT: "#7ED321", // GLEAF's signature green - muted for UI
+          muted: "#8EB868", // More muted version for subtle use
+        },
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
