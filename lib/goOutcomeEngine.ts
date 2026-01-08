@@ -831,12 +831,19 @@ export function resolveOutcome(intent: OutcomeIntent): OutcomeResult {
     .slice(0, 4) // Top 4 alternates (total 5 candidates: 1 primary + 4 alternates)
     .map(c => convertToBlendCandidate(c, true));
   
-  // Log for verification
+  // CRITICAL: Log resolver output for verification
+  console.log('[RESOLVER OUTPUT] ====================================');
   console.log(`[RESOLVER] Generated ${1 + alternateCandidates.length} blend candidates`);
-  console.log(`[RESOLVER] Primary: ${primary.selectedCultivars.map(c => c.displayName).join(' + ')}`);
-  alternateCandidates.forEach((alt, idx) => {
-    console.log(`[RESOLVER] Alternate ${idx + 1}: ${alt.selectedCultivars.map(c => c.displayName).join(' + ')}`);
-  });
+  console.log(`[RESOLVER] Primary: ${primary.selectedCultivars.map(c => c.displayName).join(' + ')} (${primary.ratios.join('/')}%)`);
+  console.log(`[RESOLVER] Primary confidence: ${(primary.confidenceScore * 100).toFixed(0)}%`);
+  if (alternateCandidates.length > 0) {
+    alternateCandidates.forEach((alt, idx) => {
+      console.log(`[RESOLVER] Alternate ${idx + 1}: ${alt.selectedCultivars.map(c => c.displayName).join(' + ')} (${alt.ratios.join('/')}%) - confidence: ${(alt.confidenceScore * 100).toFixed(0)}%`);
+    });
+  } else {
+    console.log('[RESOLVER] WARNING: No alternate candidates generated');
+  }
+  console.log('[RESOLVER OUTPUT] ====================================');
 
   return {
     primary,

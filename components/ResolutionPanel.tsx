@@ -88,6 +88,31 @@ interface ResolutionPanelProps {
 export default function ResolutionPanel({ blend, intent, isComputing, onRefineOutcome, onShowUsageProtocol, onAdjustment, isAnimating = true, hasResolved = false, deterministicExplanation, llmExplanation, llmUsageInstructions, blendNickname, blendHashtag, shareCaption }: ResolutionPanelProps) {
   const [showAdjustments, setShowAdjustments] = useState(false);
   const [showAlternates, setShowAlternates] = useState(false);
+  
+  // CRITICAL: Log what blend is being rendered
+  useEffect(() => {
+    if (blend) {
+      console.log('[UI] Rendering blend:', {
+        primaryBlendCount: blend.primaryBlend.length,
+        primaryStrains: blend.primaryBlend.map(c => c.name),
+        primaryPercentages: blend.primaryBlend.map(c => c.percentage),
+        hasAlternates: !!blend.alternates,
+        alternateCount: blend.alternates?.length || 0,
+        confidenceScore: blend.confidenceScore,
+      });
+      if (blend.alternates && blend.alternates.length > 0) {
+        blend.alternates.forEach((alt, idx) => {
+          console.log(`[UI] Alternate ${idx + 1}:`, {
+            strains: alt.primaryBlend.map(c => c.name),
+            percentages: alt.primaryBlend.map(c => c.percentage),
+            confidence: alt.confidenceScore,
+          });
+        });
+      } else {
+        console.log('[UI] WARNING: No alternates available to render');
+      }
+    }
+  }, [blend]);
   const [localIntent, setLocalIntent] = useState(intent || {
     activationTarget: 0.5,
     cognitiveEndurance: 0.5,

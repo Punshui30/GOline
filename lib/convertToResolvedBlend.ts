@@ -44,6 +44,16 @@ export function convertToResolvedBlend(
   // IMPORTANT: LLM must not choose strains. It only explains math-selected blends.
   // Alternates are already selected by the deterministic engine.
   const alternates: ResolvedBlend[] = [];
+  
+  // CRITICAL: Log outcome structure for verification
+  console.log('[CONVERT] Outcome structure:', {
+    hasOutcome: !!outcome,
+    hasAlternates: outcome && 'alternates' in outcome && !!outcome.alternates,
+    alternateCount: outcome && 'alternates' in outcome ? outcome.alternates?.length : 0,
+    hasPrimary: outcome && 'primary' in outcome && !!outcome.primary,
+    hasFailure: outcome && 'failure' in outcome && !!outcome.failure,
+  });
+  
   if (outcome && 'alternates' in outcome && outcome.alternates) {
     for (const altCandidate of outcome.alternates) {
       // Convert BlendCandidate directly to ResolvedBlend format
@@ -80,9 +90,13 @@ export function convertToResolvedBlend(
         stack: [],
       });
     }
+    
+    console.log(`[CONVERT] Converted ${alternates.length} alternate candidates`);
+  } else {
+    console.log('[CONVERT] WARNING: No alternates in outcome or outcome is missing');
   }
 
-  return {
+  const result = {
     resolutionMode: named.resolutionMode === 'STACKED' ? 'BLENDED' : 'SINGLE_TARGET', // Simplification for UI
     confidenceScore: named.confidenceScore,
     primaryBlend: cultivars,
@@ -97,4 +111,13 @@ export function convertToResolvedBlend(
     stack: named.stack ? [named.stack] : [],
     alternates: alternates.length > 0 ? alternates : undefined,
   };
+  
+  console.log('[CONVERT] Final ResolvedBlend:', {
+    primaryBlendCount: result.primaryBlend.length,
+    primaryStrains: result.primaryBlend.map(c => c.name),
+    hasAlternates: !!result.alternates,
+    alternateCount: result.alternates?.length || 0,
+  });
+  
+  return result;
 }

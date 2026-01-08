@@ -415,11 +415,21 @@ export default function Home() {
           setOutcome(resolvedOutcome);
           setDeterministicExplanation(generateDeterministicExplanation(referenceIntent, resolvedOutcome));
 
+          // CRITICAL: Log resolver output before conversion
+          console.log('[APP] Reference profile resolver output:', {
+            hasPrimary: !!resolvedOutcome.primary,
+            primaryStrains: resolvedOutcome.primary?.selectedCultivars.map(c => c.displayName),
+            primaryRatios: resolvedOutcome.primary?.ratios,
+            hasAlternates: !!resolvedOutcome.alternates,
+            alternateCount: resolvedOutcome.alternates?.length || 0,
+            hasFailure: !!resolvedOutcome.failure,
+          });
+
           if (resolvedOutcome.failure) {
-            const blend = convertToResolvedBlend(
-              { primaryBlend: [], stackingOptions: [], confidenceScore: 0, tradeoffs: [], rationaleSummary: '', resolutionMode: 'BLENDED' },
-              resolvedOutcome
-            );
+            // ConvertToResolvedBlend already handles failures - don't create empty blend
+            const named = resolveToNamedStrains(resolvedOutcome);
+            const blend = convertToResolvedBlend(named, resolvedOutcome);
+            console.log('[APP] Failure case - blend:', { hasPrimary: !!blend.primaryBlend?.length, hasAlternates: !!blend.alternates });
             setResolvedBlend(blend);
             setDeterministicExplanation(generateDeterministicExplanation(referenceIntent, resolvedOutcome));
             setOutcomePhase('result');
@@ -430,6 +440,15 @@ export default function Home() {
           const named = resolveToNamedStrains(resolvedOutcome);
           setNamedResolution(named);
           const blend = convertToResolvedBlend(named, resolvedOutcome);
+          
+          // CRITICAL: Log converted blend
+          console.log('[APP] Reference profile converted blend:', {
+            primaryBlendCount: blend.primaryBlend.length,
+            primaryStrains: blend.primaryBlend.map(c => c.name),
+            hasAlternates: !!blend.alternates,
+            alternateCount: blend.alternates?.length || 0,
+          });
+          
           setResolvedBlend(blend);
           setDeterministicExplanation(generateDeterministicExplanation(referenceIntent, resolvedOutcome));
           
@@ -573,8 +592,21 @@ export default function Home() {
         setOutcome(resolvedOutcome);
         setDeterministicExplanation(generateDeterministicExplanation(translatedIntent, resolvedOutcome));
 
+        // CRITICAL: Log resolver output before conversion
+        console.log('[APP] Main flow resolver output:', {
+          hasPrimary: !!resolvedOutcome.primary,
+          primaryStrains: resolvedOutcome.primary?.selectedCultivars.map(c => c.displayName),
+          primaryRatios: resolvedOutcome.primary?.ratios,
+          hasAlternates: !!resolvedOutcome.alternates,
+          alternateCount: resolvedOutcome.alternates?.length || 0,
+          hasFailure: !!resolvedOutcome.failure,
+        });
+
         if (resolvedOutcome.failure) {
-          const blend = convertToResolvedBlend({ primaryBlend: [], stackingOptions: [], confidenceScore: 0, tradeoffs: [], rationaleSummary: '', resolutionMode: 'BLENDED' }, resolvedOutcome);
+          // ConvertToResolvedBlend already handles failures - don't create empty blend
+          const named = resolveToNamedStrains(resolvedOutcome);
+          const blend = convertToResolvedBlend(named, resolvedOutcome);
+          console.log('[APP] Main flow failure case - blend:', { hasPrimary: !!blend.primaryBlend?.length, hasAlternates: !!blend.alternates });
           setResolvedBlend(blend);
           setDeterministicExplanation(generateDeterministicExplanation(translatedIntent, resolvedOutcome));
           setOutcomePhase('result');
@@ -600,9 +632,28 @@ export default function Home() {
           }
         }
 
+        // CRITICAL: Log resolver output before conversion
+        console.log('[APP] Resolver output received:', {
+          hasPrimary: !!resolvedOutcome.primary,
+          primaryStrains: resolvedOutcome.primary?.selectedCultivars.map(c => c.displayName),
+          primaryRatios: resolvedOutcome.primary?.ratios,
+          hasAlternates: !!resolvedOutcome.alternates,
+          alternateCount: resolvedOutcome.alternates?.length || 0,
+          hasFailure: !!resolvedOutcome.failure,
+        });
+        
         const named = resolveToNamedStrains(resolvedOutcome);
         setNamedResolution(named);
         const blend = convertToResolvedBlend(named, resolvedOutcome);
+        
+        // CRITICAL: Log converted blend
+        console.log('[APP] Converted blend:', {
+          primaryBlendCount: blend.primaryBlend.length,
+          primaryStrains: blend.primaryBlend.map(c => c.name),
+          hasAlternates: !!blend.alternates,
+          alternateCount: blend.alternates?.length || 0,
+        });
+        
         setResolvedBlend(blend);
         setHasResolved(true);
         
@@ -664,8 +715,21 @@ export default function Home() {
         setOutcome(resolvedOutcome);
         setDeterministicExplanation(generateDeterministicExplanation(updatedIntent, resolvedOutcome));
 
+        // CRITICAL: Log resolver output before conversion
+        console.log('[APP] Adjustment resolver output:', {
+          hasPrimary: !!resolvedOutcome.primary,
+          primaryStrains: resolvedOutcome.primary?.selectedCultivars.map(c => c.displayName),
+          primaryRatios: resolvedOutcome.primary?.ratios,
+          hasAlternates: !!resolvedOutcome.alternates,
+          alternateCount: resolvedOutcome.alternates?.length || 0,
+          hasFailure: !!resolvedOutcome.failure,
+        });
+
         if (resolvedOutcome.failure) {
-          const blend = convertToResolvedBlend({ primaryBlend: [], stackingOptions: [], confidenceScore: 0, tradeoffs: [], rationaleSummary: '', resolutionMode: 'BLENDED' }, resolvedOutcome);
+          // ConvertToResolvedBlend already handles failures - don't create empty blend
+          const named = resolveToNamedStrains(resolvedOutcome);
+          const blend = convertToResolvedBlend(named, resolvedOutcome);
+          console.log('[APP] Adjustment failure case - blend:', { hasPrimary: !!blend.primaryBlend?.length, hasAlternates: !!blend.alternates });
           setResolvedBlend(blend);
           setDeterministicExplanation(generateDeterministicExplanation(updatedIntent, resolvedOutcome));
           setOutcomePhase('result');
@@ -676,6 +740,15 @@ export default function Home() {
         const named = resolveToNamedStrains(resolvedOutcome);
         setNamedResolution(named);
         const blend = convertToResolvedBlend(named, resolvedOutcome);
+        
+        // CRITICAL: Log converted blend
+        console.log('[APP] Adjustment converted blend:', {
+          primaryBlendCount: blend.primaryBlend.length,
+          primaryStrains: blend.primaryBlend.map(c => c.name),
+          hasAlternates: !!blend.alternates,
+          alternateCount: blend.alternates?.length || 0,
+        });
+        
         setResolvedBlend(blend);
         
         // Generate LLM explanations asynchronously (non-blocking)
