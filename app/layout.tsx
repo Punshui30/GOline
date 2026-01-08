@@ -38,11 +38,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className="h-screen overflow-hidden flex flex-col">
-        <Header />
-        <div className="flex-1 min-h-0 overflow-hidden">
-          {children}
+    <html lang="en" className="h-full">
+      <body className="h-full overflow-hidden">
+        <div className="h-full flex flex-col">
+          <Header />
+          <div className="flex-1 min-h-0 overflow-hidden">
+            {children}
+          </div>
         </div>
       </body>
     </html>

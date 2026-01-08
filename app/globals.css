@@ -5,38 +5,36 @@
 @tailwind utilities;
 
 @layer base {
+  * {
+    box-sizing: border-box;
+  }
+
   html {
-    height: 100vh;
+    height: 100%;
+    width: 100%;
     overflow: hidden;
-    scroll-behavior: smooth;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
   body {
-    height: 100vh;
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
     overflow: hidden;
     background: #111111;
-    /* Slightly lighter than pure black for texture compatibility */
     color: #E5E5E5;
     font-family: 'Inter', sans-serif;
   }
 
   #__next {
-    height: 100vh;
+    height: 100%;
+    width: 100%;
     overflow: hidden;
-    display: flex;
-    flex-direction: column;
   }
 
-  /* Typography Overrides */
-  h1,
-  h2,
-  h3,
-  h4,
-  h5,
-  h6,
-  .font-serif {
+  h1, h2, h3, h4, h5, h6, .font-serif {
     font-family: 'Playfair Display', serif;
   }
 }
