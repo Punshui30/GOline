@@ -58,128 +58,138 @@ export default function AgeGate({ onComplete }: AgeGateProps) {
   };
 
   return (
-    <AnimatePresence>
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#0A0A0A] text-white">
       <motion.div
-        initial={reducedMotion ? {} : { opacity: 0 }}
-        animate={reducedMotion ? {} : { opacity: 1 }}
-        exit={reducedMotion ? {} : { opacity: 0 }}
-        transition={reducedMotion ? {} : { duration: 0.3 }}
-        className="fixed inset-0 z-[100] flex items-center justify-center bg-go/95 backdrop-blur-xl"
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5, ease: 'easeOut' }}
+        className="w-full max-w-lg p-8 mx-4 bg-[#111216] border border-white/10 rounded-2xl shadow-2xl relative"
       >
-        <motion.div
-          initial={reducedMotion ? {} : { opacity: 0, scale: 0.95, y: 8 }}
-          animate={reducedMotion ? {} : { opacity: 1, scale: 1, y: 0 }}
-          transition={reducedMotion ? {} : { duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
-          className="relative max-w-lg w-full mx-4 bg-glass-elevated border border-go rounded-xl p-8 lg:p-12 shadow-2xl"
-        >
-          <AnimatePresence mode="wait">
-            {step === 'age' && (
-              <motion.div
-                key="age"
-                initial={reducedMotion ? {} : { opacity: 0, x: -8 }}
-                animate={reducedMotion ? {} : { opacity: 1, x: 0 }}
-                exit={reducedMotion ? {} : { opacity: 0, x: 8 }}
-                transition={reducedMotion ? {} : { duration: 0.3 }}
-                className="space-y-6"
-              >
-                <h2 className="font-serif text-3xl lg:text-4xl font-light text-go mb-2">Age Verification</h2>
-                <p className="text-sm font-sans text-go-muted leading-relaxed">
-                  You must be 21 or older to use this calculator.
-                </p>
-                <form onSubmit={handleAgeSubmit} className="space-y-4">
-                  <div>
-                    <label htmlFor="age" className="block text-sm font-sans font-medium text-go mb-2">
-                      Enter your age
-                    </label>
-                    <input
-                      id="age"
-                      type="number"
-                      min="1"
-                      max="120"
-                      value={age}
-                      onChange={(e) => {
-                        setAge(e.target.value);
-                        setAgeError(null);
-                      }}
-                      className="w-full bg-glass border border-go-strong text-go px-4 py-3 font-sans rounded-lg focus:border-amber-strong focus:outline-none focus:ring-2 focus:ring-amber/30 focus:shadow-amber-sm transition-go"
-                      placeholder="21"
-                      autoFocus
-                    />
-                    {ageError && (
-                      <p className="mt-2 text-sm font-sans text-red-400">{ageError}</p>
-                    )}
-                  </div>
-                  <button
-                    type="submit"
-                    className="w-full px-6 py-3 border-2 border-amber text-amber text-xs font-sans uppercase tracking-widest hover:bg-amber hover:text-go-bg active:bg-amber-active hover:shadow-amber-sm transition-go cursor-pointer rounded-lg font-medium"
-                  >
-                    Continue
-                  </button>
-                </form>
-              </motion.div>
-            )}
+        {/* Decorative Grid Background */}
+        <div className="absolute inset-0 bg-[radial-gradient(#D4AF37_1px,transparent_1px)] [background-size:16px_16px] opacity-5 pointer-events-none rounded-2xl" />
 
-            {step === 'experience' && (
-              <motion.div
-                key="experience"
-                initial={reducedMotion ? {} : { opacity: 0, x: -8 }}
-                animate={reducedMotion ? {} : { opacity: 1, x: 0 }}
-                exit={reducedMotion ? {} : { opacity: 0, x: 8 }}
-                transition={reducedMotion ? {} : { duration: 0.3 }}
-                className="space-y-6"
-              >
-                <h2 className="font-serif text-3xl lg:text-4xl font-light text-go mb-2">Welcome</h2>
-                <p className="text-sm font-sans text-go-muted leading-relaxed mb-6">
-                  Have you used this calculator before?
+        <AnimatePresence mode="wait">
+          {step === 'age' && (
+            <motion.div
+              key="age"
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 10 }}
+              transition={{ duration: 0.3 }}
+              className="relative z-10 space-y-8"
+            >
+              <div className="text-center space-y-2">
+                <img
+                  src="/brand/go-mark.png"
+                  alt="GO"
+                  className="h-10 w-auto mx-auto mb-6 opacity-80"
+                />
+                <h2 className="text-3xl font-serif font-light text-white">Age Verification</h2>
+                <p className="text-sm text-gray-400 font-sans">
+                  You must be 21 or older to access this interface.
                 </p>
-                <div className="flex flex-col gap-3">
-                  <button
-                    onClick={() => handleExperienceChoice('first-time')}
-                    className="w-full px-6 py-3 border-2 border-go-strong text-go text-sm font-sans uppercase tracking-wider hover:border-amber-subtle active:border-amber-strong hover:text-amber transition-go cursor-pointer text-left rounded-lg"
-                  >
-                    First time
-                  </button>
-                  <button
-                    onClick={() => handleExperienceChoice('returning')}
-                    className="w-full px-6 py-3 border-2 border-go-strong text-go text-sm font-sans uppercase tracking-wider hover:border-amber-subtle active:border-amber-strong hover:text-amber transition-go cursor-pointer text-left rounded-lg"
-                  >
-                    I've used it before
-                  </button>
-                </div>
-              </motion.div>
-            )}
+              </div>
 
-            {step === 'onboarding' && isFirstTime && (
-              <motion.div
-                key="onboarding"
-                initial={reducedMotion ? {} : { opacity: 0, x: -8 }}
-                animate={reducedMotion ? {} : { opacity: 1, x: 0 }}
-                exit={reducedMotion ? {} : { opacity: 0, x: 8 }}
-                transition={reducedMotion ? {} : { duration: 0.3 }}
-                className="space-y-6"
+              <form onSubmit={handleAgeSubmit} className="space-y-6">
+                <div className="space-y-2">
+                  <label htmlFor="age" className="block text-xs uppercase tracking-widest text-gray-500 font-bold">
+                    Enter your age
+                  </label>
+                  <input
+                    id="age"
+                    type="number"
+                    min="1"
+                    max="120"
+                    value={age}
+                    onChange={(e) => {
+                      setAge(e.target.value);
+                      setAgeError(null);
+                    }}
+                    className="w-full bg-black/40 border border-white/20 text-white text-lg px-4 py-4 rounded-lg focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] focus:outline-none transition-all placeholder-gray-700 font-mono"
+                    placeholder="21"
+                    autoFocus
+                  />
+                  {ageError && (
+                    <p className="text-sm text-red-500 mt-2">{ageError}</p>
+                  )}
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full bg-[#D4AF37] hover:bg-[#E5C158] text-black font-bold uppercase tracking-widest py-4 rounded-lg shadow-[0_0_20px_rgba(212,175,55,0.3)] hover:shadow-[0_0_30px_rgba(212,175,55,0.5)] transition-all transform hover:-translate-y-0.5 active:translate-y-0"
+                >
+                  I am 21+ and confirm
+                </button>
+              </form>
+            </motion.div>
+          )}
+
+          {step === 'experience' && (
+            <motion.div
+              key="experience"
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 10 }}
+              transition={{ duration: 0.3 }}
+              className="relative z-10 space-y-8"
+            >
+              <div className="text-center space-y-2">
+                <h2 className="text-3xl font-serif font-light text-white">Welcome</h2>
+                <p className="text-sm text-gray-400 font-sans">
+                  Configure your experience level.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4">
+                <button
+                  onClick={() => handleExperienceChoice('first-time')}
+                  className="group relative p-6 border border-white/20 rounded-xl hover:bg-white/5 transition-all text-left space-y-2 hover:border-[#D4AF37]"
+                >
+                  <span className="block text-lg font-medium text-white group-hover:text-[#D4AF37] transition-colors">First time</span>
+                  <span className="block text-sm text-gray-500">I want to understand how the system works.</span>
+                </button>
+
+                <button
+                  onClick={() => handleExperienceChoice('returning')}
+                  className="group relative p-6 border border-white/20 rounded-xl hover:bg-white/5 transition-all text-left space-y-2 hover:border-[#D4AF37]"
+                >
+                  <span className="block text-lg font-medium text-white group-hover:text-[#D4AF37] transition-colors">Returning user</span>
+                  <span className="block text-sm text-gray-500">Skip the introduction and start calculating.</span>
+                </button>
+              </div>
+            </motion.div>
+          )}
+
+          {step === 'onboarding' && isFirstTime && (
+            <motion.div
+              key="onboarding"
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 10 }}
+              transition={{ duration: 0.3 }}
+              className="relative z-10 space-y-6"
+            >
+              <div className="space-y-4">
+                <h2 className="text-2xl font-serif text-white">Guided Outcomes</h2>
+                <div className="h-px w-12 bg-[#D4AF37]" />
+                <p className="text-sm text-gray-300 leading-relaxed">
+                  This system builds intentional cultivar blends based on your desired physical and mental state.
+                </p>
+                <p className="text-sm text-gray-300 leading-relaxed">
+                  Most effects are biphasic—meaning they change based on dose and combination. We use structured resolution to ensure your blend aligns with your intent.
+                </p>
+              </div>
+
+              <button
+                onClick={handleOnboardingComplete}
+                className="w-full mt-4 bg-[#D4AF37] hover:bg-[#E5C158] text-black font-bold uppercase tracking-widest py-4 rounded-lg shadow-[0_0_20px_rgba(212,175,55,0.3)] transition-all"
               >
-                <h2 className="font-serif text-3xl lg:text-4xl font-light text-go mb-6">How this works</h2>
-                <div className="space-y-4 text-sm font-sans text-go-muted leading-relaxed">
-                  <p>
-                    This system doesn't recommend a single strain—it builds intentional blends. Each strain contains many compounds that can interact differently depending on how they're combined. Some effects stack, some balance out, and some only work within certain ranges.
-                  </p>
-                  <p>
-                    By blending multiple strains together, the system can more reliably recreate the feeling you're looking for, even when individual strains vary or aren't available. Behind the scenes, it uses real cannabis knowledge and structured math to weigh those interactions and turn your goal into a blend designed to work consistently. The result is less guesswork and a more predictable experience.
-                  </p>
-                </div>
-                <div className="pt-4">
-                  <button
-                    onClick={handleOnboardingComplete}
-                    className="w-full px-6 py-3 border-2 border-amber text-amber text-xs font-sans uppercase tracking-widest hover:bg-amber hover:text-go-bg active:bg-amber-active hover:shadow-amber-sm transition-go cursor-pointer rounded-lg font-medium"
-                  >
-                    Start
-                  </button>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </motion.div>
+                Enter System
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.div>
-    </AnimatePresence>
+    </div>
   );
 }
