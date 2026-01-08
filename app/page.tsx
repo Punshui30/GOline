@@ -107,6 +107,88 @@ export default function Home() {
   const [showUsageProtocol, setShowUsageProtocol] = useState(false);
   const [hasResolved, setHasResolved] = useState(false);
   const [deterministicExplanation, setDeterministicExplanation] = useState<DeterministicExplanation | null>(null);
+  
+  // LLM-generated explanations (separate from deterministic resolver)
+  const [llmExplanation, setLlmExplanation] = useState<string | null>(null);
+  const [llmUsageInstructions, setLlmUsageInstructions] = useState<string | null>(null);
+  
+  // Store original user input for explanation generation
+  const [originalUserInput, setOriginalUserInput] = useState<string>('');
+
+  /**
+   * Generate LLM explanations after outcome is resolved
+   * This runs asynchronously and does not block UI rendering
+   */
+  const generateLLMExplanations = async (blend: ResolvedBlend, userIntent: string, intent: OutcomeIntent) => {
+    // Clear previous explanations
+    setLlmExplanation(null);
+    setLlmUsageInstructions(null);
+
+    try {
+      // Convert blend to format expected by API
+      const blendComponents = blend.primaryBlend.map((cultivar) => ({
+        name: cultivar.name,
+        percentage: cultivar.percentage,
+        role: cultivar.role,
+      }));
+
+      // Extract constraints from intent (consumer-friendly terms only)
+      const constraints: string[] = [];
+      if (intent.activation > 0.7) {
+        constraints.push('high energy preference');
+      } else if (intent.activation < 0.3) {
+        constraints.push('calm and relaxation preference');
+      }
+      if (intent.cognitiveEndurance > 0.7) {
+        constraints.push('sustained focus needs');
+      }
+      if (intent.anxietySensitivity > 0.6) {
+        constraints.push('low anxiety tolerance');
+      }
+
+      // Generate explanation
+      const explanationResponse = await fetch('/api/explanation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userIntent,
+          blend: blendComponents,
+          constraints,
+        }),
+      });
+
+      if (explanationResponse.ok) {
+        const data = await explanationResponse.json();
+        if (data.ok && data.explanation) {
+          setLlmExplanation(data.explanation);
+        }
+      }
+
+      // Generate usage instructions
+      const intensity = intent.activationTarget || intent.activation || 0.5;
+      const duration = intent.cognitiveEndurance || 0.5;
+      
+      const instructionsResponse = await fetch('/api/usage-instructions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          blend: blendComponents,
+          intensity,
+          duration,
+        }),
+      });
+
+      if (instructionsResponse.ok) {
+        const data = await instructionsResponse.json();
+        if (data.ok && data.instructions) {
+          setLlmUsageInstructions(data.instructions);
+        }
+      }
+    } catch (error) {
+      console.error('Error generating LLM explanations:', error);
+      // Don't set error state - explanations are optional, UI should still render
+    }
+  };
 
   // Initialize speech recognition
   useEffect(() => {
@@ -241,6 +323,10 @@ export default function Home() {
     setError(null);
     setLlmFailed(false);
 
+    // Clear previous explanations
+    setLlmExplanation(null);
+    setLlmUsageInstructions(null);
+
     if (inputMode === 'reference' && referenceProfile) {
       try {
         setPhase('LOCKED');
@@ -272,6 +358,10 @@ export default function Home() {
           const blend = convertToResolvedBlend(named, resolvedOutcome);
           setResolvedBlend(blend);
           setDeterministicExplanation(generateDeterministicExplanation(referenceIntent, resolvedOutcome));
+          
+          // Generate LLM explanations asynchronously (non-blocking)
+          generateLLMExplanations(blend, originalUserInput || userInput || 'Default blend selection', referenceIntent);
+          
           setOutcomePhase('result');
           setIsProcessing(false);
         }, 200);
@@ -390,6 +480,11 @@ export default function Home() {
     // Clear previous visualization
     setResolvedBlend(null);
     setDeterministicExplanation(null);
+    setLlmExplanation(null);
+    setLlmUsageInstructions(null);
+    
+    // Store original user input for explanation generation
+    setOriginalUserInput(userInput);
     
     // CRITICAL: Set phase to 'resolving' BEFORE async call
     setOutcomePhase('resolving');
@@ -437,6 +532,9 @@ export default function Home() {
         // CRITICAL: Transition to result phase after calculation completes
         setOutcomePhase('result');
         
+        // Generate LLM explanations asynchronously (non-blocking)
+        generateLLMExplanations(blend, userInput, translatedIntent);
+        
         setPhase('FREE');
         setGuidance(null);
         setClarificationAnswers({});
@@ -463,6 +561,8 @@ export default function Home() {
     // Clear previous visualization
     setResolvedBlend(null);
     setDeterministicExplanation(null);
+    setLlmExplanation(null);
+    setLlmUsageInstructions(null);
     
     // Transition to resolving phase
     setOutcomePhase('resolving');
@@ -500,6 +600,9 @@ export default function Home() {
         setNamedResolution(named);
         const blend = convertToResolvedBlend(named, resolvedOutcome);
         setResolvedBlend(blend);
+        
+        // Generate LLM explanations asynchronously (non-blocking)
+        generateLLMExplanations(blend, originalUserInput || userInput, updatedIntent);
         
         // Transition back to result phase
         setOutcomePhase('result');
@@ -673,6 +776,8 @@ export default function Home() {
             intent={intent}
             isProcessing={isProcessing}
             deterministicExplanation={deterministicExplanation}
+            llmExplanation={llmExplanation}
+            llmUsageInstructions={llmUsageInstructions}
             onRefineOutcome={handleRefineOutcome}
             onShowUsageProtocol={handleShowUsageProtocol}
             onAdjustment={handleAdjustment}

@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@netlify/functions": "^5.1.2",
+    "framer-motion": "^12.24.10",
     "openai": "^6.15.0",
     "pdfkit": "^0.17.2",
     "react": "^18.3.1",

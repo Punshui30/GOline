@@ -16,12 +16,14 @@ export const dynamic = 'force-dynamic';
  */
 
 import { useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import OutcomeInputPanel from '@/components/OutcomeInputPanel';
 import ResolvingPanel from '@/components/ResolvingPanel';
 import ResultPanel from '@/components/ResultPanel';
 import type { ResolvedBlend } from '@/components/ResolutionPanel';
 import type { OutcomeIntent } from '@/lib/goOutcomeEngine';
 import type { DeterministicExplanation } from '@/lib/outcomeBrain/deterministicExplanation';
+import { phaseContainer } from '@/lib/motion';
 
 type Phase = 'input' | 'resolving' | 'result';
 
@@ -105,14 +107,13 @@ export default function UISandbox() {
     <div className="min-h-screen bg-noise text-[#E5E5E5] font-sans selection:bg-[#C5A065]/30 overflow-x-hidden flex flex-col">
       {/* Main content area - scrollable */}
       <main className="flex-1 w-full max-w-[1920px] mx-auto px-6 lg:px-12 xl:px-24 pb-32 pt-20 lg:pt-28 overflow-y-auto min-h-0">
-        {/* Phase transitions with CSS animations */}
-        <div className="relative">
+        {/* Phase transitions with Framer Motion */}
+        <AnimatePresence mode="wait">
           {/* Input Phase */}
           {phase === 'input' && (
-            <div
+            <motion.div
               key="input-phase"
-              className="animate-[fadeInUp_0.3s_ease-in-out_forwards]"
-              style={{ opacity: 0 }}
+              {...phaseContainer}
             >
               <OutcomeInputPanel
                 userInput={userInput}
@@ -124,28 +125,26 @@ export default function UISandbox() {
                 onClarificationAnswer={() => {}}
                 onClearClarification={() => {}}
               />
-            </div>
+            </motion.div>
           )}
 
           {/* Resolving Phase */}
           {phase === 'resolving' && (
-            <div
+            <motion.div
               key="resolving-phase"
-              className="animate-[fadeInUp_0.3s_ease-in-out_forwards]"
-              style={{ opacity: 0 }}
+              {...phaseContainer}
             >
               <div className="bg-zinc-950/60 rounded-lg p-8">
                 <ResolvingPanel />
               </div>
-            </div>
+            </motion.div>
           )}
 
           {/* Result Phase */}
           {phase === 'result' && (
-            <div
+            <motion.div
               key="result-phase"
-              className="animate-[fadeInUp_0.3s_ease-in-out_forwards]"
-              style={{ opacity: 0 }}
+              {...phaseContainer}
             >
               <ResultPanel
                 blend={MOCK_BLEND}
@@ -157,9 +156,9 @@ export default function UISandbox() {
                 onAdjustment={handleAdjustment}
                 hasResolved={true}
               />
-            </div>
+            </motion.div>
           )}
-        </div>
+        </AnimatePresence>
 
         {/* Phase Control Debug Panel */}
         <div className="fixed bottom-4 right-4 z-50 bg-zinc-900/90 backdrop-blur-sm border border-zinc-800 rounded-lg p-4 text-xs">

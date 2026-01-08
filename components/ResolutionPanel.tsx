@@ -5,10 +5,13 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
 import { OutcomeResult } from '@/lib/goOutcomeEngine';
 import BlendVisualizer from './BlendVisualizer';
 import OutcomeTransitionBanner from './OutcomeTransitionBanner';
+import TypewriterText from './TypewriterText';
 import type { DeterministicExplanation } from '@/lib/outcomeBrain/deterministicExplanation';
+import { staggerContainer, itemFade } from '@/lib/motion';
 
 // Interfaces matching the new "Editorial" data structure
 export type CultivarRole = 'Anchor' | 'Modifier' | 'Synergist';
@@ -72,11 +75,12 @@ interface ResolutionPanelProps {
   isAnimating?: boolean;
   hasResolved?: boolean;
   deterministicExplanation?: DeterministicExplanation;
+  llmExplanation?: string;
+  llmUsageInstructions?: string;
 }
 
-export default function ResolutionPanel({ blend, intent, isComputing, onRefineOutcome, onShowUsageProtocol, onAdjustment, isAnimating = true, hasResolved = false, deterministicExplanation }: ResolutionPanelProps) {
+export default function ResolutionPanel({ blend, intent, isComputing, onRefineOutcome, onShowUsageProtocol, onAdjustment, isAnimating = true, hasResolved = false, deterministicExplanation, llmExplanation, llmUsageInstructions }: ResolutionPanelProps) {
   const [showAdjustments, setShowAdjustments] = useState(false);
-  const [showWhy, setShowWhy] = useState(false);
   const [localIntent, setLocalIntent] = useState(intent || {
     activationTarget: 0.5,
     cognitiveEndurance: 0.5,
@@ -127,10 +131,14 @@ export default function ResolutionPanel({ blend, intent, isComputing, onRefineOu
 
   // ACTIVE STATE
   return (
-    <div className="flex flex-col gap-24 lg:gap-32 mb-32 text-[#E5E5E5] overflow-y-auto min-h-0">
-
+    <motion.div
+      className="flex flex-col gap-24 lg:gap-32 mb-32 text-[#E5E5E5] overflow-y-auto min-h-0"
+      variants={staggerContainer}
+      initial="initial"
+      animate="animate"
+    >
       {/* 1. Header: Primary Conclusion */}
-      <section className="opacity-0 animate-[fadeIn_0.6s_ease-out_0.2s_forwards] min-h-0">
+      <motion.section variants={itemFade} className="min-h-0">
         <div className="flex flex-col gap-6">
           <span className="text-[10px] font-sans font-medium uppercase tracking-[0.2em] text-zinc-500">
             Best Match
@@ -141,47 +149,59 @@ export default function ResolutionPanel({ blend, intent, isComputing, onRefineOu
               : 'This blend best matches your desired outcome'}
           </h2>
         </div>
-      </section>
+      </motion.section>
 
       {/* 2. Composition (The Blend) */}
-      <section className="opacity-0 animate-[fadeIn_0.6s_ease-out_0.4s_forwards]">
+      <motion.section variants={itemFade}>
         <OutcomeTransitionBanner visible={hasResolved} />
         <h3 className="text-[10px] font-sans font-medium uppercase tracking-[0.2em] text-zinc-500 mb-12 mt-6">Blend Composition</h3>
 
         {/* Animated Visualizer Component */}
         <BlendVisualizer blend={blend} isAnimating={isAnimating} />
 
-        {deterministicExplanation && (
-          <div className="mt-10 border border-zinc-800 bg-zinc-900/30 overflow-y-auto">
-            <button
-              type="button"
-              onClick={() => setShowWhy((v) => !v)}
-              className="w-full flex items-center justify-between px-6 py-4 text-left"
-            >
-              <span className="text-sm font-sans font-medium text-white">
-                {deterministicExplanation.headline}
-              </span>
-              <span className="text-xs font-sans text-zinc-400">
-                {showWhy ? 'Hide' : 'Why this result'}
-              </span>
-            </button>
-            {showWhy && (
-              <div className="px-6 pb-6">
-                <ul className="space-y-3">
-                  {deterministicExplanation.bullets.map((b, i) => (
-                    <li key={i} className="text-sm font-sans text-zinc-400 leading-relaxed break-words">
-                      - {b}
-                    </li>
-                  ))}
-                </ul>
-                {deterministicExplanation.confidenceNote && (
-                  <p className="mt-4 text-sm font-sans text-zinc-400 leading-relaxed break-words">
-                    {deterministicExplanation.confidenceNote}
-                  </p>
-                )}
-              </div>
+        {/* LLM-Generated Explanation - Always Visible */}
+        {llmExplanation && (
+          <motion.div variants={itemFade} className="mt-10 border border-zinc-800 bg-zinc-900/30 p-6">
+            <h4 className="text-sm font-sans font-medium text-white mb-4">
+              Why this blend works for you
+            </h4>
+            <div className="text-sm font-sans text-zinc-400 leading-relaxed">
+              <TypewriterText text={llmExplanation} speed={20} />
+            </div>
+          </motion.div>
+        )}
+
+        {/* Fallback to deterministic explanation if LLM explanation not available */}
+        {!llmExplanation && deterministicExplanation && (
+          <motion.div variants={itemFade} className="mt-10 border border-zinc-800 bg-zinc-900/30 p-6">
+            <h4 className="text-sm font-sans font-medium text-white mb-4">
+              {deterministicExplanation.headline}
+            </h4>
+            <ul className="space-y-3">
+              {deterministicExplanation.bullets.map((b, i) => (
+                <li key={i} className="text-sm font-sans text-zinc-400 leading-relaxed break-words">
+                  - {b}
+                </li>
+              ))}
+            </ul>
+            {deterministicExplanation.confidenceNote && (
+              <p className="mt-4 text-sm font-sans text-zinc-400 leading-relaxed break-words">
+                {deterministicExplanation.confidenceNote}
+              </p>
             )}
-          </div>
+          </motion.div>
+        )}
+
+        {/* LLM-Generated Usage Instructions - Always Visible */}
+        {llmUsageInstructions && (
+          <motion.div variants={itemFade} className="mt-10 border border-zinc-800 bg-zinc-900/30 p-6">
+            <h4 className="text-sm font-sans font-medium text-white mb-4">
+              How to use this blend
+            </h4>
+            <div className="text-sm font-sans text-zinc-400 leading-relaxed">
+              <TypewriterText text={llmUsageInstructions} speed={20} />
+            </div>
+          </motion.div>
         )}
 
         {/* Blend Explanation */}
@@ -194,10 +214,10 @@ export default function ResolutionPanel({ blend, intent, isComputing, onRefineOu
           </div>
         )}
 
-      </section>
+      </motion.section>
 
       {/* 3. Metrics */}
-      <section className="opacity-0 animate-[fadeIn_0.6s_ease-out_0.6s_forwards]">
+      <motion.section variants={itemFade}>
         <h3 className="text-[10px] font-sans font-medium uppercase tracking-[0.2em] text-zinc-500 mb-12">Match Confidence</h3>
 
         <div className="grid grid-cols-2 gap-x-12 gap-y-16">
@@ -225,11 +245,11 @@ export default function ResolutionPanel({ blend, intent, isComputing, onRefineOu
             </>
           )}
         </div>
-      </section>
+      </motion.section>
 
       {/* Adjustment Controls */}
       {showAdjustments && onAdjustment && (
-        <section className="opacity-0 animate-[fadeIn_0.6s_ease-out_0.8s_forwards] border-t border-zinc-800 pt-8">
+        <motion.section variants={itemFade} className="border-t border-zinc-800 pt-8">
           <h3 className="text-[10px] font-sans font-medium uppercase tracking-[0.2em] text-zinc-500 mb-8">Adjust Blend</h3>
           <div className="space-y-8">
             {/* Energy ↔ Calm */}
@@ -280,11 +300,11 @@ export default function ResolutionPanel({ blend, intent, isComputing, onRefineOu
               />
             </div>
           </div>
-        </section>
+        </motion.section>
       )}
 
       {/* 4. Tradeoffs & Follow Up */}
-      <section className="opacity-0 animate-[fadeIn_0.6s_ease-out_1s_forwards]">
+      <motion.section variants={itemFade}>
         {blend.tradeoffs.length > 0 && (
           <div className="mb-12 overflow-y-auto">
             <h3 className="text-[10px] font-sans font-medium uppercase tracking-[0.2em] text-zinc-500 mb-8">Notes</h3>
@@ -316,8 +336,8 @@ export default function ResolutionPanel({ blend, intent, isComputing, onRefineOu
             </button>
           </div>
         </div>
-      </section>
+      </motion.section>
 
-    </div>
+    </motion.div>
   );
 }

@@ -9,6 +9,8 @@ interface ResultPanelProps {
   intent: OutcomeIntent | null;
   isProcessing: boolean;
   deterministicExplanation: DeterministicExplanation | null;
+  llmExplanation?: string | null;
+  llmUsageInstructions?: string | null;
   onRefineOutcome: () => void;
   onShowUsageProtocol: () => void;
   onAdjustment: (adjustedIntent: {
@@ -24,6 +26,8 @@ export default function ResultPanel({
   intent,
   isProcessing,
   deterministicExplanation,
+  llmExplanation,
+  llmUsageInstructions,
   onRefineOutcome,
   onShowUsageProtocol,
   onAdjustment,
@@ -45,6 +49,8 @@ export default function ResultPanel({
         isAnimating={!isProcessing}
         hasResolved={hasResolved}
         deterministicExplanation={deterministicExplanation || undefined}
+        llmExplanation={llmExplanation || undefined}
+        llmUsageInstructions={llmUsageInstructions || undefined}
       />
     </section>
   );
