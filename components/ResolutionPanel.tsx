@@ -83,9 +83,10 @@ interface ResolutionPanelProps {
   blendNickname?: string;
   blendHashtag?: string;
   shareCaption?: string;
+  mode?: 'blend' | 'stack';
 }
 
-export default function ResolutionPanel({ blend, intent, isComputing, onRefineOutcome, onShowUsageProtocol, onAdjustment, isAnimating = true, hasResolved = false, deterministicExplanation, llmExplanation, llmUsageInstructions, blendNickname, blendHashtag, shareCaption }: ResolutionPanelProps) {
+export default function ResolutionPanel({ blend, intent, isComputing, onRefineOutcome, onShowUsageProtocol, onAdjustment, isAnimating = true, hasResolved = false, deterministicExplanation, llmExplanation, llmUsageInstructions, blendNickname, blendHashtag, shareCaption, mode = 'blend' }: ResolutionPanelProps) {
   const [showAdjustments, setShowAdjustments] = useState(false);
   const [showAlternates, setShowAlternates] = useState(false);
 
@@ -198,7 +199,15 @@ export default function ResolutionPanel({ blend, intent, isComputing, onRefineOu
 
       <motion.div
         className="relative flex flex-col gap-20 mb-32 text-[#E5E5E5] z-10"
-        variants={staggerContainer}
+        variants={{
+          initial: {},
+          animate: {
+            transition: {
+              staggerChildren: 0.18, // Slower, more deliberate assembly
+              delayChildren: 0.2, // Slight pause before starting
+            },
+          },
+        }}
         initial="initial"
         animate="animate"
       >
@@ -254,7 +263,7 @@ export default function ResolutionPanel({ blend, intent, isComputing, onRefineOu
             </div>
 
             {/* Animated Visualizer Component */}
-            <BlendVisualizer blend={blend} isAnimating={isAnimating} />
+            <BlendVisualizer blend={blend} isAnimating={isAnimating} mode={mode} />
           </div>
 
           {/* Blend Nickname & Hashtag - Directly under blend percentages */}
@@ -374,7 +383,7 @@ export default function ResolutionPanel({ blend, intent, isComputing, onRefineOu
                   {blend.alternates.map((alt, idx) => (
                     <div key={idx} className="bg-glass/50 border border-go rounded-xl p-6 hover:bg-glass/80 transition-colors">
                       <div className="mb-4">
-                        <BlendVisualizer blend={alt} isAnimating={false} />
+                        <BlendVisualizer blend={alt} isAnimating={false} mode={mode} />
                       </div>
                       <div className="text-xs font-sans text-go-subtle uppercase tracking-wider font-medium">
                         Confidence: {(alt.confidenceScore * 100).toFixed(0)}%

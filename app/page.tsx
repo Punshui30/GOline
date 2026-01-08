@@ -99,7 +99,7 @@ export default function Home() {
 
   // Consumption mode (Blend vs Stack)
   const [consumptionMode, setConsumptionMode] = useState<'blend' | 'stack'>('blend');
-  
+
 
   // Phase management
   const [phase, setPhase] = useState<InteractionPhase>('FREE');
@@ -122,14 +122,14 @@ export default function Home() {
   const [showUsageProtocol, setShowUsageProtocol] = useState(false);
   const [hasResolved, setHasResolved] = useState(false);
   const [deterministicExplanation, setDeterministicExplanation] = useState<DeterministicExplanation | null>(null);
-  
+
   // LLM-generated explanations (separate from deterministic resolver)
   const [llmExplanation, setLlmExplanation] = useState<string | null>(null);
   const [llmUsageInstructions, setLlmUsageInstructions] = useState<string | null>(null);
   const [blendNickname, setBlendNickname] = useState<string | null>(null);
   const [blendHashtag, setBlendHashtag] = useState<string | null>(null);
   const [shareCaption, setShareCaption] = useState<string | null>(null);
-  
+
   // Store original user input for explanation generation
   const [originalUserInput, setOriginalUserInput] = useState<string>('');
 
@@ -175,7 +175,7 @@ export default function Home() {
 
       // IMPORTANT: LLM must not choose strains. It only explains math-selected blends.
       // Convert alternates if available
-      const alternateBlends = blend.alternates?.map(alt => 
+      const alternateBlends = blend.alternates?.map(alt =>
         alt.primaryBlend.map(c => ({
           name: c.name,
           percentage: c.percentage,
@@ -207,7 +207,7 @@ export default function Home() {
       // Generate usage instructions
       const intensity = intent.activationTarget || intent.activation || 0.5;
       const duration = intent.cognitiveEndurance || 0.5;
-      
+
       const instructionsResponse = await fetch('/api/usage-instructions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -397,10 +397,10 @@ export default function Home() {
         setPhase('LOCKED');
         const referenceIntent = referenceProfileToIntent(referenceProfile);
         setIntent(referenceIntent);
-        
+
         // Transition to resolving phase
         setOutcomePhase('resolving');
-        
+
         setTimeout(() => {
           const resolvedOutcome = resolveOutcome(referenceIntent);
           setOutcome(resolvedOutcome);
@@ -431,7 +431,7 @@ export default function Home() {
           const named = resolveToNamedStrains(resolvedOutcome);
           setNamedResolution(named);
           const blend = convertToResolvedBlend(named, resolvedOutcome);
-          
+
           // CRITICAL: Log converted blend
           console.log('[APP] Reference profile converted blend:', {
             primaryBlendCount: blend.primaryBlend.length,
@@ -439,13 +439,13 @@ export default function Home() {
             hasAlternates: !!blend.alternates,
             alternateCount: blend.alternates?.length || 0,
           });
-          
+
           setResolvedBlend(blend);
           setDeterministicExplanation(generateDeterministicExplanation(referenceIntent, resolvedOutcome));
-          
+
           // Generate LLM explanations asynchronously (non-blocking)
           generateLLMExplanations(blend, originalUserInput || userInput || 'Default blend selection', referenceIntent);
-          
+
           setOutcomePhase('result');
           setIsProcessing(false);
         }, 200);
@@ -508,7 +508,7 @@ export default function Home() {
       const filteredQuestions = guidanceData.guidance.clarificationNeeded
         ? filterRedundantQuestions(guidanceData.guidance.clarificationNeeded, confidence)
         : [];
-      
+
       // Filter out questions for already-resolved axes
       const unresolvedQuestions = filteredQuestions.filter(q => {
         const axis = getAxisFromQuestionType(q.type);
@@ -569,10 +569,10 @@ export default function Home() {
     setBlendNickname(null);
     setBlendHashtag(null);
     setShareCaption(null);
-    
+
     // Store original user input for explanation generation
     setOriginalUserInput(userInput);
-    
+
     // CRITICAL: Set phase to 'resolving' BEFORE async call
     setOutcomePhase('resolving');
 
@@ -632,11 +632,11 @@ export default function Home() {
           alternateCount: resolvedOutcome.alternates?.length || 0,
           hasFailure: !!resolvedOutcome.failure,
         });
-        
+
         const named = resolveToNamedStrains(resolvedOutcome);
         setNamedResolution(named);
         const blend = convertToResolvedBlend(named, resolvedOutcome);
-        
+
         // CRITICAL: Log converted blend
         console.log('[APP] Converted blend:', {
           primaryBlendCount: blend.primaryBlend.length,
@@ -644,16 +644,16 @@ export default function Home() {
           hasAlternates: !!blend.alternates,
           alternateCount: blend.alternates?.length || 0,
         });
-        
+
         setResolvedBlend(blend);
         setHasResolved(true);
-        
+
         // CRITICAL: Transition to result phase after calculation completes
         setOutcomePhase('result');
-        
+
         // Generate LLM explanations asynchronously (non-blocking)
         generateLLMExplanations(blend, userInput, translatedIntent);
-        
+
         setPhase('FREE');
         setGuidance(null);
         setClarificationAnswers({});
@@ -672,7 +672,7 @@ export default function Home() {
     anxietySensitivity: number;
   }) => {
     if (!intent) return;
-    
+
     setIsProcessing(true);
     setError(null);
     setHasResolved(false);
@@ -682,7 +682,7 @@ export default function Home() {
     setDeterministicExplanation(null);
     setLlmExplanation(null);
     setLlmUsageInstructions(null);
-    
+
     // Transition to resolving phase
     setOutcomePhase('resolving');
 
@@ -698,9 +698,9 @@ export default function Home() {
           cognitiveEndurance: adjustedIntent.cognitiveEndurance,
           anxietySensitivity: adjustedIntent.anxietySensitivity,
         };
-        
+
         setIntent(updatedIntent);
-        
+
         // Re-resolve with adjusted intent
         const resolvedOutcome = resolveOutcome(updatedIntent);
         setOutcome(resolvedOutcome);
@@ -731,7 +731,7 @@ export default function Home() {
         const named = resolveToNamedStrains(resolvedOutcome);
         setNamedResolution(named);
         const blend = convertToResolvedBlend(named, resolvedOutcome);
-        
+
         // CRITICAL: Log converted blend
         console.log('[APP] Adjustment converted blend:', {
           primaryBlendCount: blend.primaryBlend.length,
@@ -739,12 +739,12 @@ export default function Home() {
           hasAlternates: !!blend.alternates,
           alternateCount: blend.alternates?.length || 0,
         });
-        
+
         setResolvedBlend(blend);
-        
+
         // Generate LLM explanations asynchronously (non-blocking)
         generateLLMExplanations(blend, originalUserInput || userInput, updatedIntent);
-        
+
         // Transition back to result phase
         setOutcomePhase('result');
       } catch (err) {
@@ -794,21 +794,21 @@ export default function Home() {
 
       const updatedAnswers = isSensitivityQuestion || isMultiSelect
         ? (() => {
-            const current = prev[questionType];
-            const currentArray = Array.isArray(current) ? current : (current ? [current] : []);
+          const current = prev[questionType];
+          const currentArray = Array.isArray(current) ? current : (current ? [current] : []);
 
-            if (answer === 'None / Balanced') {
-              return { ...prev, [questionType]: ['None / Balanced'] };
+          if (answer === 'None / Balanced') {
+            return { ...prev, [questionType]: ['None / Balanced'] };
+          } else {
+            let newArray = currentArray.filter(item => item !== 'None / Balanced');
+            if (newArray.includes(answer)) {
+              newArray = newArray.filter(item => item !== answer);
             } else {
-              let newArray = currentArray.filter(item => item !== 'None / Balanced');
-              if (newArray.includes(answer)) {
-                newArray = newArray.filter(item => item !== answer);
-              } else {
-                newArray.push(answer);
-              }
-              return { ...prev, ...(newArray.length > 0 ? { [questionType]: newArray } : {}) };
+              newArray.push(answer);
             }
-          })()
+            return { ...prev, ...(newArray.length > 0 ? { [questionType]: newArray } : {}) };
+          }
+        })()
         : { ...prev, [questionType]: answer };
 
       // After answering, check if we need more clarification or can proceed
@@ -817,7 +817,7 @@ export default function Home() {
         const filteredQuestions = guidance.clarificationNeeded
           ? filterRedundantQuestions(guidance.clarificationNeeded, confidence)
           : [];
-        
+
         const unresolvedQuestions = filteredQuestions.filter(q => {
           const qAxis = getAxisFromQuestionType(q.type);
           return !updatedResolvedAxes.has(qAxis);
@@ -959,8 +959,8 @@ export default function Home() {
                 mode={consumptionMode}
                 state={
                   outcomePhase === 'input' ? 'idle' :
-                  outcomePhase === 'resolving' ? 'calculating' :
-                  outcomePhase === 'result' ? 'resolved' : 'idle'
+                    outcomePhase === 'resolving' ? 'calculating' :
+                      outcomePhase === 'result' ? 'resolved' : 'idle'
                 }
                 blendData={resolvedBlend}
               />
@@ -985,6 +985,7 @@ export default function Home() {
                   onShowUsageProtocol={handleShowUsageProtocol}
                   onAdjustment={handleAdjustment}
                   hasResolved={hasResolved}
+                  mode={consumptionMode}
                 />
               </div>
             </div>

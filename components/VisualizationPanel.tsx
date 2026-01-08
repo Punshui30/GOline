@@ -38,39 +38,51 @@ export default function VisualizationPanel({ mode, state, blendData }: Visualiza
   if (state === 'calculating') {
     return (
       <div className="h-full flex items-center justify-center bg-glass border border-go rounded-2xl relative overflow-hidden shadow-lg">
-        {/* Abstract motion: numbers, symbols, molecules */}
+        {/* Abstract motion: numbers, symbols, molecules formulating */}
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
           className="absolute inset-0 flex items-center justify-center"
+          initial="hidden"
+          animate="visible"
+          variants={{
+            hidden: { opacity: 0 },
+            visible: {
+              opacity: 1,
+              transition: {
+                staggerChildren: 0.1, // Sequential appearance
+                delayChildren: 0.2
+              }
+            }
+          }}
         >
-          <div className="grid grid-cols-3 gap-4 opacity-20">
-            {[...Array(9)].map((_, i) => (
+          <div className="grid grid-cols-3 gap-6 opacity-30">
+            {['+', '×', '≈', '→', '•', '≡', '∞', 'Δ', '∑'].map((symbol, i) => (
               <motion.div
                 key={i}
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{
-                  opacity: [0, 1, 0],
-                  scale: [0.8, 1.2, 0.8],
+                variants={{
+                  hidden: { opacity: 0, scale: 0.8, filter: 'blur(4px)' },
+                  visible: {
+                    opacity: [0, 1, 0.4], // Fade in then settle
+                    scale: 1,
+                    filter: 'blur(0px)',
+                    transition: {
+                      duration: 0.8,
+                      ease: [0.2, 0.65, 0.3, 0.9] // Smooth easing
+                    }
+                  }
                 }}
-                transition={{
-                  duration: 2,
-                  repeat: Infinity,
-                  delay: i * 0.1,
-                  ease: 'easeInOut',
-                }}
-                className="text-energy text-2xl font-mono"
+                className="text-energy text-3xl font-mono flex items-center justify-center"
               >
-                {['+', '×', '≈', '→', '•', '≡', '∞', 'Δ', '∑'][i]}
+                {symbol}
               </motion.div>
             ))}
           </div>
         </motion.div>
-        {/* GO logo may animate as part of resolution */}
+
+        {/* Central Anchor - Pulse gently */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
+          initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5 }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
           className="relative z-10"
         >
           <img
@@ -79,9 +91,17 @@ export default function VisualizationPanel({ mode, state, blendData }: Visualiza
             alt="GO"
             width={80}
             height={44}
-            className="h-10 w-auto object-contain opacity-60"
+            className="h-10 w-auto object-contain opacity-80"
           />
         </motion.div>
+
+        {/* Scanning beam effect - subtle */}
+        <motion.div
+          initial={{ top: '-10%', opacity: 0 }}
+          animate={{ top: '110%', opacity: [0, 0.1, 0] }}
+          transition={{ duration: 1.5, ease: 'easeInOut', repeat: Infinity, repeatDelay: 0.5 }}
+          className="absolute inset-x-0 h-32 bg-gradient-to-b from-transparent via-energy/10 to-transparent pointer-events-none"
+        />
       </div>
     );
   }
@@ -89,54 +109,76 @@ export default function VisualizationPanel({ mode, state, blendData }: Visualiza
   // Resolved State - Blend Visualization
   if (state === 'resolved' && mode === 'blend') {
     return (
-      <div className="h-full bg-glass border border-go rounded-2xl p-6 shadow-2xl relative overflow-hidden">
+      <div className="h-full bg-glass border border-go rounded-2xl p-6 shadow-2xl relative overflow-hidden flex flex-col items-center justify-center">
         {/* Subtle internal glow for depth */}
-        <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none" />
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1 }}
+          className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none"
+        />
 
-        <div className="h-full flex items-center justify-center relative z-10">
-          <div className="text-center space-y-6">
-            <h3 className="text-go font-serif text-2xl tracking-tight">Blend Visualization</h3>
-            {/* Overlapping/merged forms representing simultaneous consumption */}
-            <div className="relative w-48 h-48 mx-auto">
-              {blendData?.primaryBlend?.map((cultivar: any, idx: number) => {
-                const size = 80 + idx * 20;
-                // Add varied rotation for more organic feel
-                const rotation = idx * 45 + 15;
-                return (
-                  <motion.div
-                    key={cultivar.id || idx}
-                    initial={{ opacity: 0, scale: 0 }}
-                    animate={{ opacity: 0.7, scale: 1 }}
-                    transition={{ delay: idx * 0.1, duration: 0.6, type: 'spring' }}
-                    className="absolute inset-0 flex items-center justify-center"
+        <div className="relative z-10 w-full flex flex-col items-center">
+          <motion.h3
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1, ease: 'easeOut' }}
+            className="text-go font-serif text-2xl tracking-tight mb-8"
+          >
+            Blend Visualization
+          </motion.h3>
+
+          {/* Overlapping/merged forms representing simultaneous consumption */}
+          <div className="relative w-64 h-64 flex items-center justify-center">
+            {blendData?.primaryBlend?.map((cultivar: any, idx: number) => {
+              // Size proportional to percentage, but kept large enough to overlap
+              const baseSize = 140;
+              const size = baseSize + (cultivar.percentage || 20);
+
+              return (
+                <motion.div
+                  key={cultivar.id || idx}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 0.8, scale: 1 }}
+                  // Deliberate, no bounce, staggered
+                  transition={{
+                    delay: 0.2 + (idx * 0.15),
+                    duration: 0.6,
+                    ease: [0.2, 0.65, 0.3, 0.9] // Custom calm bezier
+                  }}
+                  className="absolute flex items-center justify-center mix-blend-screen"
+                  style={{
+                    width: `${size}px`,
+                    height: `${size}px`,
+                    x: idx === 0 ? -20 : idx === 1 ? 20 : 0,
+                    y: idx === 2 ? 20 : -10,
+                  }}
+                >
+                  <div
+                    className="rounded-full backdrop-blur-md"
                     style={{
-                      width: `${size}px`,
-                      height: `${size}px`,
-                      left: '50%',
-                      top: '50%',
-                      transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
+                      width: '100%',
+                      height: '100%',
+                      backgroundColor: `${getColorForRole(cultivar.role)}40`, // Increased transparency for blending
+                      border: `1px solid ${getColorForRole(cultivar.role)}80`,
+                      boxShadow: `0 0 40px ${getColorForRole(cultivar.role)}20`,
                     }}
-                  >
-                    <div
-                      className="rounded-full backdrop-blur-sm"
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        border: `1px solid ${getColorForRole(cultivar.role)}`,
-                        backgroundColor: `${getColorForRole(cultivar.role)}20`,
-                        boxShadow: `0 0 30px ${getColorForRole(cultivar.role)}10`,
-                      }}
-                    />
-                  </motion.div>
-                );
-              }) || (
-                  <div className="w-full h-full flex items-center justify-center text-go-muted text-sm">
-                    Blend data loading...
-                  </div>
-                )}
-            </div>
-            <p className="text-go-subtle text-xs uppercase tracking-widest">Simultaneous consumption</p>
+                  />
+                </motion.div>
+              );
+            }) || (
+                <div className="text-go-muted text-sm">Blend data loading...</div>
+              )}
           </div>
+
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.8, duration: 0.5 }}
+            className="text-go-subtle text-xs uppercase tracking-widest mt-8"
+          >
+            Simultaneous consumption
+          </motion.p>
         </div>
       </div>
     );
@@ -145,47 +187,70 @@ export default function VisualizationPanel({ mode, state, blendData }: Visualiza
   // Resolved State - Stack Visualization
   if (state === 'resolved' && mode === 'stack') {
     return (
-      <div className="h-full bg-glass border border-go rounded-2xl p-6 shadow-2xl relative overflow-hidden">
+      <div className="h-full bg-glass border border-go rounded-2xl p-6 shadow-2xl relative overflow-hidden flex flex-col items-center justify-center">
         {/* Subtle internal glow for depth */}
         <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none" />
 
-        <div className="h-full flex items-center justify-center relative z-10">
-          <div className="text-center space-y-6">
-            <h3 className="text-go font-serif text-2xl tracking-tight">Stack Visualization</h3>
-            {/* Layered/directional forms representing sequential consumption */}
-            <div className="relative w-48 h-48 mx-auto flex items-end justify-center mb-8">
-              {blendData?.stackSegments?.map((segment: any, idx: number) => {
-                const width = 60 + idx * 15;
-                // Stack centrally instead of offset left for better balance
-                // Or keep left offset if that was the design? "left = idx * 30"
-                // Let's keep original layout logic but refine style
-                const left = idx * 30;
-                return (
+        <div className="relative z-10 w-full flex flex-col items-center h-full max-h-full">
+          <motion.h3
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1, ease: 'easeOut' }}
+            className="text-go font-serif text-2xl tracking-tight mb-6 flex-shrink-0"
+          >
+            Stack Visualization
+          </motion.h3>
+
+          {/* Distinct ordered steps representing sequential consumption */}
+          <div className="flex-1 w-full max-w-[240px] flex flex-col items-center justify-center gap-2 overflow-y-auto">
+            {blendData?.stackSegments?.map((segment: any, idx: number) => (
+              <motion.div
+                key={segment.id || idx}
+                initial={{ opacity: 0, x: -20, filter: 'blur(4px)' }}
+                animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
+                transition={{ delay: idx * 0.25, duration: 0.5, ease: 'easeOut' }} // Slower stagger
+                className="w-full flex items-center justify-center relative"
+              >
+                {/* Connector Line (except for last item) */}
+                {idx < (blendData.stackSegments.length - 1) && (
                   <motion.div
-                    key={segment.id || idx}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: idx * 0.15, duration: 0.5 }}
-                    className="absolute bottom-0 backdrop-blur-sm shadow-lg"
-                    style={{
-                      left: `${left}px`,
-                      width: `${width}px`,
-                      height: `${40 + idx * 20}px`,
-                      backgroundColor: `${getColorForRole(segment.role || 'Anchor')}40`, // More translucent
-                      border: `1px solid ${getColorForRole(segment.role || 'Anchor')}`,
-                      borderRadius: '8px 8px 0 0', // Softer top radius
-                      zIndex: 10 - idx, // Ensure front-to-back sorting visual
-                    }}
+                    initial={{ height: 0 }}
+                    animate={{ height: 16 }}
+                    transition={{ delay: (idx * 0.25) + 0.4, duration: 0.3 }}
+                    className="absolute bottom-[-16px] left-1/2 w-[1px] bg-go-border z-0"
                   />
-                );
-              }) || (
-                  <div className="w-full h-full flex items-center justify-center text-go-muted text-sm">
-                    Stack data loading...
-                  </div>
                 )}
-            </div>
-            <p className="text-go-subtle text-xs uppercase tracking-widest">Sequential consumption</p>
+
+                <div
+                  className="w-full p-4 rounded-xl border backdrop-blur-sm shadow-lg flex items-center justify-between z-10"
+                  style={{
+                    borderColor: `${getColorForRole(segment.role)}`,
+                    backgroundColor: `${getColorForRole(segment.role)}10`,
+                  }}
+                >
+                  <div className="flex flex-col">
+                    <span className="text-[10px] uppercase tracking-wider text-go-subtle">Step {idx + 1}</span>
+                    <span className="text-sm font-medium text-go">{segment.name || segment.cultivar?.name}</span>
+                  </div>
+                  {/* Directional Indicator */}
+                  <div className="text-xs opacity-50 text-current" style={{ color: getColorForRole(segment.role) }}>
+                    ↓
+                  </div>
+                </div>
+              </motion.div>
+            )) || (
+                <div className="text-go-muted text-sm">Stack data loading...</div>
+              )}
           </div>
+
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.8, duration: 0.5 }}
+            className="text-go-subtle text-xs uppercase tracking-widest mt-6 flex-shrink-0"
+          >
+            Sequential consumption
+          </motion.p>
         </div>
       </div>
     );

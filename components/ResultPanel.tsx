@@ -22,6 +22,7 @@ interface ResultPanelProps {
     anxietySensitivity: number;
   }) => void;
   hasResolved: boolean;
+  mode?: 'blend' | 'stack';
 }
 
 export default function ResultPanel({
@@ -38,6 +39,7 @@ export default function ResultPanel({
   onShowUsageProtocol,
   onAdjustment,
   hasResolved,
+  mode,
 }: ResultPanelProps) {
   return (
     <section className="max-w-5xl mx-auto min-h-0">
@@ -60,10 +62,8 @@ export default function ResultPanel({
         blendNickname={blendNickname || undefined}
         blendHashtag={blendHashtag || undefined}
         shareCaption={shareCaption || undefined}
+        mode={mode}
       />
     </section>
   );
 }
-
-
-

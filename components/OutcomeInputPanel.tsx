@@ -31,7 +31,7 @@ export default function OutcomeInputPanel({
   onClearClarification,
 }: OutcomeInputPanelProps) {
   return (
-    <section className="max-w-3xl mx-auto">
+    <section className={`max-w-3xl mx-auto transition-all duration-700 ease-out ${isProcessing ? 'opacity-40 scale-[0.98] grayscale-[0.5] pointer-events-none' : 'opacity-100 scale-100'}`}>
 
       {/* Logo - Hero Element with Strengthened Animation */}
       <motion.div
@@ -118,8 +118,8 @@ export default function OutcomeInputPanel({
                     currentClarification.type === 'tolerance' || currentClarification.type === 'priority'
                   )}
                   className={`text-sm font-sans transition-all duration-300 text-left relative py-3 px-4 rounded-lg w-full break-words ${isSelected
-                      ? 'text-nearblack bg-energy font-medium shadow-amber-sm'
-                      : 'text-go-muted hover:text-go hover:bg-white/5'
+                    ? 'text-nearblack bg-energy font-medium shadow-amber-sm'
+                    : 'text-go-muted hover:text-go hover:bg-white/5'
                     }`}
                 >
                   {option}
@@ -139,8 +139,8 @@ export default function OutcomeInputPanel({
           <button
             onClick={() => onModeChange('blend')}
             className={`flex-1 px-6 py-4 border rounded-xl text-sm font-sans uppercase tracking-widest transition-go ${mode === 'blend'
-                ? 'border-energy text-energy bg-energy/5 shadow-amber-sm' // Active
-                : 'border-go text-go-muted hover:border-go-strong hover:bg-white/5' // Inactive
+              ? 'border-energy text-energy bg-energy/5 shadow-amber-sm' // Active
+              : 'border-go text-go-muted hover:border-go-strong hover:bg-white/5' // Inactive
               }`}
           >
             Simultaneous Blend
@@ -148,8 +148,8 @@ export default function OutcomeInputPanel({
           <button
             onClick={() => onModeChange('stack')}
             className={`flex-1 px-6 py-4 border rounded-xl text-sm font-sans uppercase tracking-widest transition-go ${mode === 'stack'
-                ? 'border-energy text-energy bg-energy/5 shadow-amber-sm' // Active
-                : 'border-go text-go-muted hover:border-go-strong hover:bg-white/5' // Inactive
+              ? 'border-energy text-energy bg-energy/5 shadow-amber-sm' // Active
+              : 'border-go text-go-muted hover:border-go-strong hover:bg-white/5' // Inactive
               }`}
           >
             Sequential Stack
