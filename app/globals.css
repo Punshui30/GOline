@@ -24,7 +24,7 @@
     padding: 0;
     overflow: hidden;
     background: #0d0d0d;
-    background-image: 
+    background-image:
       radial-gradient(at 0% 0%, rgba(212, 175, 55, 0.015) 0px, transparent 50%),
       radial-gradient(at 100% 100%, rgba(212, 175, 55, 0.01) 0px, transparent 50%);
     color: #f5f5f5;
@@ -37,17 +37,36 @@
     overflow: hidden;
   }
 
-  h1, h2, h3, h4, h5, h6, .font-serif {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  .font-serif {
     font-family: 'Playfair Display', serif;
   }
 
   /* Ensure text is selectable and interactive */
-  body, main, div, section, article, p, span, label, input, textarea, button {
+  body,
+  main,
+  div,
+  section,
+  article,
+  p,
+  span,
+  label,
+  input,
+  textarea,
+  button {
     user-select: text;
     -webkit-user-select: text;
   }
 
-  input, textarea, button, select {
+  input,
+  textarea,
+  button,
+  select {
     user-select: auto;
     -webkit-user-select: auto;
   }
@@ -55,36 +74,53 @@
 
 @layer base {
   :root {
-    /* GO Brand Color System - Dark, Organic, Premium (Increased Contrast) */
-    --go-bg: #0d0d0d;
-    --go-surface: rgba(25, 25, 25, 0.75);
-    --go-surface-elevated: rgba(30, 30, 30, 0.85);
-    --go-border: rgba(255, 255, 255, 0.12);
-    --go-border-strong: rgba(255, 255, 255, 0.18);
+    /* GO Brand Color System - Dark, Premium, Swiss-inspired */
+    --go-bg: #0A0A0A;
+    --go-surface: rgba(255, 255, 255, 0.03);
+    --go-surface-elevated: rgba(255, 255, 255, 0.06);
+    --go-border: rgba(255, 255, 255, 0.05);
+    --go-border-strong: rgba(255, 255, 255, 0.12);
     --go-text: #f5f5f5;
     --go-text-muted: #c0c0c0;
     --go-text-subtle: #909090;
-    --go-amber: #d4af37;
-    --go-amber-hover: #e5c158;
-    --go-amber-active: #c19d2a;
-    --go-amber-glow: rgba(212, 175, 55, 0.25);
-    --go-amber-border: rgba(212, 175, 55, 0.5);
-    --go-amber-border-strong: rgba(212, 175, 55, 0.7);
+
+    /* Functional Colors */
+    --go-energy: #D4AF37;
+    --go-balance: #94A3B8;
+    --go-grounding: #4A5D23;
+    --go-calm: #9F9EB3;
+
+    --go-amber: #D4AF37;
+    --go-amber-hover: #E5C158;
+    --go-amber-active: #C19D2A;
+    --go-amber-glow: rgba(212, 175, 55, 0.15);
+    --go-amber-border: rgba(212, 175, 55, 0.3);
   }
 }
 
 @layer utilities {
+
   /* Background */
   .bg-go {
     background-color: var(--go-bg);
   }
 
-  /* Glass Morphism Surfaces - Full Text Opacity */
+  /* Glass Morphism Surfaces - Soft, Premium */
   .bg-glass {
     background: var(--go-surface);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    box-shadow:
+      0 4px 24px -1px rgba(0, 0, 0, 0.2),
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--go-border);
+  }
+
+  /* Carved / Deep Surface */
+  .bg-carved {
+    background: rgba(0, 0, 0, 0.2);
+    box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.02);
   }
 
   .bg-glass * {
@@ -93,9 +129,12 @@
 
   .bg-glass-elevated {
     background: var(--go-surface-elevated);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 0 0 1px rgba(212, 175, 55, 0.05);
+    backdrop-filter: blur(32px);
+    -webkit-backdrop-filter: blur(32px);
+    box-shadow:
+      0 20px 48px -12px rgba(0, 0, 0, 0.5),
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--go-border-strong);
   }
 
   .bg-glass-elevated * {
@@ -124,7 +163,40 @@
     color: var(--go-text-subtle);
   }
 
-  /* Amber Accent */
+  /* Functional Colors */
+  .text-energy {
+    color: var(--go-energy);
+  }
+
+  .text-balance {
+    color: var(--go-balance);
+  }
+
+  .text-grounding {
+    color: var(--go-grounding);
+  }
+
+  .text-calm {
+    color: var(--go-calm);
+  }
+
+  .bg-energy {
+    background-color: var(--go-energy);
+  }
+
+  .bg-balance {
+    background-color: var(--go-balance);
+  }
+
+  .bg-grounding {
+    background-color: var(--go-grounding);
+  }
+
+  .bg-calm {
+    background-color: var(--go-calm);
+  }
+
+  /* Amber Accent Legacy Support */
   .text-amber {
     color: var(--go-amber);
   }
@@ -137,28 +209,16 @@
     border-color: var(--go-amber);
   }
 
-  .border-amber-subtle {
-    border-color: var(--go-amber-border);
-  }
-
-  .border-amber-strong {
-    border-color: var(--go-amber-border-strong);
-  }
-
   .bg-amber-glow {
     background-color: var(--go-amber-glow);
   }
 
   .shadow-amber {
-    box-shadow: 0 0 12px var(--go-amber-glow), 0 0 24px rgba(212, 175, 55, 0.1);
-  }
-
-  .shadow-amber-sm {
-    box-shadow: 0 0 6px var(--go-amber-glow);
+    box-shadow: 0 0 24px var(--go-amber-glow);
   }
 
   /* Transitions */
   .transition-go {
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.4s cubic-bezier(0.2, 0, 0.2, 1);
   }
 }

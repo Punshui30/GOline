@@ -16,13 +16,20 @@ const config: Config = {
           light: "#6B806A",
           dark: "#4A5A49",
         },
+        nearblack: "#0A0A0A", // New Premium Base
         charcoal: "#1F1F1F",
+        // Functional Role Colors
+        energy: "#D4AF37",    // Warm Amber/Gold (Action/Primary)
+        balance: "#94A3B8",   // Cool Slate (Equilibrium/Support)
+        grounding: "#4A5D23", // Deep Forest/Olive (Foundation)
+        calm: "#9F9EB3",      // Muted Lavender/Thistle (Relaxation)
+
         // Single accent color - use sparingly for emphasis
         accent: {
-          DEFAULT: "#C5A065",
-          hover: "#D4B075",
+          DEFAULT: "#D4AF37", // Matching Energy
+          hover: "#E5C158",
           active: "#B89555",
-          light: "#C5A065",
+          light: "#E5C158",
         },
         // GLEAF brand color - use very sparingly, only for GLEAF name/source indicators
         gleaf: {

@@ -37,7 +37,7 @@ export default function OutcomeInputPanel({
       <motion.div
         initial={{ opacity: 0, y: 12, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ 
+        transition={{
           duration: 0.65,
           ease: 'easeOut',
           delay: 0.05
@@ -45,14 +45,14 @@ export default function OutcomeInputPanel({
         className="mb-10 flex flex-col items-start"
       >
         <div className="relative">
-          {/* Subtle ambient glow behind logo (slightly more visible) */}
+          {/* Subtle ambient glow behind logo */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.9, ease: 'easeOut', delay: 0.2 }}
-            className="absolute -inset-10 -z-10 bg-accent/5 blur-3xl rounded-full"
+            className="absolute -inset-10 -z-10 bg-energy/5 blur-3xl rounded-full"
           />
-          
+
           {/* Logo - Increased prominence */}
           <img
             src="/brand/go-mark.png"
@@ -66,7 +66,7 @@ export default function OutcomeInputPanel({
               objectFit: "contain"
             }}
           />
-          
+
           {/* Visual anchor divider - more prominent */}
           <motion.div
             initial={{ width: 0, opacity: 0 }}
@@ -76,56 +76,52 @@ export default function OutcomeInputPanel({
               ease: 'easeOut',
               delay: 0.7
             }}
-            className="h-[1.5px] bg-gradient-to-r from-accent/30 via-accent/15 to-transparent mt-7"
+            className="h-[1.5px] bg-gradient-to-r from-energy/30 via-energy/15 to-transparent mt-7"
           />
         </div>
       </motion.div>
 
       {/* Headline and Description */}
       <div className="mb-8">
-        <h1 className="font-serif text-5xl lg:text-7xl font-light text-white leading-tight mb-6">
+        <h1 className="font-serif text-5xl lg:text-7xl font-light text-go leading-tight mb-6 tracking-tight">
           Calculate Your Outcome
         </h1>
-        <p className="text-sm lg:text-base font-sans text-zinc-400 max-w-md border-l border-zinc-700 pl-4 mb-6">
+        <p className="text-sm lg:text-base font-sans text-go-muted max-w-md border-l border-go ml-1 pl-5 mb-6 leading-relaxed">
           Describe your desired physical and mental state. The system will calculate a precise blend formulation to match your needs.
         </p>
-        
+
         {/* Inventory-based accuracy explanation */}
-        <div className="max-w-md mt-6 pt-4 border-t border-zinc-800/50">
-          <p className="text-xs lg:text-sm font-sans text-zinc-500 leading-relaxed">
-            <span className="font-medium text-zinc-400">How results stay accurate.</span>{' '}
-            Outcomes are calculated using actual strains available from participating dispensaries, based on lab-tested terpene and cannabinoid profiles. When inventory changes, recommendations adjust automatically, using real percentage data rather than averages or strain names alone. This keeps outcomes consistent with what's actually on the menu where you're shopping.
+        <div className="max-w-md mt-6 pt-6 border-t border-go">
+          <p className="text-xs lg:text-sm font-sans text-go-subtle leading-relaxed">
+            <span className="font-medium text-go-muted">How results stay accurate.</span>{' '}
+            Outcomes are calculated using actual strains available from participating dispensaries, based on lab-tested terpene and cannabinoid profiles. When inventory changes, recommendations adjust automatically, using real percentage data rather than averages or strain names alone.
           </p>
         </div>
       </div>
 
-      {/* Current Clarification Question - Inline above input */}
+      {/* Current Clarification Question - Glass Container */}
       {currentClarification && (
-        <div className="mb-6 p-4 border border-zinc-800 bg-zinc-900/50 overflow-y-auto">
-          <p className="text-sm font-sans text-white mb-4 break-words">{currentClarification.question}</p>
+        <div className="mb-8 p-6 bg-glass rounded-2xl overflow-y-auto shadow-lg backdrop-blur-xl">
+          <p className="text-sm font-sans text-go mb-5 break-words font-medium tracking-wide border-b border-go pb-4">{currentClarification.question}</p>
           <div className="flex flex-col items-start gap-2">
             {currentClarification.options.map((option) => {
               const isSelected = clarificationAnswers[currentClarification.type] === option ||
-                (Array.isArray(clarificationAnswers[currentClarification.type]) && 
-                 (clarificationAnswers[currentClarification.type] as string[]).includes(option));
+                (Array.isArray(clarificationAnswers[currentClarification.type]) &&
+                  (clarificationAnswers[currentClarification.type] as string[]).includes(option));
 
               return (
                 <button
                   key={option}
                   onClick={() => onClarificationAnswer(
-                    currentClarification.type, 
-                    option, 
+                    currentClarification.type,
+                    option,
                     currentClarification.type === 'tolerance' || currentClarification.type === 'priority'
                   )}
-                  className={`text-sm font-sans transition-all duration-200 text-left relative py-2 px-0 break-words ${
-                    isSelected
-                      ? 'text-white font-medium pl-6'
-                      : 'text-zinc-400 hover:text-zinc-200 pl-0 hover:pl-2'
-                  }`}
+                  className={`text-sm font-sans transition-all duration-300 text-left relative py-3 px-4 rounded-lg w-full break-words ${isSelected
+                      ? 'text-nearblack bg-energy font-medium shadow-amber-sm'
+                      : 'text-go-muted hover:text-go hover:bg-white/5'
+                    }`}
                 >
-                  <span className={`absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-white transition-all duration-200 ${
-                    isSelected ? 'opacity-100 scale-100' : 'opacity-0 scale-0'
-                  }`} />
                   {option}
                 </button>
               );
@@ -135,36 +131,34 @@ export default function OutcomeInputPanel({
       )}
 
       {/* Mode Selector */}
-      <div className="mb-6">
-        <label className="block text-xs font-sans font-medium text-go-muted uppercase tracking-wider mb-3">
+      <div className="mb-8">
+        <label className="block text-[10px] font-sans font-semibold text-go-subtle uppercase tracking-[0.2em] mb-4">
           Consumption Mode
         </label>
         <div className="flex gap-4">
           <button
             onClick={() => onModeChange('blend')}
-            className={`flex-1 px-4 py-3 border-2 rounded-lg text-sm font-sans uppercase tracking-wider transition-go ${
-              mode === 'blend'
-                ? 'border-amber text-amber bg-amber-glow'
-                : 'border-go text-go-muted hover:border-go-strong'
-            }`}
+            className={`flex-1 px-6 py-4 border rounded-xl text-sm font-sans uppercase tracking-widest transition-go ${mode === 'blend'
+                ? 'border-energy text-energy bg-energy/5 shadow-amber-sm' // Active
+                : 'border-go text-go-muted hover:border-go-strong hover:bg-white/5' // Inactive
+              }`}
           >
             Simultaneous Blend
           </button>
           <button
             onClick={() => onModeChange('stack')}
-            className={`flex-1 px-4 py-3 border-2 rounded-lg text-sm font-sans uppercase tracking-wider transition-go ${
-              mode === 'stack'
-                ? 'border-amber text-amber bg-amber-glow'
-                : 'border-go text-go-muted hover:border-go-strong'
-            }`}
+            className={`flex-1 px-6 py-4 border rounded-xl text-sm font-sans uppercase tracking-widest transition-go ${mode === 'stack'
+                ? 'border-energy text-energy bg-energy/5 shadow-amber-sm' // Active
+                : 'border-go text-go-muted hover:border-go-strong hover:bg-white/5' // Inactive
+              }`}
           >
             Sequential Stack
           </button>
         </div>
       </div>
 
-      <div className="mb-8 border-b border-zinc-700 focus-within:border-accent transition-colors duration-300 py-4">
-        <label className="block text-xs font-sans font-medium text-go-muted uppercase tracking-wider mb-3">
+      <div className="mb-10 border-b border-go focus-within:border-energy transition-colors duration-500 py-6">
+        <label className="block text-[10px] font-sans font-semibold text-go-subtle uppercase tracking-[0.2em] mb-4">
           Desired Outcome
         </label>
         <OutcomeIntentInput
@@ -175,15 +169,15 @@ export default function OutcomeInputPanel({
         />
       </div>
 
-      <div className="mt-8 flex items-center gap-8">
+      <div className="mt-10 flex items-center gap-8">
         <button
           onClick={onSubmit}
           disabled={!userInput.trim() || isProcessing}
           className={`
-            text-sm font-medium tracking-widest uppercase transition-all duration-200 flex items-center gap-4 px-8 py-4
-            ${userInput.trim() 
-              ? 'text-black bg-accent hover:bg-accent-hover active:bg-accent-active cursor-pointer' 
-              : 'text-zinc-500 bg-zinc-900 border border-zinc-800 cursor-not-allowed opacity-50'}
+            text-sm font-medium tracking-[0.2em] uppercase transition-all duration-300 flex items-center gap-4 px-10 py-5 rounded-xl
+            ${userInput.trim()
+              ? 'text-nearblack bg-energy hover:bg-energy/90 shadow-amber hover:shadow-amber-sm hover:-translate-y-0.5'
+              : 'text-go-subtle bg-glass border border-go cursor-not-allowed opacity-50'}
           `}
         >
           <span>Calculate {mode === 'blend' ? 'Blend' : 'Stack'}</span>
