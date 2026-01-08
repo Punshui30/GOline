@@ -1,6 +1,6 @@
 import { NamedResolutionResult } from '@/lib/namedResolution';
 import { ResolvedBlend, ResolvedCultivar, CultivarRole } from '@/components/ResolutionPanel';
-import { OutcomeResult } from '@/lib/goOutcomeEngine';
+import { OutcomeResult, BlendCandidate } from '@/lib/goOutcomeEngine';
 
 /**
  * Convert NamedResolutionResult to ResolvedBlend format
@@ -40,6 +40,48 @@ export function convertToResolvedBlend(
     weightGrams: (strain.percentage / 100) * 1.0, // Assuming 1g total for display
   }));
 
+  // Convert alternate candidates if available
+  // IMPORTANT: LLM must not choose strains. It only explains math-selected blends.
+  // Alternates are already selected by the deterministic engine.
+  const alternates: ResolvedBlend[] = [];
+  if (outcome && 'alternates' in outcome && outcome.alternates) {
+    for (const altCandidate of outcome.alternates) {
+      // Convert BlendCandidate directly to ResolvedBlend format
+      // Assign roles based on percentage (highest = Anchor, others = Modifier/Synergist)
+      const sortedIndices = altCandidate.ratios
+        .map((ratio, idx) => ({ ratio, idx }))
+        .sort((a, b) => b.ratio - a.ratio)
+        .map(item => item.idx);
+      
+      const altCultivars: ResolvedCultivar[] = altCandidate.selectedCultivars.map((cultivar, idx) => {
+        let role: CultivarRole = 'Synergist';
+        if (sortedIndices[0] === idx) role = 'Anchor';
+        else if (sortedIndices[1] === idx) role = 'Modifier';
+        
+        return {
+          id: cultivar.id,
+          name: cultivar.displayName,
+          role,
+          percentage: altCandidate.ratios[idx],
+          explanation: '',
+          chemotypeId: cultivar.id,
+          weightGrams: (altCandidate.ratios[idx] / 100) * 1.0,
+        };
+      });
+      
+      alternates.push({
+        resolutionMode: 'BLENDED',
+        confidenceScore: altCandidate.confidenceScore,
+        primaryBlend: altCultivars,
+        tradeoffs: altCandidate.notes || [],
+        rationaleSummary: altCandidate.notes?.[0] || 'Alternate blend',
+        stackingOptions: [],
+        cultivars: altCultivars,
+        stack: [],
+      });
+    }
+  }
+
   return {
     resolutionMode: named.resolutionMode === 'STACKED' ? 'BLENDED' : 'SINGLE_TARGET', // Simplification for UI
     confidenceScore: named.confidenceScore,
@@ -53,5 +95,6 @@ export function convertToResolvedBlend(
     // Keep raw data available if needed
     cultivars: cultivars,
     stack: named.stack ? [named.stack] : [],
+    alternates: alternates.length > 0 ? alternates : undefined,
   };
 }

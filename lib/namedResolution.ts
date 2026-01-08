@@ -193,23 +193,35 @@ export function resolveToNamedStrains(outcome: OutcomeResult): NamedResolutionRe
     throw new Error(`Resolution failed: ${outcome.failure.reason} - ${outcome.failure.details || ''}`);
   }
 
-  // Validation: OutcomeResult must have selectedCultivars and ratios
-  if (!outcome.selectedCultivars || outcome.selectedCultivars.length === 0) {
-    throw new Error('OutcomeResult must have selectedCultivars');
+  // Handle new format with primary + alternates
+  const primaryCandidate = outcome.primary;
+  
+  // Validation: OutcomeResult must have primary candidate
+  if (!primaryCandidate || !primaryCandidate.selectedCultivars || primaryCandidate.selectedCultivars.length === 0) {
+    throw new Error('OutcomeResult must have primary candidate with selectedCultivars');
   }
-  if (!outcome.ratios || outcome.ratios.length === 0) {
-    throw new Error('OutcomeResult must have ratios');
+  if (!primaryCandidate.ratios || primaryCandidate.ratios.length === 0) {
+    throw new Error('OutcomeResult primary must have ratios');
   }
-  if (outcome.selectedCultivars.length !== outcome.ratios.length) {
-    throw new Error('OutcomeResult selectedCultivars and ratios must have the same length');
+  if (primaryCandidate.selectedCultivars.length !== primaryCandidate.ratios.length) {
+    throw new Error('OutcomeResult primary selectedCultivars and ratios must have the same length');
   }
+  
+  // Use primary candidate for the main result
+  const outcomeForProcessing = {
+    selectedCultivars: primaryCandidate.selectedCultivars,
+    ratios: primaryCandidate.ratios,
+    confidenceScore: primaryCandidate.confidenceScore,
+    notes: primaryCandidate.notes,
+    explanation: primaryCandidate.explanation
+  };
 
   // Handle BLENDED mode (Math Engine output)
   const namedStrains: NamedStrainComponent[] = [];
 
-  for (let i = 0; i < outcome.selectedCultivars.length; i++) {
-    const cultivar = outcome.selectedCultivars[i];
-    const ratio = outcome.ratios[i];
+  for (let i = 0; i < outcomeForProcessing.selectedCultivars.length; i++) {
+    const cultivar = outcomeForProcessing.selectedCultivars[i];
+    const ratio = outcomeForProcessing.ratios[i];
 
     // Safety: ensure cultivar.id is valid
     // The Math Engine outputs IDs from STRAIN_LIBRARY, which might not match the `resolveStrain` expectation 
@@ -243,9 +255,9 @@ export function resolveToNamedStrains(outcome: OutcomeResult): NamedResolutionRe
   return {
     primaryBlend: namedStrains,
     stackingOptions,
-    confidenceScore: outcome.confidenceScore || 0.7,
-    tradeoffs: outcome.notes || [],
-    rationaleSummary: outcome.notes?.[0] || 'Optimized Blend',
+    confidenceScore: outcomeForProcessing.confidenceScore || 0.7,
+    tradeoffs: outcomeForProcessing.notes || [],
+    rationaleSummary: outcomeForProcessing.notes?.[0] || 'Optimized Blend',
     resolutionMode: 'BLENDED',
     stack,
   };

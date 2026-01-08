@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { userIntent, blend, constraints, userAge, dominantTerpenes } = body;
+    const { userIntent, blend, constraints, userAge, dominantTerpenes, alternates } = body;
 
     if (!userIntent || !blend || !Array.isArray(blend)) {
       return NextResponse.json(
@@ -37,12 +37,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // IMPORTANT: LLM must not choose strains. It only explains math-selected blends.
     const explanation = await generateExplanation({
       userIntent,
       blend,
       constraints: constraints || [],
       userAge: userAge ?? null,
       dominantTerpenes: dominantTerpenes ?? undefined,
+      alternates: alternates ?? undefined,
     });
 
     return NextResponse.json(

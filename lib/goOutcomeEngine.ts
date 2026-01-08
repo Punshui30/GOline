@@ -58,13 +58,25 @@ export interface SelectedCultivar {
   displayName: string;
 }
 
-export interface OutcomeResult {
+export interface BlendCandidate {
   selectedCultivars: SelectedCultivar[];
   ratios: number[]; // integers summing to 100
   confidenceScore: number; // 0-1
+  distance: number; // Distance from target
+  varianceFromTarget: number; // Same as distance, for clarity
+  diversityScore: number; // Diversity penalty applied
+  terpeneVector: number[]; // Computed blend vector
   notes: string[];
-  failure?: any;
   explanation?: any; // Additive brain layer data
+}
+
+export interface OutcomeResult {
+  // Primary recommendation (best match)
+  primary: BlendCandidate;
+  // Alternate viable blends (top 3-5, excluding primary)
+  alternates: BlendCandidate[];
+  // Overall metadata
+  failure?: any;
 }
 
 // --- CONSTANTS ---
@@ -444,6 +456,9 @@ export function resolveOutcome(intent: OutcomeIntent): OutcomeResult {
     };
   });
 
+  // IMPORTANT: Diversity pressure is applied BEFORE ranking (in adjustedDistance calculation above)
+  // This ensures top candidates are meaningfully different, not cosmetic variants
+  
   // Sort by adjusted distance (accounts for diversity)
   evaluatedCandidates.sort((a, b) => a.adjustedDistance - b.adjustedDistance);
 
@@ -463,6 +478,9 @@ export function resolveOutcome(intent: OutcomeIntent): OutcomeResult {
     }
   }
 
+  // IMPORTANT: LLM must not choose strains. It only explains math-selected blends.
+  // All strain selection happens here in the deterministic engine.
+  
   // Select best solution using blend math evaluation
   // Preference order:
   // 1. Lower adjusted distance (primary - includes diversity)
@@ -661,25 +679,167 @@ export function resolveOutcome(intent: OutcomeIntent): OutcomeResult {
     explanation = { explanation: explanationText };
   }
 
-  // CRITICAL: Final assertion - this should NEVER happen after enforceBlendMinimum
-  if (finalStrains.length < 2) {
-    console.error('CRITICAL BUG: Resolver returned single-strain solution. This violates blend-only requirement.');
-    // Emergency fallback: force a second component
-    const emergencyStabilizer = allStrains.find(s => s.id !== finalStrains[0].id);
-    if (emergencyStabilizer) {
-      finalStrains = [finalStrains[0], emergencyStabilizer];
-      finalRatios = [70, 30];
+  // Helper function to convert CandidateSolution to BlendCandidate
+  const convertToBlendCandidate = (solution: CandidateSolution, isEnforced: boolean = false): BlendCandidate => {
+    let strains = solution.strains;
+    let ratios = solution.ratios;
+    
+    // Enforce blend minimum if needed
+    if (isEnforced) {
+      const blendComponents: BlendComponent[] = strains.map((strain, idx) => ({
+        strainId: strain.id,
+        strain,
+        weight: ratios[idx] / 100,
+        deviationScore: 0
+      }));
+      
+      const enforcedComponents = enforceBlendMinimum(blendComponents, allStrains, intent);
+      strains = enforcedComponents.map(c => c.strain);
+      ratios = enforcedComponents.map(c => Math.round(c.weight * 100));
+      
+      // Normalize ratios
+      const totalRatio = ratios.reduce((sum, r) => sum + r, 0);
+      if (totalRatio !== 100) {
+        ratios = ratios.map(r => Math.round((r / totalRatio) * 100));
+        const actualTotal = ratios.reduce((sum, r) => sum + r, 0);
+        if (actualTotal !== 100) {
+          ratios[0] += (100 - actualTotal);
+        }
+      }
     }
-  }
+    
+    // CRITICAL: Final assertion - this should NEVER happen after enforceBlendMinimum
+    if (strains.length < 2) {
+      console.error('CRITICAL BUG: Resolver returned single-strain solution. This violates blend-only requirement.');
+      const emergencyStabilizer = allStrains.find(s => s.id !== strains[0].id);
+      if (emergencyStabilizer) {
+        strains = [strains[0], emergencyStabilizer];
+        ratios = [70, 30];
+      }
+    }
+    
+    // Calculate confidence and evaluation
+    let candidateConfidence = Math.exp(-solution.distance);
+    let candidateEvaluation = solution.evaluation;
+    
+    if (isEnforced && (strains.length !== solution.strains.length || strains.some((s, i) => s.id !== solution.strains[i].id))) {
+      try {
+        candidateEvaluation = evaluateBlend(strains, ratios);
+      } catch (e) {
+        console.warn('Failed to re-evaluate enforced blend:', e);
+      }
+    }
+    
+    if (candidateEvaluation) {
+      const baseConfidence = candidateConfidence;
+      const mathConfidence = candidateEvaluation.confidence;
+      candidateConfidence = baseConfidence * 0.7 + mathConfidence * 0.3;
+      
+      if (candidateEvaluation.risk > 0.5) {
+        candidateConfidence *= (1 - (candidateEvaluation.risk - 0.5));
+      }
+    }
+    
+    // Compute terpene vector
+    const vec = computeBlendVector(strains, ratios);
+    const terpeneVector = [vec.activation, vec.anxietyRisk, vec.body, vec.focus, vec.calm];
+    
+    // Generate notes
+    const candidateNotes: string[] = [];
+    if (candidateConfidence < 0.6) candidateNotes.push("Complex intent match - result is approximate.");
+    if (strains.length === 1) candidateNotes.push("Note: Single-strain solution detected - this should not happen. Blend enforced.");
+    if (solution.diversityInfluenced) {
+      candidateNotes.push("This blend balances fit with system flexibility for varied outcomes.");
+    }
+    if (candidateEvaluation) {
+      if (candidateEvaluation.stability < 0.6) candidateNotes.push("Blend stability is moderate - effects may vary.");
+      if (candidateEvaluation.risk > 0.5) candidateNotes.push("Higher risk profile - start with lower doses.");
+      if (candidateEvaluation.biphasicIssues.length > 0) {
+        candidateNotes.push(...candidateEvaluation.biphasicIssues.map(issue => `Note: ${issue}`));
+      }
+    }
+    
+    // Generate explanation
+    let candidateExplanation;
+    try {
+      const mappedReferenceStrains = strains.map(s => ({
+        id: s.id,
+        displayName: s.name,
+        thcPercent: s.thc,
+        terpenePercentages: s.terpenes,
+        dataConfidence: "canonical" as const
+      }));
+      
+      const doseAnalysis = analyzeBlendDoseZones(mappedReferenceStrains, ratios);
+      const saturation = analyzeSignalDensity(mappedReferenceStrains, ratios, doseAnalysis);
+      const risk = assessRiskProfile(doseAnalysis, saturation, intent);
+      
+      let explanationText = `Selected ${strains.map(s => s.name).join(' + ')} to minimize distance to target vectors.`;
+      
+      if (candidateEvaluation) {
+        const evalParts: string[] = [];
+        if (candidateEvaluation.entourageEffects.length > 0) {
+          evalParts.push(...candidateEvaluation.entourageEffects);
+        }
+        if (candidateEvaluation.stability > 0.75) {
+          evalParts.push(`High stability blend with predictable effects.`);
+        }
+        if (evalParts.length > 0) {
+          explanationText += ` ${evalParts.join(' ')}`;
+        }
+      }
+      
+      candidateExplanation = { explanation: explanationText };
+    } catch (e) {
+      let explanationText = `Selected ${strains.map(s => s.name).join(' + ')} to minimize distance to target vectors.`;
+      if (candidateEvaluation?.entourageEffects.length) {
+        explanationText += ` ${candidateEvaluation.entourageEffects.join(' ')}`;
+      }
+      candidateExplanation = { explanation: explanationText };
+    }
+    
+    return {
+      selectedCultivars: strains.map(s => ({
+        id: s.id,
+        displayName: s.name
+      })),
+      ratios,
+      confidenceScore: candidateConfidence,
+      distance: solution.distance,
+      varianceFromTarget: solution.distance,
+      diversityScore: solution.adjustedDistance - solution.distance, // The penalty amount
+      terpeneVector,
+      notes: candidateNotes,
+      explanation: candidateExplanation
+    };
+  };
+  
+  // Process primary solution
+  const primary = convertToBlendCandidate(bestSolution, true);
+  
+  // Select alternate candidates (top 3-5, excluding primary)
+  // Filter out candidates that are too similar to primary (same primary strain)
+  const alternateCandidates = topCandidates
+    .filter(c => {
+      // Exclude primary
+      if (c === bestSolution) return false;
+      // Exclude candidates with same primary strain (for diversity)
+      const primaryIndex = c.ratios.indexOf(Math.max(...c.ratios));
+      const candidatePrimaryStrainId = c.strains[primaryIndex].id;
+      return candidatePrimaryStrainId !== bestSolution.primaryStrainId;
+    })
+    .slice(0, 4) // Top 4 alternates (total 5 candidates: 1 primary + 4 alternates)
+    .map(c => convertToBlendCandidate(c, true));
+  
+  // Log for verification
+  console.log(`[RESOLVER] Generated ${1 + alternateCandidates.length} blend candidates`);
+  console.log(`[RESOLVER] Primary: ${primary.selectedCultivars.map(c => c.displayName).join(' + ')}`);
+  alternateCandidates.forEach((alt, idx) => {
+    console.log(`[RESOLVER] Alternate ${idx + 1}: ${alt.selectedCultivars.map(c => c.displayName).join(' + ')}`);
+  });
 
   return {
-    selectedCultivars: finalStrains.map(s => ({
-      id: s.id,
-      displayName: s.name
-    })),
-    ratios: finalRatios,
-    confidenceScore,
-    notes,
-    explanation
+    primary,
+    alternates: alternateCandidates
   };
 }

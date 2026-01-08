@@ -153,9 +153,6 @@ export default function Home() {
     setBlendNickname(null);
     setBlendHashtag(null);
     setShareCaption(null);
-    setBlendNickname(null);
-    setBlendHashtag(null);
-    setShareCaption(null);
 
     try {
       // Convert blend to format expected by API
@@ -185,6 +182,16 @@ export default function Home() {
       // TODO: Extract actual terpene data from blend when available
       // For now, pass empty array - this can be enhanced when terpene data structure is confirmed
 
+      // IMPORTANT: LLM must not choose strains. It only explains math-selected blends.
+      // Convert alternates if available
+      const alternateBlends = blend.alternates?.map(alt => 
+        alt.primaryBlend.map(c => ({
+          name: c.name,
+          percentage: c.percentage,
+          role: c.role,
+        }))
+      );
+
       // Generate explanation
       const explanationResponse = await fetch('/api/explanation', {
         method: 'POST',
@@ -195,6 +202,7 @@ export default function Home() {
           constraints,
           userAge,
           dominantTerpenes: dominantTerpenes.length > 0 ? dominantTerpenes : undefined,
+          alternates: alternateBlends,
         }),
       });
 

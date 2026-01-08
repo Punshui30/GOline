@@ -11,13 +11,18 @@ export function generateDeterministicExplanation(
   intent: OutcomeIntent,
   result: OutcomeResult
 ): DeterministicExplanation {
-  const strains = result.selectedCultivars
+  // Handle new format with primary + alternates
+  const primaryCandidate = result.primary;
+  const strains = primaryCandidate.selectedCultivars
     .map((c) => STRAIN_LIBRARY[c.id])
     .filter(Boolean);
 
   const primaryStrain = strains[0];
   const isBlend = strains.length > 1;
 
+  // Use primary candidate's ratios for calculations
+  const ratios = primaryCandidate.ratios;
+  
   const axes = [
     { key: "activation", label: "energy / alertness", value: intent.activation },
     { key: "cognitiveEndurance", label: "mental endurance", value: intent.cognitiveEndurance },
@@ -64,7 +69,7 @@ export function generateDeterministicExplanation(
   }
 
   let confidenceNote: string | undefined;
-  if (result.confidenceScore < 0.65) {
+  if (primaryCandidate.confidenceScore < 0.65) {
     confidenceNote =
       "This intent required balancing competing goals, so the result is an optimized compromise rather than a perfect match.";
   }

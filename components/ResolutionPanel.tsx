@@ -56,6 +56,8 @@ export interface ResolvedBlend {
   cultivars?: ResolvedCultivar[]; // Alias for primaryBlend if engine uses this name
   stack?: any[]; // Alias for stackingOptions
   failure?: any;
+  // Alternate viable blends (top 3-5, excluding primary)
+  alternates?: ResolvedBlend[];
 }
 
 interface ResolutionPanelProps {
@@ -85,6 +87,7 @@ interface ResolutionPanelProps {
 
 export default function ResolutionPanel({ blend, intent, isComputing, onRefineOutcome, onShowUsageProtocol, onAdjustment, isAnimating = true, hasResolved = false, deterministicExplanation, llmExplanation, llmUsageInstructions, blendNickname, blendHashtag, shareCaption }: ResolutionPanelProps) {
   const [showAdjustments, setShowAdjustments] = useState(false);
+  const [showAlternates, setShowAlternates] = useState(false);
   const [localIntent, setLocalIntent] = useState(intent || {
     activationTarget: 0.5,
     cognitiveEndurance: 0.5,
@@ -298,6 +301,38 @@ export default function ResolutionPanel({ blend, intent, isComputing, onRefineOu
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Alternate Paths - Collapsed by default */}
+        {blend.alternates && blend.alternates.length > 0 && (
+          <div className="mt-10 pt-10 border-t border-neutral-800/50">
+            <button
+              onClick={() => setShowAlternates(!showAlternates)}
+              className="w-full flex items-center justify-between text-left mb-4"
+            >
+              <h3 className="text-xs font-sans font-medium uppercase tracking-widest text-zinc-400">
+                Alternate Paths ({blend.alternates.length})
+              </h3>
+              <span className="text-xs text-zinc-500">
+                {showAlternates ? 'Hide' : 'Show'}
+              </span>
+            </button>
+            
+            {showAlternates && (
+              <div className="space-y-6">
+                {blend.alternates.map((alt, idx) => (
+                  <div key={idx} className="bg-neutral-900/20 border border-neutral-800/50 rounded-lg p-6">
+                    <div className="mb-4">
+                      <BlendVisualizer blend={alt} isAnimating={false} />
+                    </div>
+                    <div className="text-xs font-sans text-zinc-500">
+                      Confidence: {(alt.confidenceScore * 100).toFixed(0)}%
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

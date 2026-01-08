@@ -27,13 +27,18 @@ export async function generateExplanation({
   constraints,
   userAge,
   dominantTerpenes,
+  alternates,
 }: {
   userIntent: string;
   blend: BlendComponent[];
   constraints: string[];
   userAge?: number | null;
   dominantTerpenes?: Array<{ name: string; percentage: number }>;
+  alternates?: BlendComponent[][];
 }): Promise<string> {
+  // IMPORTANT: LLM must not choose strains. It only explains math-selected blends.
+  // The blend parameter contains strains that were already selected by the deterministic engine.
+  
   const blendDescription = blend
     .map((c) => `${c.name} (${c.percentage}% - ${c.role})`)
     .join(', ');
@@ -54,24 +59,32 @@ export async function generateExplanation({
     ? `Dominant terpene signals: ${dominantTerpenes.slice(0, 5).map(t => `${t.name} (${(t.percentage * 100).toFixed(1)}%)`).join(', ')}`
     : '';
 
+  const alternatesText = alternates && alternates.length > 0
+    ? `\n\nAlternate viable blends (for context only - do not recommend, only explain differences if relevant):\n${alternates.map((alt, idx) => `Alternate ${idx + 1}: ${alt.map(c => `${c.name} (${c.percentage}%)`).join(' + ')}`).join('\n')}`
+    : '';
+
   const prompt = `You are explaining why a cannabis blend was selected for a user.
+
+CRITICAL: This blend was already selected by a deterministic math engine. Your job is ONLY to explain why it works, not to select or recommend strains.
 
 User's request: "${userIntent}"
 User age: ${userAge ? userAge : 'not provided'}
 Communication tone: ${ageTone} - ${toneInstructions[ageTone]}
 
-Selected blend: ${blendDescription}
+Selected blend (already chosen by math engine): ${blendDescription}
 ${constraintsText}
-${terpeneText}
+${terpeneText}${alternatesText}
 
 Generate a clear, natural explanation (2-3 sentences) that:
 - References what the user said they wanted
-- Explains why this specific blend matches their needs
+- Explains why this specific blend (already selected) matches their needs
 - Uses ${ageTone} tone: ${toneInstructions[ageTone]}
 - Uses plain, consumer-friendly language
 - Does NOT mention internal risk models, technical terms, or medical claims unless the user explicitly mentioned them
 - Does NOT use slang or stoner-coded language
 - Does NOT reuse strain names in the explanation (focus on effects, not cultivar names)
+- Does NOT invent strain logic or reference strain stereotypes
+- Does NOT assume conditions not stated by the user
 
 Return ONLY the explanation text. No markdown, no formatting, no quotes.`;
 
