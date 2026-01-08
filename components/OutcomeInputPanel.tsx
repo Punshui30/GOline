@@ -1,5 +1,6 @@
 'use client';
 
+import { motion } from 'framer-motion';
 import OutcomeIntentInput from './OutcomeIntentInput';
 
 interface OutcomeInputPanelProps {
@@ -25,6 +26,55 @@ export default function OutcomeInputPanel({
 }: OutcomeInputPanelProps) {
   return (
     <section className="max-w-3xl mx-auto">
+      {/* Logo - Hero Element with Intentional Animation */}
+      <motion.div
+        initial={{ opacity: 0, y: 8, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ 
+          duration: 0.5,
+          ease: 'easeOut',
+          delay: 0.1
+        }}
+        className="mb-10 flex flex-col items-start"
+      >
+        <div className="relative">
+          {/* Subtle ambient glow behind logo (very low opacity) */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.8, ease: 'easeOut', delay: 0.3 }}
+            className="absolute -inset-8 -z-10 bg-accent/3 blur-3xl rounded-full"
+          />
+          
+          {/* Logo */}
+          <img
+            src="/brand/go-mark.png"
+            srcSet="/brand/go-mark@2x.png 2x"
+            alt="GO Line"
+            width={144}
+            height={80}
+            className="h-14 lg:h-16 max-h-[56px] lg:max-h-[64px] w-auto object-contain"
+            style={{
+              display: "block",
+              objectFit: "contain"
+            }}
+          />
+          
+          {/* Subtle divider line that draws in */}
+          <motion.div
+            initial={{ width: 0, opacity: 0 }}
+            animate={{ width: '100%', opacity: 0.2 }}
+            transition={{
+              duration: 0.6,
+              ease: 'easeOut',
+              delay: 0.6
+            }}
+            className="h-px bg-gradient-to-r from-accent/20 via-accent/10 to-transparent mt-6"
+          />
+        </div>
+      </motion.div>
+
+      {/* Headline and Description */}
       <div className="mb-8">
         <h1 className="font-serif text-5xl lg:text-7xl font-light text-white leading-tight mb-6">
           Calculate Your Outcome
@@ -69,7 +119,7 @@ export default function OutcomeInputPanel({
         </div>
       )}
 
-      <div className="mb-8 border-b border-zinc-700 focus-within:border-[#C5A065] transition-colors duration-300 py-4">
+      <div className="mb-8 border-b border-zinc-700 focus-within:border-accent transition-colors duration-300 py-4">
         <OutcomeIntentInput
           value={userInput}
           onChange={onInputChange}
@@ -85,7 +135,7 @@ export default function OutcomeInputPanel({
           className={`
             text-sm font-medium tracking-widest uppercase transition-all duration-200 flex items-center gap-4 px-8 py-4
             ${userInput.trim() 
-              ? 'text-black bg-[#C5A065] hover:bg-[#D4B075] active:bg-[#B89555] cursor-pointer' 
+              ? 'text-black bg-accent hover:bg-accent-hover active:bg-accent-active cursor-pointer' 
               : 'text-zinc-500 bg-zinc-900 border border-zinc-800 cursor-not-allowed opacity-50'}
           `}
         >

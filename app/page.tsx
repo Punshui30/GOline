@@ -734,7 +734,7 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-noise text-[#E5E5E5] font-sans selection:bg-[#C5A065]/30 overflow-x-hidden flex flex-col">
+    <div className="min-h-screen bg-noise text-[#E5E5E5] font-sans selection:bg-accent/30 overflow-x-hidden flex flex-col">
       {/* PHASED MOUNT/UNMOUNT - Each phase has its own wrapper with distinct styling */}
       {/* Input Phase - Hero layout with centered input */}
       {outcomePhase === 'input' && (
@@ -790,7 +790,7 @@ export default function Home() {
       <div className="fixed bottom-12 right-12 z-50">
         <button
           onClick={isListening ? stopListening : startListening}
-          className={`flex items-center gap-4 transition-colors duration-500 ${isListening ? 'text-[#C5A065]' : 'text-zinc-600 hover:text-white'}`}
+          className={`flex items-center gap-4 transition-colors duration-500 ${isListening ? 'text-accent' : 'text-zinc-600 hover:text-white'}`}
         >
           <span className="text-[10px] font-bold tracking-[0.2em] uppercase hidden lg:block">
             {isListening ? 'LISTENING' : 'VOICE INPUT'}

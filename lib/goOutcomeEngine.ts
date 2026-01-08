@@ -240,15 +240,54 @@ function enforceBlendMinimum(
 /**
  * Generate blend candidates directly (no single-strain ranking)
  * Generates pairwise and triple blends
+ * Uses intelligent candidate pool selection to widen diversity
  */
 function generateBlendCandidates(
   library: Strain[],
+  intent: OutcomeIntent,
+  usageStats: Record<string, number>,
   maxCandidates: number = 500
 ): Array<{ strains: Strain[]; ratios: number[] }> {
   const blends: Array<{ strains: Strain[]; ratios: number[] }> = [];
   
-  // Cap library size to prevent combinatorial explosion
-  const candidatePool = library.slice(0, 20);
+  // Intelligent candidate pool selection:
+  // 1. Calculate quick distance score for all strains
+  // 2. Include top matches but also include mid-tier matches for diversity
+  // 3. Avoid limiting to just first 20 strains
+  
+  const strainScores = library.map(strain => {
+    const vec = getStrainVector(strain);
+    const distance = calculateDistance(vec, intent);
+    // Apply small diversity penalty during candidate selection
+    const diversityPenalty = calculateDiversityPenalty(strain.id, usageStats) * 0.3; // Smaller penalty during selection
+    return {
+      strain,
+      score: distance + diversityPenalty
+    };
+  });
+  
+  // Sort by score (lower is better)
+  strainScores.sort((a, b) => a.score - b.score);
+  
+  // Create diverse candidate pool:
+  // - Top 15 best matches
+  // - Next 15 mid-tier matches (ranks 16-30)  
+  // - 10 random diverse picks from remaining (to ensure broader coverage)
+  const topMatches = strainScores.slice(0, 15).map(s => s.strain);
+  const midTierMatches = strainScores.slice(15, 30).map(s => s.strain);
+  
+  // Select diverse picks from remaining (every Nth strain to ensure spread)
+  const remaining = strainScores.slice(30);
+  const diversePicks: Strain[] = [];
+  if (remaining.length > 0) {
+    const step = Math.max(1, Math.floor(remaining.length / 10));
+    for (let i = 0; i < remaining.length && diversePicks.length < 10; i += step) {
+      diversePicks.push(remaining[i].strain);
+    }
+  }
+  
+  // Combine into candidate pool (max 40 strains, but intelligently selected)
+  const candidatePool = [...topMatches, ...midTierMatches, ...diversePicks].slice(0, 40);
 
   // Pairwise blends with varied ratios
   for (let i = 0; i < candidatePool.length && blends.length < maxCandidates; i++) {
@@ -301,19 +340,65 @@ function generateBlendCandidates(
 /**
  * Calculate diversity penalty for a strain based on usage statistics
  * Penalizes over-used strains without introducing randomness
+ * Applied proportionally and capped to preserve determinism
  */
 function calculateDiversityPenalty(
   strainId: string,
   usageStats: Record<string, number>
 ): number {
   const recentFrequency = usageStats[strainId] ?? 0;
-  // Cap penalty at 0.25 (25% reduction) to avoid completely excluding good matches
-  return Math.min(recentFrequency * 0.05, 0.25);
+  // Capped penalty: 4% per usage, max 20% to avoid completely excluding good matches
+  // This ensures diversity pressure while preserving match quality
+  return Math.min(recentFrequency * 0.04, 0.20);
 }
 
 // Global usage statistics tracking (simple in-memory)
 // In production, this would be persisted and reset periodically
 const usageStatistics: Record<string, number> = {};
+
+// Dev-only: Selection tracking for diagnostics
+const selectionHistory: Array<{
+  timestamp: number;
+  primaryStrainId: string;
+  secondaryStrainIds: string[];
+  intent: OutcomeIntent;
+}> = [];
+
+// Dev-only: Log selection for diagnostics
+function logSelection(primaryStrainId: string, secondaryStrainIds: string[], intent: OutcomeIntent) {
+  if (process.env.NODE_ENV === 'development') {
+    selectionHistory.push({
+      timestamp: Date.now(),
+      primaryStrainId,
+      secondaryStrainIds,
+      intent: { ...intent }
+    });
+    
+    // Keep only last 100 selections
+    if (selectionHistory.length > 100) {
+      selectionHistory.shift();
+    }
+    
+    // Log summary every 10 selections
+    if (selectionHistory.length % 10 === 0) {
+      const primaryFreq: Record<string, number> = {};
+      const secondaryFreq: Record<string, number> = {};
+      
+      selectionHistory.forEach(sel => {
+        primaryFreq[sel.primaryStrainId] = (primaryFreq[sel.primaryStrainId] || 0) + 1;
+        sel.secondaryStrainIds.forEach(id => {
+          secondaryFreq[id] = (secondaryFreq[id] || 0) + 1;
+        });
+      });
+      
+      console.log('[Resolver Diagnostics] Primary strain frequency:', Object.entries(primaryFreq)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([id, count]) => `${id}: ${count}`)
+        .join(', '));
+    }
+  }
+}
 
 /**
  * Resolve Outcome using Blend-First Combinatorial Optimization
@@ -324,7 +409,8 @@ export function resolveOutcome(intent: OutcomeIntent): OutcomeResult {
 
   // --- BLEND-FIRST GENERATION ---
   // Generate blend candidates directly, no single-strain ranking
-  const blendCandidates = generateBlendCandidates(allStrains, 500);
+  // Pass intent and usage stats for intelligent candidate pool selection
+  const blendCandidates = generateBlendCandidates(allStrains, intent, usageStatistics, 500);
 
   // Track candidates with their evaluations
   interface CandidateSolution {
@@ -334,6 +420,7 @@ export function resolveOutcome(intent: OutcomeIntent): OutcomeResult {
     adjustedDistance: number; // Distance after diversity penalty
     evaluation?: BlendEvaluation;
     primaryStrainId: string; // For diversity tracking
+    diversityInfluenced: boolean; // Track if diversity penalty affected selection
   }
 
   // Evaluate all blend candidates
@@ -352,7 +439,8 @@ export function resolveOutcome(intent: OutcomeIntent): OutcomeResult {
       ratios: blend.ratios,
       distance: baseDistance,
       adjustedDistance,
-      primaryStrainId
+      primaryStrainId,
+      diversityInfluenced: diversityPenalty > 0.01 // Track if diversity had meaningful impact
     };
   });
 
@@ -361,8 +449,8 @@ export function resolveOutcome(intent: OutcomeIntent): OutcomeResult {
 
   // Take top candidates within reasonable threshold for blend math evaluation
   const bestAdjustedDistance = evaluatedCandidates[0].adjustedDistance;
-  const threshold = bestAdjustedDistance * 1.05; // 5% threshold
-  const topCandidates = evaluatedCandidates.filter(c => c.adjustedDistance <= threshold).slice(0, 50); // Cap at 50 for evaluation
+  const threshold = bestAdjustedDistance * 1.08; // 8% threshold (increased from 5% for more diversity)
+  const topCandidates = evaluatedCandidates.filter(c => c.adjustedDistance <= threshold).slice(0, 75); // Cap at 75 (increased from 50)
 
   // --- BLEND MATH EVALUATION LAYER ---
   // Evaluate top candidates using blend math
@@ -419,6 +507,12 @@ export function resolveOutcome(intent: OutcomeIntent): OutcomeResult {
   if (bestSolution.primaryStrainId) {
     usageStatistics[bestSolution.primaryStrainId] = (usageStatistics[bestSolution.primaryStrainId] || 0) + 1;
   }
+  
+  // Dev-only: Log selection for diagnostics
+  const secondaryStrainIds = bestSolution.strains
+    .map(s => s.id)
+    .filter(id => id !== bestSolution.primaryStrainId);
+  logSelection(bestSolution.primaryStrainId, secondaryStrainIds, intent);
 
   // --- ENFORCE BLEND MINIMUM (CRITICAL GUARD) ---
   // Convert to BlendComponent format for enforceBlendMinimum
@@ -487,6 +581,17 @@ export function resolveOutcome(intent: OutcomeIntent): OutcomeResult {
   // Ensure we never note single-strain solutions
   if (finalStrains.length === 1) {
     notes.push("Note: Single-strain solution detected - this should not happen. Blend enforced.");
+  }
+  
+  // Subtle note when diversity influenced selection (without revealing mechanics)
+  // Only add if diversity penalty meaningfully affected the choice
+  if (bestSolution.diversityInfluenced) {
+    // Check if the base distance winner differs from adjusted distance winner
+    const baseWinner = evaluatedCandidates.find(c => c.distance === Math.min(...evaluatedCandidates.map(c => c.distance)));
+    if (baseWinner && baseWinner.primaryStrainId !== bestSolution.primaryStrainId) {
+      // Diversity influenced selection - add subtle note
+      notes.push("This blend balances fit with system flexibility for varied outcomes.");
+    }
   }
   
   // Add blend math insights to notes

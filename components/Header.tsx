@@ -25,7 +25,7 @@ export default function Header() {
           alt="GO Line"
           width={144}
           height={80}
-          className="h-6 lg:h-8 max-h-[24px] lg:max-h-[32px] w-auto object-contain"
+          className="h-10 lg:h-12 max-h-[40px] lg:max-h-[48px] w-auto object-contain"
           style={{
             display: "block",
             objectFit: "contain"

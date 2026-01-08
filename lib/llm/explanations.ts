@@ -83,18 +83,27 @@ export async function generateUsageInstructions({
   intensity: number; // 0-1
   duration: number; // 0-1 (how long effects should last)
 }): Promise<string> {
-  const blendNames = blend.map((c) => c.name).join(' and ');
+  // Build precise blend description with exact percentages
+  const blendDescription = blend
+    .map((c) => `${c.name} (${c.percentage}%)`)
+    .join(' + ');
+  
+  // Check if all percentages are equal
+  const allEqual = blend.length > 0 && blend.every(c => c.percentage === blend[0].percentage);
+  
   const intensityLevel = intensity > 0.7 ? 'higher' : intensity > 0.4 ? 'moderate' : 'gentle';
   const durationLevel = duration > 0.7 ? 'longer-lasting' : duration > 0.4 ? 'moderate duration' : 'shorter duration';
 
   const prompt = `Generate simple, practical usage instructions for a cannabis blend.
 
-Blend: ${blendNames}
+EXACT BLEND RATIOS: ${blendDescription}
 Intensity: ${intensityLevel}
 Duration expectation: ${durationLevel}
 
+CRITICAL: Use the EXACT percentages provided above. ${allEqual ? 'All components are equal parts.' : 'The ratios are NOT equal - reference the specific percentages.'} Do NOT suggest "equal parts" unless all percentages are identical. Do NOT contradict or approximate the provided ratios.
+
 Provide clear, actionable guidance (3-4 sentences) covering:
-- How to consume this blend (mixed together, not sequentially)
+- How to mix and consume this blend using the exact ratios provided
 - Recommended pacing (start slow, wait before more)
 - What to expect (onset time, peak, duration)
 - Tips for best experience
@@ -102,6 +111,7 @@ Provide clear, actionable guidance (3-4 sentences) covering:
 Use plain language. Assume the user is not an expert.
 Avoid medical claims.
 Focus on practical, consumer-friendly advice.
+Reference the specific percentages when describing the blend.
 
 Return ONLY the instructions text. No markdown, no formatting, no quotes.`;
 

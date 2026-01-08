@@ -122,7 +122,7 @@ export default function ResolutionPanel({ blend, intent, isComputing, onRefineOu
   if (!blend) {
     return (
       <div className="opacity-0 lg:opacity-100 transition-opacity duration-1000 delay-500 min-h-[50vh] flex flex-col justify-start pt-12">
-        <div className="w-8 h-1 bg-[#C5A065] mb-8" />
+        <div className="w-8 h-1 bg-accent mb-8" />
         <p className="text-xs font-bold text-zinc-700 uppercase tracking-widest max-w-xs">
           System Ready
         </p>
@@ -140,7 +140,7 @@ export default function ResolutionPanel({ blend, intent, isComputing, onRefineOu
       <DispensaryMenuBackground selectedStrainIds={selectedStrainIds} />
       
       <motion.div
-        className="relative flex flex-col gap-16 mb-32 text-[#E5E5E5] overflow-y-auto min-h-0 z-10"
+        className="relative flex flex-col gap-20 mb-32 text-[#E5E5E5] overflow-y-auto min-h-0 z-10"
         variants={staggerContainer}
         initial="initial"
         animate="animate"
@@ -169,7 +169,9 @@ export default function ResolutionPanel({ blend, intent, isComputing, onRefineOu
               <span className="text-xs font-sans uppercase tracking-widest text-zinc-500">
                 Confidence
               </span>
-              <span className="text-3xl lg:text-4xl font-serif font-light text-white tracking-tight">
+              <span className={`text-3xl lg:text-4xl font-serif font-light tracking-tight ${
+                blend.confidenceScore >= 0.75 ? 'text-accent' : 'text-white'
+              }`}>
                 {(blend.confidenceScore * 100).toFixed(0)}<span className="text-lg font-sans text-zinc-500 ml-1">%</span>
               </span>
             </div>
@@ -180,7 +182,7 @@ export default function ResolutionPanel({ blend, intent, isComputing, onRefineOu
       {/* SECONDARY SECTION: Blend Composition & Metrics (30% visual attention) */}
       <motion.section 
         variants={itemFade}
-        className="bg-neutral-900/30 border border-neutral-800 rounded-lg p-8 lg:p-10"
+        className="bg-neutral-900/30 border border-neutral-800 rounded-lg p-8 lg:p-12"
       >
         <OutcomeTransitionBanner visible={hasResolved} />
         
@@ -191,6 +193,22 @@ export default function ResolutionPanel({ blend, intent, isComputing, onRefineOu
 
           {/* Animated Visualizer Component */}
           <BlendVisualizer blend={blend} isAnimating={isAnimating} />
+        </div>
+
+        {/* Usage Instructions - Moved up, immediately after blend composition */}
+        <div className="mt-10 pt-10 border-t border-neutral-800/50">
+          <h3 className="text-xs font-sans font-medium uppercase tracking-widest text-zinc-300 mb-6">
+            How to Use This Blend
+          </h3>
+          {llmUsageInstructions ? (
+            <div className="text-sm font-sans text-zinc-300 leading-[1.9] max-w-2xl">
+              <TypewriterText text={llmUsageInstructions} speed={20} />
+            </div>
+          ) : (
+            <div className="text-sm font-sans text-zinc-400 leading-[1.9] max-w-2xl">
+              <p>Mix all components together according to the percentages shown above. Start with a small amount and wait to assess effects before consuming more.</p>
+            </div>
+          )}
         </div>
 
         {/* Metrics - Grouped with blend composition */}
@@ -220,7 +238,7 @@ export default function ResolutionPanel({ blend, intent, isComputing, onRefineOu
           </div>
         )}
 
-        {/* PRIMARY ACTIONS - Prominent, immediately after blend */}
+        {/* PRIMARY ACTIONS - Prominent, after usage instructions */}
         <div className="mt-12 pt-10 border-t border-neutral-800">
           <h3 className="text-xs font-sans font-medium uppercase tracking-widest text-zinc-400 mb-6">
             Next Steps
@@ -228,7 +246,7 @@ export default function ResolutionPanel({ blend, intent, isComputing, onRefineOu
           <div className="flex flex-wrap gap-4">
             <button 
               onClick={handleRefineOutcome}
-              className="px-8 py-4 border-2 border-[#C5A065] text-[#C5A065] text-sm font-sans uppercase tracking-widest hover:bg-[#C5A065] hover:text-black active:bg-[#B89555] transition-all duration-200 cursor-pointer font-medium"
+              className="px-8 py-4 border-2 border-accent text-accent text-sm font-sans uppercase tracking-widest hover:bg-accent hover:text-black active:bg-accent-active transition-all duration-200 cursor-pointer font-medium"
             >
               Refine Outcome
             </button>
@@ -246,15 +264,15 @@ export default function ResolutionPanel({ blend, intent, isComputing, onRefineOu
       {/* TERTIARY SECTION: Context & Guidance (30% visual attention) */}
       <motion.section 
         variants={itemFade}
-        className="space-y-8"
+        className="space-y-10"
       >
-        {/* LLM-Generated Explanation - Always Visible */}
+        {/* LLM-Generated Explanation - De-emphasized but visible */}
         {llmExplanation && (
-          <div className="bg-neutral-900/20 border border-neutral-800/50 rounded-lg p-6 lg:p-8">
-            <h3 className="text-xs font-sans font-medium uppercase tracking-widest text-zinc-400 mb-5">
-              Why this blend works for you
+          <div className="bg-neutral-900/20 border border-neutral-800/50 rounded-lg p-8 lg:p-10">
+            <h3 className="text-xs font-sans font-medium uppercase tracking-widest text-zinc-400 mb-6">
+              Why This Blend Works For You
             </h3>
-            <div className="text-sm font-sans text-zinc-400 leading-[1.8] max-w-prose">
+            <div className="text-sm font-sans text-zinc-400 leading-[1.9] max-w-2xl">
               <TypewriterText text={llmExplanation} speed={20} />
             </div>
           </div>
@@ -262,20 +280,20 @@ export default function ResolutionPanel({ blend, intent, isComputing, onRefineOu
 
         {/* Fallback to deterministic explanation if LLM explanation not available */}
         {!llmExplanation && deterministicExplanation && (
-          <div className="bg-neutral-900/20 border border-neutral-800/50 rounded-lg p-6 lg:p-8">
-            <h3 className="text-xs font-sans font-medium uppercase tracking-widest text-zinc-400 mb-5">
+          <div className="bg-neutral-900/20 border border-neutral-800/50 rounded-lg p-8 lg:p-10">
+            <h3 className="text-xs font-sans font-medium uppercase tracking-widest text-zinc-400 mb-6">
               {deterministicExplanation.headline}
             </h3>
-            <div className="space-y-4 max-w-prose">
+            <div className="space-y-5 max-w-2xl">
               <ul className="space-y-3">
                 {deterministicExplanation.bullets.map((b, i) => (
-                  <li key={i} className="text-sm font-sans text-zinc-400 leading-[1.8] break-words">
+                  <li key={i} className="text-sm font-sans text-zinc-400 leading-[1.9] break-words">
                     - {b}
                   </li>
                 ))}
               </ul>
               {deterministicExplanation.confidenceNote && (
-                <p className="text-sm font-sans text-zinc-400 leading-[1.8] break-words">
+                <p className="text-sm font-sans text-zinc-400 leading-[1.9] break-words">
                   {deterministicExplanation.confidenceNote}
                 </p>
               )}
@@ -283,25 +301,14 @@ export default function ResolutionPanel({ blend, intent, isComputing, onRefineOu
           </div>
         )}
 
-        {/* LLM-Generated Usage Instructions - Always Visible */}
-        {llmUsageInstructions && (
-          <div className="bg-neutral-900/20 border border-neutral-800/50 rounded-lg p-6 lg:p-8">
-            <h3 className="text-xs font-sans font-medium uppercase tracking-widest text-zinc-400 mb-5">
-              How to use this blend
-            </h3>
-            <div className="text-sm font-sans text-zinc-400 leading-[1.8] max-w-prose">
-              <TypewriterText text={llmUsageInstructions} speed={20} />
-            </div>
-          </div>
-        )}
 
         {/* Blend Formulation Info - Tertiary */}
         {blend.resolutionMode === 'BLENDED' && (
-          <div className="bg-neutral-900/20 border border-neutral-800/50 rounded-lg p-6 lg:p-8">
-            <h3 className="text-xs font-sans font-medium uppercase tracking-widest text-zinc-400 mb-5">
+          <div className="bg-neutral-900/20 border border-neutral-800/50 rounded-lg p-8 lg:p-10">
+            <h3 className="text-xs font-sans font-medium uppercase tracking-widest text-zinc-400 mb-6">
               Blend Formulation
             </h3>
-            <p className="text-sm font-sans text-zinc-400 leading-[1.8] max-w-prose">
+            <p className="text-sm font-sans text-zinc-400 leading-[1.9] max-w-2xl">
               This is a blended formulation where all components are mixed together. The <span className="text-white font-medium">Primary Contributor</span> provides the main effect profile. The <span className="text-white font-medium">Supporting Contributor</span> fine-tunes the experience. The <span className="text-white font-medium">Weighted Influence</span> adds complementary effects. All components work together simultaneously in a single blended product.
             </p>
           </div>
@@ -309,13 +316,13 @@ export default function ResolutionPanel({ blend, intent, isComputing, onRefineOu
 
         {/* Tradeoffs/Notes - Tertiary */}
         {blend.tradeoffs.length > 0 && (
-          <div className="bg-neutral-900/20 border border-neutral-800/50 rounded-lg p-6 lg:p-8">
-            <h3 className="text-xs font-sans font-medium uppercase tracking-widest text-zinc-400 mb-5">
+          <div className="bg-neutral-900/20 border border-neutral-800/50 rounded-lg p-8 lg:p-10">
+            <h3 className="text-xs font-sans font-medium uppercase tracking-widest text-zinc-400 mb-6">
               Notes
             </h3>
-            <ul className="space-y-3 max-w-prose">
+            <ul className="space-y-4 max-w-2xl">
               {blend.tradeoffs.map((tradeoff, i) => (
-                <li key={i} className="text-sm font-sans text-zinc-400 leading-[1.8] flex gap-3">
+                <li key={i} className="text-sm font-sans text-zinc-400 leading-[1.9] flex gap-3">
                   <span className="text-zinc-600 flex-shrink-0">•</span>
                   <span className="break-words">{tradeoff}</span>
                 </li>
@@ -343,7 +350,7 @@ export default function ResolutionPanel({ blend, intent, isComputing, onRefineOu
                   max="100"
                   value={Math.round(localIntent.activationTarget * 100)}
                   onChange={(e) => handleAdjustmentChange('activationTarget', parseInt(e.target.value) / 100)}
-                  className="w-full h-1 bg-zinc-800 appearance-none cursor-pointer accent-[#C5A065] hover:accent-[#D4B075] transition-colors"
+                  className="w-full h-1 bg-zinc-800 appearance-none cursor-pointer accent-accent hover:accent-accent-hover transition-colors"
                 />
               </div>
 
@@ -359,7 +366,7 @@ export default function ResolutionPanel({ blend, intent, isComputing, onRefineOu
                   max="100"
                   value={Math.round(localIntent.cognitiveEndurance * 100)}
                   onChange={(e) => handleAdjustmentChange('cognitiveEndurance', parseInt(e.target.value) / 100)}
-                  className="w-full h-1 bg-zinc-800 appearance-none cursor-pointer accent-[#C5A065] hover:accent-[#D4B075] transition-colors"
+                  className="w-full h-1 bg-zinc-800 appearance-none cursor-pointer accent-accent hover:accent-accent-hover transition-colors"
                 />
               </div>
 
@@ -375,7 +382,7 @@ export default function ResolutionPanel({ blend, intent, isComputing, onRefineOu
                   max="100"
                   value={Math.round(localIntent.anxietySensitivity * 100)}
                   onChange={(e) => handleAdjustmentChange('anxietySensitivity', parseInt(e.target.value) / 100)}
-                  className="w-full h-1 bg-zinc-800 appearance-none cursor-pointer accent-[#C5A065] hover:accent-[#D4B075] transition-colors"
+                  className="w-full h-1 bg-zinc-800 appearance-none cursor-pointer accent-accent hover:accent-accent-hover transition-colors"
                 />
               </div>
             </div>

@@ -82,12 +82,12 @@ export default function BlendVisualizer({ blend, isAnimating = true }: BlendVisu
     };
 
     return (
-        <div className="w-full mb-16 overflow-visible">
+        <div className="w-full mb-12 overflow-visible">
             {isSingleCultivar ? (
                 // Single cultivar: card with vertical flex stack
-                <div className="w-full border border-[#C5A065] bg-zinc-900 p-6">
-                    <div className="flex flex-col gap-3 items-center text-center">
-                        <div className={`font-serif font-light text-white ${getPercentageTextSize(100)}`}>
+                <div className="w-full border border-accent bg-zinc-900 p-8 lg:p-10">
+                    <div className="flex flex-col gap-4 items-center text-center">
+                        <div className={`font-serif font-light text-accent ${getPercentageTextSize(100)}`}>
                             100%
                         </div>
                         <div className="text-sm font-sans text-zinc-400 uppercase tracking-wider">
@@ -109,7 +109,8 @@ export default function BlendVisualizer({ blend, isAnimating = true }: BlendVisu
                 </div>
             ) : (
                 // Multiple cultivars: proportional visualization with cards
-                <div className="flex w-full border border-zinc-800 min-h-[120px] items-stretch">
+                // Handles 2, 3, or more strains gracefully
+                <div className="flex w-full border border-zinc-800 min-h-[140px] lg:min-h-[160px] items-stretch overflow-hidden rounded-sm">
                     {sortedStrains.map((strain, index) => {
                         const animatedWidth = animatedPercentages[strain.id || index] || 0;
                         const displayWidth = isAnimating ? animatedWidth : strain.percentage;
@@ -117,16 +118,21 @@ export default function BlendVisualizer({ blend, isAnimating = true }: BlendVisu
                         return (
                             <div
                                 key={strain.id || index}
-                                className="flex flex-col justify-center items-center border-r border-zinc-800 last:border-r-0 bg-zinc-900 transition-all duration-300 p-4"
+                                className="flex flex-col justify-center items-center border-r border-zinc-800 last:border-r-0 bg-zinc-900 transition-all duration-300 p-5 lg:p-6"
                                 style={{
                                     width: `${displayWidth}%`,
-                                    minWidth: displayWidth > 0 ? '120px' : '0px',
+                                    minWidth: displayWidth > 0 ? (sortedStrains.length > 3 ? '100px' : '120px') : '0px',
                                     opacity: visible && displayWidth > 0 ? 1 : 0,
                                 }}
                             >
-                                {/* Vertical flex stack: percentage, role, name */}
-                                <div className="flex flex-col gap-2 items-center text-center">
-                                    <div className={`font-serif font-light text-white ${getPercentageTextSize(strain.percentage)}`}>
+                                {/* Vertical flex stack: percentage (most prominent), role, name */}
+                                <div className="flex flex-col gap-3 items-center text-center">
+                                    <div className={`font-serif font-light ${getPercentageTextSize(strain.percentage)} leading-tight ${
+                                        // Use accent color for dominant contributor (highest percentage)
+                                        strain.percentage === Math.max(...sortedStrains.map(s => s.percentage)) 
+                                          ? 'text-accent' 
+                                          : 'text-white'
+                                    }`}>
                                         {Math.round(strain.percentage)}%
                                     </div>
                                     <div className="text-[10px] font-sans font-medium uppercase tracking-wider text-zinc-400">
@@ -140,7 +146,7 @@ export default function BlendVisualizer({ blend, isAnimating = true }: BlendVisu
                                             duration: 0.4,
                                             ease: 'easeOut'
                                         }}
-                                        className="text-sm lg:text-base font-serif font-light text-white break-words"
+                                        className="text-sm lg:text-base font-serif font-light text-white break-words px-2"
                                     >
                                         {strain.name}
                                     </motion.div>

@@ -17,6 +17,13 @@ const config: Config = {
           dark: "#4A5A49",
         },
         charcoal: "#1F1F1F",
+        // Single accent color - use sparingly for emphasis
+        accent: {
+          DEFAULT: "#C5A065",
+          hover: "#D4B075",
+          active: "#B89555",
+          light: "#C5A065",
+        },
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],

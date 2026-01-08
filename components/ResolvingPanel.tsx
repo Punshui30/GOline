@@ -16,7 +16,7 @@ export default function ResolvingPanel() {
       <div className="text-center space-y-6">
         <div className="text-xl lg:text-2xl font-sans text-white font-medium">Calculating your outcome</div>
         <div className="h-1.5 w-64 mx-auto bg-zinc-800 overflow-hidden rounded-full">
-          <div className="h-full w-1/2 bg-[#C5A065] animate-pulse" />
+          <div className="h-full w-1/2 bg-accent animate-pulse" />
         </div>
       </div>
     </div>
