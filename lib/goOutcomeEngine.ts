@@ -836,13 +836,31 @@ export function resolveOutcome(intent: OutcomeIntent): OutcomeResult {
   console.log(`[RESOLVER] Generated ${1 + alternateCandidates.length} blend candidates`);
   console.log(`[RESOLVER] Primary: ${primary.selectedCultivars.map(c => c.displayName).join(' + ')} (${primary.ratios.join('/')}%)`);
   console.log(`[RESOLVER] Primary confidence: ${(primary.confidenceScore * 100).toFixed(0)}%`);
+  
+  // ASSERT: Resolver should generate multiple candidates when possible
+  // If no alternates are generated, log a warning (this might be expected for edge cases)
   if (alternateCandidates.length > 0) {
     alternateCandidates.forEach((alt, idx) => {
       console.log(`[RESOLVER] Alternate ${idx + 1}: ${alt.selectedCultivars.map(c => c.displayName).join(' + ')} (${alt.ratios.join('/')}%) - confidence: ${(alt.confidenceScore * 100).toFixed(0)}%`);
     });
   } else {
     console.log('[RESOLVER] WARNING: No alternate candidates generated');
+    // This is not necessarily an error - edge cases might have only one valid blend
+    // But it should be logged for verification
   }
+  
+  // ASSERT: Verify we're returning the expected structure
+  if (!primary || !primary.selectedCultivars || primary.selectedCultivars.length === 0) {
+    console.error('[RESOLVER][ASSERT] Primary candidate is invalid', { primary });
+    throw new Error('Resolver must return a valid primary candidate');
+  }
+  
+  // ASSERT: Verify alternates array is present (even if empty)
+  if (!Array.isArray(alternateCandidates)) {
+    console.error('[RESOLVER][ASSERT] Alternates must be an array', { alternateCandidates });
+    throw new Error('Resolver must return alternates as an array');
+  }
+  
   console.log('[RESOLVER OUTPUT] ====================================');
 
   return {

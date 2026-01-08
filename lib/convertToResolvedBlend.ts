@@ -54,6 +54,9 @@ export function convertToResolvedBlend(
     hasFailure: outcome && 'failure' in outcome && !!outcome.failure,
   });
   
+  // ASSERT: Verify alternates are present if outcome has them
+  const expectedAlternates = outcome && 'alternates' in outcome ? outcome.alternates?.length || 0 : 0;
+  
   if (outcome && 'alternates' in outcome && outcome.alternates) {
     for (const altCandidate of outcome.alternates) {
       // Convert BlendCandidate directly to ResolvedBlend format
@@ -92,6 +95,24 @@ export function convertToResolvedBlend(
     }
     
     console.log(`[CONVERT] Converted ${alternates.length} alternate candidates`);
+    
+    // ASSERT: Alternates should not be dropped during conversion
+    if (expectedAlternates > 0 && alternates.length === 0) {
+      console.error('[CONVERT][ASSERT] Alternates dropped during conversion', {
+        expected: expectedAlternates,
+        actual: alternates.length,
+        outcomeAlternates: outcome.alternates,
+      });
+    }
+    
+    // ASSERT: All alternates should be converted
+    if (expectedAlternates > 0 && alternates.length !== expectedAlternates) {
+      console.error('[CONVERT][ASSERT] Not all alternates were converted', {
+        expected: expectedAlternates,
+        actual: alternates.length,
+        missing: expectedAlternates - alternates.length,
+      });
+    }
   } else {
     console.log('[CONVERT] WARNING: No alternates in outcome or outcome is missing');
   }
@@ -118,6 +139,24 @@ export function convertToResolvedBlend(
     hasAlternates: !!result.alternates,
     alternateCount: result.alternates?.length || 0,
   });
+  
+  // ASSERT: Final result should have alternates if they were in the outcome
+  if (expectedAlternates > 0 && (!result.alternates || result.alternates.length === 0)) {
+    console.error('[CONVERT][ASSERT] Alternates dropped during conversion', {
+      expected: expectedAlternates,
+      actual: result.alternates?.length || 0,
+      outcomeHasAlternates: outcome && 'alternates' in outcome && !!outcome.alternates,
+    });
+  }
+  
+  // ASSERT: All alternates should be preserved
+  if (expectedAlternates > 0 && result.alternates && result.alternates.length !== expectedAlternates) {
+    console.error('[CONVERT][ASSERT] Not all alternates preserved in final result', {
+      expected: expectedAlternates,
+      actual: result.alternates.length,
+      missing: expectedAlternates - result.alternates.length,
+    });
+  }
   
   return result;
 }

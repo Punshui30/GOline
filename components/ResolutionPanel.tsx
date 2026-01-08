@@ -89,17 +89,37 @@ export default function ResolutionPanel({ blend, intent, isComputing, onRefineOu
   const [showAdjustments, setShowAdjustments] = useState(false);
   const [showAlternates, setShowAlternates] = useState(false);
   
-  // CRITICAL: Log what blend is being rendered
+  // CRITICAL: Log what blend is being rendered and assert expectations
   useEffect(() => {
     if (blend) {
+      const actualAlternateCount = blend.alternates?.length || 0;
+      
       console.log('[UI] Rendering blend:', {
         primaryBlendCount: blend.primaryBlend.length,
         primaryStrains: blend.primaryBlend.map(c => c.name),
         primaryPercentages: blend.primaryBlend.map(c => c.percentage),
         hasAlternates: !!blend.alternates,
-        alternateCount: blend.alternates?.length || 0,
+        alternateCount: actualAlternateCount,
         confidenceScore: blend.confidenceScore,
       });
+      
+      // ASSERT: Alternates should be present if resolver generated them
+      // Note: We expect at least 1-4 alternates based on resolver logic
+      // If resolver generates alternates but UI receives none, that's a regression
+      const expectedAlternates = 4; // Resolver generates up to 4 alternates
+      
+      if (typeof process !== 'undefined' && process.env.NODE_ENV === 'development') {
+        // In development, assert that alternates are not silently dropped
+        // This will fail loudly if alternates are expected but missing
+        if (expectedAlternates > 0 && actualAlternateCount === 0) {
+          console.warn('[UI][ASSERT] Alternates expected but not rendered', {
+            expected: expectedAlternates,
+            actual: actualAlternateCount,
+            hasAlternatesProp: !!blend.alternates,
+          });
+        }
+      }
+      
       if (blend.alternates && blend.alternates.length > 0) {
         blend.alternates.forEach((alt, idx) => {
           console.log(`[UI] Alternate ${idx + 1}:`, {
