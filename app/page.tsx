@@ -18,7 +18,6 @@ import { resolveToNamedStrains, type NamedResolutionResult } from '@/lib/namedRe
 import { type ResolvedBlend } from '@/components/ResolutionPanel';
 import UsageProtocol from '@/components/UsageProtocol';
 import AgeGate from '@/components/AgeGate';
-import { DispensaryCarouselSplash } from '@/components/DispensaryCarouselSplash';
 import OutcomeInputPanel from '@/components/OutcomeInputPanel';
 import ResolvingPanel from '@/components/ResolvingPanel';
 import ResultPanel from '@/components/ResultPanel';
@@ -88,27 +87,6 @@ export default function Home() {
   const [ageGateComplete, setAgeGateComplete] = useState(false);
   const [userAge, setUserAge] = useState<number | null>(null);
   
-  // Dispensary source splash (shows once per session after age gate)
-  const [showSourceSplash, setShowSourceSplash] = useState<boolean | null>(null);
-  
-  useEffect(() => {
-    // Check if user has seen splash in this session
-    if (ageGateComplete) {
-      const seen = typeof window !== 'undefined' ? sessionStorage.getItem('dispensary-splash-seen') : null;
-      if (!seen) {
-        setShowSourceSplash(true);
-      } else {
-        setShowSourceSplash(false);
-      }
-    }
-  }, [ageGateComplete]);
-  
-  const handleContinueSplash = () => {
-    if (typeof window !== 'undefined') {
-      sessionStorage.setItem('dispensary-splash-seen', 'true');
-    }
-    setShowSourceSplash(false);
-  };
 
   // Phase management
   const [phase, setPhase] = useState<InteractionPhase>('FREE');
@@ -887,20 +865,6 @@ export default function Home() {
           setAgeGateComplete(true);
         }}
       />
-    );
-  }
-
-  // Show dispensary source splash if needed (once per session)
-  if (showSourceSplash === null) {
-    // Still checking sessionStorage, don't render yet
-    return null;
-  }
-
-  if (showSourceSplash) {
-    return (
-      <div className="min-h-screen bg-noise text-[#E5E5E5] font-sans selection:bg-accent/30 overflow-x-hidden flex flex-col">
-        <DispensaryCarouselSplash onContinue={handleContinueSplash} />
-      </div>
     );
   }
 
