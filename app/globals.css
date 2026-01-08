@@ -6,16 +6,27 @@
 
 @layer base {
   html {
+    height: 100vh;
+    overflow: hidden;
     scroll-behavior: smooth;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
   body {
+    height: 100vh;
+    overflow: hidden;
     background: #111111;
     /* Slightly lighter than pure black for texture compatibility */
     color: #E5E5E5;
     font-family: 'Inter', sans-serif;
+  }
+
+  #__next {
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
   }
 
   /* Typography Overrides */

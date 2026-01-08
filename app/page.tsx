@@ -859,21 +859,23 @@ export default function Home() {
   // Show age gate if not complete
   if (!ageGateComplete) {
     return (
-      <AgeGate
-        onComplete={(age) => {
-          setUserAge(age);
-          setAgeGateComplete(true);
-        }}
-      />
+      <div className="h-full overflow-hidden">
+        <AgeGate
+          onComplete={(age) => {
+            setUserAge(age);
+            setAgeGateComplete(true);
+          }}
+        />
+      </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-noise text-[#E5E5E5] font-sans selection:bg-accent/30 overflow-x-hidden flex flex-col">
+    <div className="h-full bg-noise text-[#E5E5E5] font-sans selection:bg-accent/30 overflow-hidden flex flex-col">
       {/* PHASED MOUNT/UNMOUNT - Each phase has its own wrapper with distinct styling */}
       {/* Input Phase - Hero layout with centered input */}
       {outcomePhase === 'input' && (
-        <main key="input" className="flex-1 w-full max-w-[1920px] mx-auto px-6 lg:px-12 xl:px-24 pb-32 pt-20 lg:pt-28 overflow-y-auto min-h-0 transition-opacity duration-300">
+        <main key="input" className="flex-1 min-h-0 w-full max-w-[1920px] mx-auto px-6 lg:px-12 xl:px-24 pb-32 pt-20 lg:pt-28 overflow-y-auto transition-opacity duration-300">
           {isProcessing && (
             <div className="mb-4">
               <span className="text-[10px] font-mono font-medium tracking-widest text-zinc-400">PROCESSING...</span>
@@ -898,14 +900,14 @@ export default function Home() {
 
       {/* Resolving Phase - Distinct background, centered, no input */}
       {outcomePhase === 'resolving' && (
-        <main key="resolving" className="flex-1 w-full max-w-[1920px] mx-auto px-6 lg:px-12 xl:px-24 pb-32 pt-20 lg:pt-28 overflow-y-auto min-h-0 bg-zinc-950/60 transition-opacity duration-300">
+        <main key="resolving" className="flex-1 min-h-0 w-full max-w-[1920px] mx-auto px-6 lg:px-12 xl:px-24 pb-32 pt-20 lg:pt-28 overflow-y-auto bg-zinc-950/60 transition-opacity duration-300">
           <ResolvingPanel />
         </main>
       )}
 
       {/* Result Phase - Result-focused layout */}
       {outcomePhase === 'result' && resolvedBlend && (
-        <main key="result" className="flex-1 w-full max-w-[1920px] mx-auto px-6 lg:px-12 xl:px-24 pb-32 pt-20 lg:pt-28 overflow-y-auto min-h-0 transition-opacity duration-300">
+        <main key="result" className="flex-1 min-h-0 w-full max-w-[1920px] mx-auto px-6 lg:px-12 xl:px-24 pb-32 pt-20 lg:pt-28 overflow-y-auto transition-opacity duration-300">
           <ResultPanel
             blend={resolvedBlend}
             intent={intent}

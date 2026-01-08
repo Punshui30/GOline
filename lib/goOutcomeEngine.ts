@@ -24,6 +24,7 @@ import { generateOutcomeExplanation } from '@/lib/outcomeBrain/explainability';
 
 // Blend math evaluation layer
 import { evaluateBlend, type BlendEvaluation } from '@/lib/blendMath';
+import { generateBlendNotes } from '@/lib/generateBlendNotes';
 
 // --- INTERFACES ---
 
@@ -796,13 +797,13 @@ export function resolveOutcome(intent: OutcomeIntent): OutcomeResult {
         explanationText += ` ${candidateEvaluation.entourageEffects.join(' ')}`;
       }
       candidateExplanation = { explanation: explanationText };
-    }
-    
-    return {
+  }
+
+  return {
       selectedCultivars: strains.map(s => ({
-        id: s.id,
-        displayName: s.name
-      })),
+      id: s.id,
+      displayName: s.name
+    })),
       ratios,
       confidenceScore: candidateConfidence,
       distance: solution.distance,
