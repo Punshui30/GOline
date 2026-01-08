@@ -18,7 +18,7 @@ import { resolveToNamedStrains, type NamedResolutionResult } from '@/lib/namedRe
 import { type ResolvedBlend } from '@/components/ResolutionPanel';
 import UsageProtocol from '@/components/UsageProtocol';
 import AgeGate from '@/components/AgeGate';
-import DispensarySourceSplash from '@/components/DispensarySourceSplash';
+import { DispensaryCarouselSplash } from '@/components/DispensaryCarouselSplash';
 import OutcomeInputPanel from '@/components/OutcomeInputPanel';
 import ResolvingPanel from '@/components/ResolvingPanel';
 import ResultPanel from '@/components/ResultPanel';
@@ -826,7 +826,7 @@ export default function Home() {
   if (showSourceSplash) {
     return (
       <div className="min-h-screen bg-noise text-[#E5E5E5] font-sans selection:bg-accent/30 overflow-x-hidden flex flex-col">
-        <DispensarySourceSplash onContinue={handleContinueSplash} />
+        <DispensaryCarouselSplash onContinue={handleContinueSplash} />
       </div>
     );
   }
