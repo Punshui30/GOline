@@ -31,7 +31,7 @@ export default function OutcomeInputPanel({
   onClearClarification,
 }: OutcomeInputPanelProps) {
   return (
-    <section className={`max-w-3xl mx-auto transition-all duration-700 ease-out ${isProcessing ? 'opacity-40 scale-[0.98] grayscale-[0.5] pointer-events-none' : 'opacity-100 scale-100'}`}>
+    <section className="max-w-3xl mx-auto opacity-100 scale-100 transition-all duration-700 ease-out">
 
       {/* Logo - Hero Element with Strengthened Animation */}
       <motion.div
