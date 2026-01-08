@@ -73,6 +73,7 @@ const MOCK_EXPLANATION: DeterministicExplanation = {
 
 export default function UISandbox() {
   const [phase, setPhase] = useState<Phase>('input');
+  const [mode, setMode] = useState<'blend' | 'stack'>('blend');
   const [userInput, setUserInput] = useState('I want to feel focused and energized but relaxed');
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -117,10 +118,12 @@ export default function UISandbox() {
             >
               <OutcomeInputPanel
                 userInput={userInput}
+                mode={mode}
                 currentClarification={null}
                 clarificationAnswers={{}}
                 isProcessing={isProcessing}
                 onInputChange={setUserInput}
+                onModeChange={setMode}
                 onSubmit={handleSubmit}
                 onClarificationAnswer={() => {}}
                 onClearClarification={() => {}}

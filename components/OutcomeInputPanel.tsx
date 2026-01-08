@@ -3,12 +3,16 @@
 import { motion } from 'framer-motion';
 import OutcomeIntentInput from './OutcomeIntentInput';
 
+type ConsumptionMode = 'blend' | 'stack';
+
 interface OutcomeInputPanelProps {
   userInput: string;
+  mode: ConsumptionMode;
   currentClarification: { type: string; question: string; options: string[] } | null;
   clarificationAnswers: Record<string, string | string[]>;
   isProcessing: boolean;
   onInputChange: (value: string) => void;
+  onModeChange: (mode: ConsumptionMode) => void;
   onSubmit: () => void;
   onClarificationAnswer: (questionType: string, answer: string, isMultiSelect?: boolean) => void;
   onClearClarification: () => void;
@@ -16,10 +20,12 @@ interface OutcomeInputPanelProps {
 
 export default function OutcomeInputPanel({
   userInput,
+  mode,
   currentClarification,
   clarificationAnswers,
   isProcessing,
   onInputChange,
+  onModeChange,
   onSubmit,
   onClarificationAnswer,
   onClearClarification,
@@ -128,7 +134,39 @@ export default function OutcomeInputPanel({
         </div>
       )}
 
+      {/* Mode Selector */}
+      <div className="mb-6">
+        <label className="block text-xs font-sans font-medium text-go-muted uppercase tracking-wider mb-3">
+          Consumption Mode
+        </label>
+        <div className="flex gap-4">
+          <button
+            onClick={() => onModeChange('blend')}
+            className={`flex-1 px-4 py-3 border-2 rounded-lg text-sm font-sans uppercase tracking-wider transition-go ${
+              mode === 'blend'
+                ? 'border-amber text-amber bg-amber-glow'
+                : 'border-go text-go-muted hover:border-go-strong'
+            }`}
+          >
+            Simultaneous Blend
+          </button>
+          <button
+            onClick={() => onModeChange('stack')}
+            className={`flex-1 px-4 py-3 border-2 rounded-lg text-sm font-sans uppercase tracking-wider transition-go ${
+              mode === 'stack'
+                ? 'border-amber text-amber bg-amber-glow'
+                : 'border-go text-go-muted hover:border-go-strong'
+            }`}
+          >
+            Sequential Stack
+          </button>
+        </div>
+      </div>
+
       <div className="mb-8 border-b border-zinc-700 focus-within:border-accent transition-colors duration-300 py-4">
+        <label className="block text-xs font-sans font-medium text-go-muted uppercase tracking-wider mb-3">
+          Desired Outcome
+        </label>
         <OutcomeIntentInput
           value={userInput}
           onChange={onInputChange}
@@ -148,7 +186,7 @@ export default function OutcomeInputPanel({
               : 'text-zinc-500 bg-zinc-900 border border-zinc-800 cursor-not-allowed opacity-50'}
           `}
         >
-          <span>Calculate My Outcome</span>
+          <span>Calculate {mode === 'blend' ? 'Blend' : 'Stack'}</span>
         </button>
       </div>
     </section>

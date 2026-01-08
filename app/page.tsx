@@ -19,6 +19,8 @@ import { resolveToNamedStrains, type NamedResolutionResult } from '@/lib/namedRe
 import { type ResolvedBlend } from '@/components/ResolutionPanel';
 import UsageProtocol from '@/components/UsageProtocol';
 import AgeGate from '@/components/AgeGate';
+import OnboardingOverlay from '@/components/OnboardingOverlay';
+import VisualizationPanel from '@/components/VisualizationPanel';
 import OutcomeInputPanel from '@/components/OutcomeInputPanel';
 import ResolvingPanel from '@/components/ResolvingPanel';
 import ResultPanel from '@/components/ResultPanel';
@@ -87,6 +89,16 @@ export default function Home() {
   // Age gate and onboarding
   const [ageGateComplete, setAgeGateComplete] = useState(false);
   const [userAge, setUserAge] = useState<number | null>(null);
+  const [onboardingComplete, setOnboardingComplete] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('onboardingComplete') === 'true';
+    }
+    return false;
+  });
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  // Consumption mode (Blend vs Stack)
+  const [consumptionMode, setConsumptionMode] = useState<'blend' | 'stack'>('blend');
   
 
   // Phase management
@@ -857,19 +869,44 @@ export default function Home() {
     }
   };
 
+  // Show onboarding after age gate if not completed
+  useEffect(() => {
+    if (ageGateComplete && !onboardingComplete && !showOnboarding) {
+      setShowOnboarding(true);
+    }
+  }, [ageGateComplete, onboardingComplete, showOnboarding]);
+
+  const handleOnboardingComplete = () => {
+    setOnboardingComplete(true);
+    setShowOnboarding(false);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('onboardingComplete', 'true');
+    }
+  };
+
+  const handleOnboardingSkip = () => {
+    setOnboardingComplete(true);
+    setShowOnboarding(false);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('onboardingComplete', 'true');
+    }
+  };
+
   // PROOF: Console logs for replacement verification
   useEffect(() => {
     if (typeof window !== 'undefined') {
       console.log('[PAGE] AppShell content mounted - Fixed viewport layout');
-      console.log('[PAGE] Active layout: app/page.tsx (DESTRUCTIVE REPLACEMENT)');
+      console.log('[PAGE] Active layout: app/page.tsx (APPLICATION SCHEMA)');
       console.log('[PAGE] AgeGate overlay:', !ageGateComplete ? 'ACTIVE' : 'COMPLETE');
+      console.log('[PAGE] Onboarding:', showOnboarding ? 'ACTIVE' : 'COMPLETE');
+      console.log('[PAGE] Consumption mode:', consumptionMode);
       console.log('[PAGE] Current phase:', outcomePhase);
     }
-  }, [ageGateComplete, outcomePhase]);
+  }, [ageGateComplete, showOnboarding, consumptionMode, outcomePhase]);
 
   return (
     <div className="h-full bg-go text-go relative">
-      {/* Age Gate Modal Overlay - Does NOT control layout */}
+      {/* Age Gate Modal Overlay - Blocks all interaction */}
       {!ageGateComplete && (
         <AgeGate
           onComplete={(age) => {
@@ -879,148 +916,79 @@ export default function Home() {
         />
       )}
 
+      {/* Onboarding Overlay - Blocks interaction until complete or skipped */}
+      {ageGateComplete && showOnboarding && (
+        <OnboardingOverlay
+          onComplete={handleOnboardingComplete}
+          onSkip={handleOnboardingSkip}
+        />
+      )}
+
       {/* App Shell Content - Always renders, owns viewport */}
       <div className="h-full flex flex-col">
-        {/* Main Content Region - Always visible */}
-        <div className="flex-1 min-h-0 overflow-hidden">
-          <AnimatePresence mode="wait">
-            {/* Input Phase */}
-            {ageGateComplete && outcomePhase === 'input' && (
-              <motion.main
-                key="input"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.3 }}
-                className="h-full overflow-y-auto"
-              >
-                <div className="w-full max-w-[1920px] mx-auto px-6 lg:px-12 xl:px-24 pb-32 pt-20 lg:pt-28">
-                  {isProcessing && (
-                    <div className="mb-4">
-                      <span className="text-[10px] font-mono font-medium tracking-widest text-muted">PROCESSING...</span>
-                    </div>
-                  )}
-                  <OutcomeInputPanel
-                    userInput={userInput}
-                    currentClarification={currentClarification}
-                    clarificationAnswers={clarificationAnswers}
-                    isProcessing={isProcessing}
-                    onInputChange={handleInputChange}
-                    onSubmit={handleAnalyze}
-                    onClarificationAnswer={handleClarificationAnswer}
-                    onClearClarification={() => {
-                      setCurrentClarification(null);
-                      setResolvedAxes(new Set());
-                      setClarificationAnswers({});
-                    }}
-                  />
-                </div>
-              </motion.main>
-            )}
+        {/* Main Workspace - Three panel layout */}
+        <div className="flex-1 min-h-0 overflow-hidden grid grid-cols-12 gap-4 p-4">
+          {/* Input Panel - Left Column */}
+          {ageGateComplete && !showOnboarding && (
+            <div className="col-span-12 lg:col-span-4 overflow-y-auto">
+              <div className="h-full bg-glass-elevated border border-go rounded-xl p-6">
+                <OutcomeInputPanel
+                  userInput={userInput}
+                  mode={consumptionMode}
+                  currentClarification={currentClarification}
+                  clarificationAnswers={clarificationAnswers}
+                  isProcessing={isProcessing}
+                  onInputChange={handleInputChange}
+                  onModeChange={setConsumptionMode}
+                  onSubmit={handleAnalyze}
+                  onClarificationAnswer={handleClarificationAnswer}
+                  onClearClarification={() => {
+                    setCurrentClarification(null);
+                    setResolvedAxes(new Set());
+                    setClarificationAnswers({});
+                  }}
+                />
+              </div>
+            </div>
+          )}
 
-            {/* Resolving Phase */}
-            {ageGateComplete && outcomePhase === 'resolving' && (
-              <motion.main
-                key="resolving"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.3 }}
-                className="h-full overflow-y-auto bg-glass"
-              >
-                <div className="w-full max-w-[1920px] mx-auto px-6 lg:px-12 xl:px-24 pb-32 pt-20 lg:pt-28">
-                  <ResolvingPanel />
-                </div>
-              </motion.main>
-            )}
+          {/* Visualization Panel - Center Column */}
+          {ageGateComplete && !showOnboarding && (
+            <div className="col-span-12 lg:col-span-4 overflow-hidden">
+              <VisualizationPanel
+                mode={consumptionMode}
+                state={
+                  outcomePhase === 'input' ? 'idle' :
+                  outcomePhase === 'resolving' ? 'calculating' :
+                  outcomePhase === 'result' ? 'resolved' : 'idle'
+                }
+                blendData={resolvedBlend}
+              />
+            </div>
+          )}
 
-            {/* Result Phase */}
-            {ageGateComplete && outcomePhase === 'result' && resolvedBlend && (
-              <motion.main
-                key="result"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.3 }}
-                className="h-full overflow-y-auto"
-              >
-                <div className="w-full max-w-[1920px] mx-auto px-6 lg:px-12 xl:px-24 pb-32 pt-20 lg:pt-28">
-                  <ResultPanel
-                    blend={resolvedBlend}
-                    intent={intent}
-                    isProcessing={isProcessing}
-                    deterministicExplanation={deterministicExplanation}
-                    llmExplanation={llmExplanation}
-                    llmUsageInstructions={llmUsageInstructions}
-                    blendNickname={blendNickname}
-                    blendHashtag={blendHashtag}
-                    shareCaption={shareCaption}
-                    onRefineOutcome={handleRefineOutcome}
-                    onShowUsageProtocol={handleShowUsageProtocol}
-                    onAdjustment={handleAdjustment}
-                    hasResolved={hasResolved}
-                  />
-                </div>
-              </motion.main>
-            )}
-
-            {/* Default Skeleton - Visible when age gate is active (underneath overlay) */}
-            {!ageGateComplete && (
-              <motion.main
-                key="skeleton"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.3 }}
-                className="h-full overflow-y-auto"
-                style={{ opacity: 0.4 }}
-              >
-                <div className="w-full max-w-[1920px] mx-auto px-6 lg:px-12 xl:px-24 pb-32 pt-20 lg:pt-28">
-                  {/* Visible App Structure Skeleton */}
-                  <div className="space-y-8">
-                    {/* Title Section */}
-                    <div className="border-b border-go-strong pb-8 transition-go">
-                      <h1 className="font-serif text-4xl lg:text-5xl font-light text-go mb-2" style={{ opacity: 1 }}>
-                        GO — Guided Outcome Calculator
-                      </h1>
-                      <p className="text-sm font-sans text-go-muted" style={{ opacity: 1 }}>
-                        Translate your intent into structured cannabis blends
-                      </p>
-                    </div>
-
-                    {/* Main Input Panel - Glass Morphism */}
-                    <div className="bg-glass-elevated border border-go-strong rounded-xl p-8 lg:p-12 transition-go hover:border-amber-subtle hover:shadow-amber-sm">
-                      <div className="space-y-6">
-                        <div>
-                          <label className="block text-xs font-sans font-medium text-go-muted uppercase tracking-wider mb-3" style={{ opacity: 1 }}>
-                            Desired Outcome
-                          </label>
-                          <div className="h-12 bg-glass border border-go rounded-lg flex items-center px-4 transition-go hover:border-amber-subtle focus-within:border-amber-strong focus-within:shadow-amber-sm">
-                            <span className="text-go text-sm" style={{ opacity: 1 }}>
-                              Waiting for age verification...
-                            </span>
-                          </div>
-                        </div>
-                        <div className="flex gap-4">
-                          <div className="flex-1 h-12 bg-glass border border-go rounded-lg transition-go hover:border-go-strong"></div>
-                          <div className="w-32 h-12 bg-amber-glow border border-amber-subtle rounded-lg transition-go hover:border-amber-strong hover:shadow-amber-sm"></div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Results Container Placeholder - Glass Morphism */}
-                    <div className="bg-glass-elevated border border-go-strong rounded-xl p-8 lg:p-12 transition-go hover:border-amber-subtle hover:shadow-amber-sm">
-                      <div className="space-y-4">
-                        <div className="h-6 bg-glass rounded-lg w-1/3 border border-go"></div>
-                        <div className="h-4 bg-glass rounded-lg w-2/3 border border-go"></div>
-                        <div className="h-4 bg-glass rounded-lg w-1/2 border border-go"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </motion.main>
-            )}
-          </AnimatePresence>
+          {/* Results Panel - Right Column */}
+          {ageGateComplete && !showOnboarding && outcomePhase === 'result' && resolvedBlend && (
+            <div className="col-span-12 lg:col-span-4 overflow-y-auto">
+              <div className="h-full bg-glass-elevated border border-go rounded-xl p-6">
+                <ResultPanel
+                  blend={resolvedBlend}
+                  intent={intent}
+                  isProcessing={isProcessing}
+                  deterministicExplanation={deterministicExplanation}
+                  llmExplanation={llmExplanation}
+                  llmUsageInstructions={llmUsageInstructions}
+                  blendNickname={blendNickname}
+                  blendHashtag={blendHashtag}
+                  shareCaption={shareCaption}
+                  onRefineOutcome={handleRefineOutcome}
+                  onShowUsageProtocol={handleShowUsageProtocol}
+                  onAdjustment={handleAdjustment}
+                  hasResolved={hasResolved}
+                />
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

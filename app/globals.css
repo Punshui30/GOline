@@ -40,6 +40,17 @@
   h1, h2, h3, h4, h5, h6, .font-serif {
     font-family: 'Playfair Display', serif;
   }
+
+  /* Ensure text is selectable and interactive */
+  body, main, div, section, article, p, span, label, input, textarea, button {
+    user-select: text;
+    -webkit-user-select: text;
+  }
+
+  input, textarea, button, select {
+    user-select: auto;
+    -webkit-user-select: auto;
+  }
 }
 
 @layer base {
