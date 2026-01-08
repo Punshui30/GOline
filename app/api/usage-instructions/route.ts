@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { blend, intensity, duration } = body;
+    const { blend, intensity, duration, userAge } = body;
 
     if (!blend || !Array.isArray(blend)) {
       return NextResponse.json(
@@ -41,6 +41,7 @@ export async function POST(request: NextRequest) {
       blend,
       intensity: intensity ?? 0.5,
       duration: duration ?? 0.5,
+      userAge: userAge ?? null,
     });
 
     return NextResponse.json(

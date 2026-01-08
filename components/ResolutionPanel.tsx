@@ -78,9 +78,12 @@ interface ResolutionPanelProps {
   deterministicExplanation?: DeterministicExplanation;
   llmExplanation?: string;
   llmUsageInstructions?: string;
+  blendNickname?: string;
+  blendHashtag?: string;
+  shareCaption?: string;
 }
 
-export default function ResolutionPanel({ blend, intent, isComputing, onRefineOutcome, onShowUsageProtocol, onAdjustment, isAnimating = true, hasResolved = false, deterministicExplanation, llmExplanation, llmUsageInstructions }: ResolutionPanelProps) {
+export default function ResolutionPanel({ blend, intent, isComputing, onRefineOutcome, onShowUsageProtocol, onAdjustment, isAnimating = true, hasResolved = false, deterministicExplanation, llmExplanation, llmUsageInstructions, blendNickname, blendHashtag, shareCaption }: ResolutionPanelProps) {
   const [showAdjustments, setShowAdjustments] = useState(false);
   const [localIntent, setLocalIntent] = useState(intent || {
     activationTarget: 0.5,
@@ -201,6 +204,58 @@ export default function ResolutionPanel({ blend, intent, isComputing, onRefineOu
           <BlendVisualizer blend={blend} isAnimating={isAnimating} />
         </div>
 
+        {/* Blend Nickname & Hashtag - Directly under blend percentages */}
+        {(blendNickname || blendHashtag) && (
+          <div className="mt-6 pt-6 border-t border-neutral-800/50">
+            <div className="flex items-center gap-4 flex-wrap">
+              {blendNickname && (
+                <div>
+                  <span className="text-[10px] font-sans uppercase tracking-wider text-zinc-500 mb-1 block">
+                    Blend Name
+                  </span>
+                  <span className="text-lg font-serif font-light text-white">
+                    {blendNickname}
+                  </span>
+                </div>
+              )}
+              {blendHashtag && (
+                <div>
+                  <span className="text-[10px] font-sans uppercase tracking-wider text-zinc-500 mb-1 block">
+                    Hashtag
+                  </span>
+                  <span className="text-sm font-sans text-zinc-400">
+                    {blendHashtag}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Share Caption - With copy button */}
+        {shareCaption && (
+          <div className="mt-6 pt-6 border-t border-neutral-800/50">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1">
+                <span className="text-[10px] font-sans uppercase tracking-wider text-zinc-500 mb-2 block">
+                  Share Caption
+                </span>
+                <p className="text-sm font-sans text-zinc-300 leading-relaxed">
+                  {shareCaption}
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(shareCaption);
+                }}
+                className="px-4 py-2 border border-zinc-700 text-zinc-400 text-xs font-sans uppercase tracking-wider hover:border-zinc-500 hover:text-white transition-colors flex-shrink-0"
+              >
+                Copy
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Usage Instructions - Moved up, immediately after blend composition */}
         <div className="mt-10 pt-10 border-t border-neutral-800/50">
           <h3 className="text-xs font-sans font-medium uppercase tracking-widest text-zinc-300 mb-6">
@@ -211,8 +266,10 @@ export default function ResolutionPanel({ blend, intent, isComputing, onRefineOu
               <TypewriterText text={llmUsageInstructions} speed={20} />
             </div>
           ) : (
-            <div className="text-sm font-sans text-zinc-400 leading-[1.9] max-w-2xl">
-              <p>Mix all components together according to the percentages shown above. Start with a small amount and wait to assess effects before consuming more.</p>
+            // 🚫 Do not add fallback copy here.
+            // All explanation text must come from LLM output.
+            <div className="text-sm font-sans text-zinc-500 leading-[1.9] max-w-2xl italic">
+              Generating usage instructions...
             </div>
           )}
         </div>
@@ -273,7 +330,7 @@ export default function ResolutionPanel({ blend, intent, isComputing, onRefineOu
         className="space-y-10"
       >
         {/* LLM-Generated Explanation - De-emphasized but visible */}
-        {llmExplanation && (
+        {llmExplanation ? (
           <div className="bg-neutral-900/20 border border-neutral-800/50 rounded-lg p-8 lg:p-10">
             <h3 className="text-xs font-sans font-medium uppercase tracking-widest text-zinc-400 mb-6">
               Why This Blend Works For You
@@ -282,27 +339,15 @@ export default function ResolutionPanel({ blend, intent, isComputing, onRefineOu
               <TypewriterText text={llmExplanation} speed={20} />
             </div>
           </div>
-        )}
-
-        {/* Fallback to deterministic explanation if LLM explanation not available */}
-        {!llmExplanation && deterministicExplanation && (
+        ) : (
+          // 🚫 Do not add fallback copy here.
+          // All explanation text must come from LLM output.
           <div className="bg-neutral-900/20 border border-neutral-800/50 rounded-lg p-8 lg:p-10">
             <h3 className="text-xs font-sans font-medium uppercase tracking-widest text-zinc-400 mb-6">
-              {deterministicExplanation.headline}
+              Why This Blend Works For You
             </h3>
-            <div className="space-y-5 max-w-2xl">
-              <ul className="space-y-3">
-                {deterministicExplanation.bullets.map((b, i) => (
-                  <li key={i} className="text-sm font-sans text-zinc-400 leading-[1.9] break-words">
-                    - {b}
-                  </li>
-                ))}
-              </ul>
-              {deterministicExplanation.confidenceNote && (
-                <p className="text-sm font-sans text-zinc-400 leading-[1.9] break-words">
-                  {deterministicExplanation.confidenceNote}
-                </p>
-              )}
+            <div className="text-sm font-sans text-zinc-500 leading-[1.9] max-w-2xl italic">
+              Generating explanation...
             </div>
           </div>
         )}

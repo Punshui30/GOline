@@ -6,6 +6,7 @@
  */
 
 import OpenAI from 'openai';
+import { getAgeTone, type AgeTone } from '@/lib/ageTone';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -24,10 +25,14 @@ export async function generateExplanation({
   userIntent,
   blend,
   constraints,
+  userAge,
+  dominantTerpenes,
 }: {
   userIntent: string;
   blend: BlendComponent[];
   constraints: string[];
+  userAge?: number | null;
+  dominantTerpenes?: Array<{ name: string; percentage: number }>;
 }): Promise<string> {
   const blendDescription = blend
     .map((c) => `${c.name} (${c.percentage}% - ${c.role})`)
@@ -37,19 +42,36 @@ export async function generateExplanation({
     ? `Key considerations: ${constraints.join(', ')}`
     : '';
 
+  const ageTone = userAge ? getAgeTone(userAge) : 'modern';
+  const toneInstructions: Record<AgeTone, string> = {
+    playful: 'Use casual, energetic language with light enthusiasm. Avoid being too formal.',
+    modern: 'Use contemporary, straightforward language that feels current and approachable.',
+    grounded: 'Use clear, practical language with a measured tone. Prioritize clarity over excitement.',
+    reassuring: 'Use calm, confident language that feels supportive and trustworthy.'
+  };
+
+  const terpeneText = dominantTerpenes && dominantTerpenes.length > 0
+    ? `Dominant terpene signals: ${dominantTerpenes.slice(0, 5).map(t => `${t.name} (${(t.percentage * 100).toFixed(1)}%)`).join(', ')}`
+    : '';
+
   const prompt = `You are explaining why a cannabis blend was selected for a user.
 
 User's request: "${userIntent}"
+User age: ${userAge ? userAge : 'not provided'}
+Communication tone: ${ageTone} - ${toneInstructions[ageTone]}
 
 Selected blend: ${blendDescription}
 ${constraintsText}
+${terpeneText}
 
 Generate a clear, natural explanation (2-3 sentences) that:
 - References what the user said they wanted
 - Explains why this specific blend matches their needs
+- Uses ${ageTone} tone: ${toneInstructions[ageTone]}
 - Uses plain, consumer-friendly language
 - Does NOT mention internal risk models, technical terms, or medical claims unless the user explicitly mentioned them
 - Does NOT use slang or stoner-coded language
+- Does NOT reuse strain names in the explanation (focus on effects, not cultivar names)
 
 Return ONLY the explanation text. No markdown, no formatting, no quotes.`;
 
@@ -78,10 +100,12 @@ export async function generateUsageInstructions({
   blend,
   intensity,
   duration,
+  userAge,
 }: {
   blend: BlendComponent[];
   intensity: number; // 0-1
   duration: number; // 0-1 (how long effects should last)
+  userAge?: number | null;
 }): Promise<string> {
   // Build precise blend description with exact percentages
   const blendDescription = blend
@@ -94,7 +118,18 @@ export async function generateUsageInstructions({
   const intensityLevel = intensity > 0.7 ? 'higher' : intensity > 0.4 ? 'moderate' : 'gentle';
   const durationLevel = duration > 0.7 ? 'longer-lasting' : duration > 0.4 ? 'moderate duration' : 'shorter duration';
 
+  const ageTone = userAge ? getAgeTone(userAge) : 'modern';
+  const toneInstructions: Record<AgeTone, string> = {
+    playful: 'Use casual, friendly language with light enthusiasm.',
+    modern: 'Use contemporary, straightforward language.',
+    grounded: 'Use clear, practical language with a measured tone.',
+    reassuring: 'Use calm, confident language that feels supportive.'
+  };
+
   const prompt = `Generate simple, practical usage instructions for a cannabis blend.
+
+User age: ${userAge ? userAge : 'not provided'}
+Communication tone: ${ageTone} - ${toneInstructions[ageTone]}
 
 EXACT BLEND RATIOS: ${blendDescription}
 Intensity: ${intensityLevel}

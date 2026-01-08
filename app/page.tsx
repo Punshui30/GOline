@@ -86,6 +86,7 @@ export default function Home() {
 
   // Age gate and onboarding
   const [ageGateComplete, setAgeGateComplete] = useState(false);
+  const [userAge, setUserAge] = useState<number | null>(null);
   
   // Dispensary source splash (shows once per session after age gate)
   const [showSourceSplash, setShowSourceSplash] = useState<boolean | null>(null);
@@ -134,6 +135,9 @@ export default function Home() {
   // LLM-generated explanations (separate from deterministic resolver)
   const [llmExplanation, setLlmExplanation] = useState<string | null>(null);
   const [llmUsageInstructions, setLlmUsageInstructions] = useState<string | null>(null);
+  const [blendNickname, setBlendNickname] = useState<string | null>(null);
+  const [blendHashtag, setBlendHashtag] = useState<string | null>(null);
+  const [shareCaption, setShareCaption] = useState<string | null>(null);
   
   // Store original user input for explanation generation
   const [originalUserInput, setOriginalUserInput] = useState<string>('');
@@ -146,6 +150,12 @@ export default function Home() {
     // Clear previous explanations
     setLlmExplanation(null);
     setLlmUsageInstructions(null);
+    setBlendNickname(null);
+    setBlendHashtag(null);
+    setShareCaption(null);
+    setBlendNickname(null);
+    setBlendHashtag(null);
+    setShareCaption(null);
 
     try {
       // Convert blend to format expected by API
@@ -169,6 +179,12 @@ export default function Home() {
         constraints.push('low anxiety tolerance');
       }
 
+      // Extract dominant terpenes from blend if available
+      // Note: This assumes terpene data is in the blend metadata or we calculate from strains
+      const dominantTerpenes: Array<{ name: string; percentage: number }> = [];
+      // TODO: Extract actual terpene data from blend when available
+      // For now, pass empty array - this can be enhanced when terpene data structure is confirmed
+
       // Generate explanation
       const explanationResponse = await fetch('/api/explanation', {
         method: 'POST',
@@ -177,6 +193,8 @@ export default function Home() {
           userIntent,
           blend: blendComponents,
           constraints,
+          userAge,
+          dominantTerpenes: dominantTerpenes.length > 0 ? dominantTerpenes : undefined,
         }),
       });
 
@@ -198,6 +216,7 @@ export default function Home() {
           blend: blendComponents,
           intensity,
           duration,
+          userAge,
         }),
       });
 
@@ -205,6 +224,27 @@ export default function Home() {
         const data = await instructionsResponse.json();
         if (data.ok && data.instructions) {
           setLlmUsageInstructions(data.instructions);
+        }
+      }
+
+      // Generate blend social content (nickname, hashtag, caption)
+      const socialResponse = await fetch('/api/blend-social', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userIntent,
+          blend: blendComponents,
+          userAge,
+          dominantTerpenes: dominantTerpenes.length > 0 ? dominantTerpenes : undefined,
+        }),
+      });
+
+      if (socialResponse.ok) {
+        const data = await socialResponse.json();
+        if (data.ok) {
+          setBlendNickname(data.blendNickname || null);
+          setBlendHashtag(data.blendHashtag || null);
+          setShareCaption(data.shareCaption || null);
         }
       }
     } catch (error) {
@@ -349,6 +389,9 @@ export default function Home() {
     // Clear previous explanations
     setLlmExplanation(null);
     setLlmUsageInstructions(null);
+    setBlendNickname(null);
+    setBlendHashtag(null);
+    setShareCaption(null);
 
     if (inputMode === 'reference' && referenceProfile) {
       try {
@@ -505,6 +548,9 @@ export default function Home() {
     setDeterministicExplanation(null);
     setLlmExplanation(null);
     setLlmUsageInstructions(null);
+    setBlendNickname(null);
+    setBlendHashtag(null);
+    setShareCaption(null);
     
     // Store original user input for explanation generation
     setOriginalUserInput(userInput);
@@ -753,7 +799,14 @@ export default function Home() {
 
   // Show age gate if not complete
   if (!ageGateComplete) {
-    return <AgeGate onComplete={() => setAgeGateComplete(true)} />;
+    return (
+      <AgeGate
+        onComplete={(age) => {
+          setUserAge(age);
+          setAgeGateComplete(true);
+        }}
+      />
+    );
   }
 
   // Show dispensary source splash if needed (once per session)
@@ -815,6 +868,9 @@ export default function Home() {
             deterministicExplanation={deterministicExplanation}
             llmExplanation={llmExplanation}
             llmUsageInstructions={llmUsageInstructions}
+            blendNickname={blendNickname}
+            blendHashtag={blendHashtag}
+            shareCaption={shareCaption}
             onRefineOutcome={handleRefineOutcome}
             onShowUsageProtocol={handleShowUsageProtocol}
             onAdjustment={handleAdjustment}

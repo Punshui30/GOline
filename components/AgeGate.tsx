@@ -3,7 +3,7 @@
 import { useState } from 'react';
 
 interface AgeGateProps {
-  onComplete: () => void;
+  onComplete: (userAge: number) => void;
 }
 
 type GateStep = 'age' | 'experience' | 'onboarding';
@@ -37,12 +37,14 @@ export default function AgeGate({ onComplete }: AgeGateProps) {
       setIsFirstTime(true);
       setStep('onboarding');
     } else {
-      onComplete();
+      const ageNum = parseInt(age, 10);
+      onComplete(ageNum);
     }
   };
 
   const handleOnboardingComplete = () => {
-    onComplete();
+    const ageNum = parseInt(age, 10);
+    onComplete(ageNum);
   };
 
   return (

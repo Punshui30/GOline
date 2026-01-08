@@ -1,15 +1,15 @@
 /**
- * API Route: Generate Explanation
+ * API Route: Generate Blend Social Content
  * 
- * Generates a dynamic explanation for why a blend was selected.
+ * Generates age-aware blend nickname, hashtag, and share caption.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { generateExplanation } from '@/lib/llm/explanations';
+import { generateBlendSocial } from '@/lib/llm/blendSocial';
 
 export async function POST(request: NextRequest) {
   if (request.method === 'OPTIONS') {
-    return new NextResponse(null, {
+    return NextResponse.json(null, {
       status: 200,
       headers: {
         'Access-Control-Allow-Origin': '*',
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { userIntent, blend, constraints, userAge, dominantTerpenes } = body;
+    const { userIntent, blend, userAge, dominantTerpenes } = body;
 
     if (!userIntent || !blend || !Array.isArray(blend)) {
       return NextResponse.json(
@@ -37,28 +37,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const explanation = await generateExplanation({
+    const social = await generateBlendSocial({
       userIntent,
       blend,
-      constraints: constraints || [],
       userAge: userAge ?? null,
       dominantTerpenes: dominantTerpenes ?? undefined,
     });
 
     return NextResponse.json(
-      { ok: true, explanation },
+      { ok: true, ...social },
       {
         status: 200,
         headers: { 'Access-Control-Allow-Origin': '*' },
       }
     );
   } catch (error: any) {
-    console.error('[API/EXPLANATION] Error:', error);
+    console.error('[API/BLEND-SOCIAL] Error:', error);
     return NextResponse.json(
       {
         ok: false,
         error: 'GENERATION_FAILED',
-        message: error.message || 'Failed to generate explanation',
+        message: error.message || 'Failed to generate social content',
       },
       { status: 500 }
     );

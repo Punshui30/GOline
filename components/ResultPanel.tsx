@@ -11,6 +11,9 @@ interface ResultPanelProps {
   deterministicExplanation: DeterministicExplanation | null;
   llmExplanation?: string | null;
   llmUsageInstructions?: string | null;
+  blendNickname?: string | null;
+  blendHashtag?: string | null;
+  shareCaption?: string | null;
   onRefineOutcome: () => void;
   onShowUsageProtocol: () => void;
   onAdjustment: (adjustedIntent: {
@@ -28,6 +31,9 @@ export default function ResultPanel({
   deterministicExplanation,
   llmExplanation,
   llmUsageInstructions,
+  blendNickname,
+  blendHashtag,
+  shareCaption,
   onRefineOutcome,
   onShowUsageProtocol,
   onAdjustment,
@@ -51,6 +57,9 @@ export default function ResultPanel({
         deterministicExplanation={deterministicExplanation || undefined}
         llmExplanation={llmExplanation || undefined}
         llmUsageInstructions={llmUsageInstructions || undefined}
+        blendNickname={blendNickname || undefined}
+        blendHashtag={blendHashtag || undefined}
+        shareCaption={shareCaption || undefined}
       />
     </section>
   );
