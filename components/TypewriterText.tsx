@@ -40,6 +40,6 @@ export default function TypewriterText({ text, speed = 20, onComplete }: Props) 
     return () => clearInterval(interval);
   }, [text, speed, onComplete]);
 
-  return <p className="whitespace-pre-line">{visible}</p>;
+  return <div className="whitespace-pre-line">{visible}</div>;
 }
 

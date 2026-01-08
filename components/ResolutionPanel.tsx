@@ -10,6 +10,7 @@ import { OutcomeResult } from '@/lib/goOutcomeEngine';
 import BlendVisualizer from './BlendVisualizer';
 import OutcomeTransitionBanner from './OutcomeTransitionBanner';
 import TypewriterText from './TypewriterText';
+import DispensaryMenuBackground from './DispensaryMenuBackground';
 import type { DeterministicExplanation } from '@/lib/outcomeBrain/deterministicExplanation';
 import { staggerContainer, itemFade } from '@/lib/motion';
 
@@ -129,215 +130,260 @@ export default function ResolutionPanel({ blend, intent, isComputing, onRefineOu
     );
   }
 
+  // Get selected strain IDs for background highlighting
+  const selectedStrainIds = blend ? blend.primaryBlend.map(c => c.id) : [];
+
   // ACTIVE STATE
   return (
-    <motion.div
-      className="flex flex-col gap-24 lg:gap-32 mb-32 text-[#E5E5E5] overflow-y-auto min-h-0"
-      variants={staggerContainer}
-      initial="initial"
-      animate="animate"
-    >
-      {/* 1. Header: Primary Conclusion */}
-      <motion.section variants={itemFade} className="min-h-0">
+    <>
+      {/* Dispensary Menu Background - Visual Context */}
+      <DispensaryMenuBackground selectedStrainIds={selectedStrainIds} />
+      
+      <motion.div
+        className="relative flex flex-col gap-16 mb-32 text-[#E5E5E5] overflow-y-auto min-h-0 z-10"
+        variants={staggerContainer}
+        initial="initial"
+        animate="animate"
+      >
+      {/* PRIMARY SECTION: Outcome Summary & Confidence (40% visual attention) */}
+      <motion.section 
+        variants={itemFade} 
+        className="bg-neutral-900/40 border border-neutral-800 rounded-lg p-8 lg:p-12"
+      >
         <div className="flex flex-col gap-6">
+          {/* Label */}
           <span className="text-[10px] font-sans font-medium uppercase tracking-[0.2em] text-zinc-500">
             Best Match
           </span>
-          <h2 className="font-serif text-3xl lg:text-5xl font-light leading-tight tracking-tight text-white break-words">
+          
+          {/* Primary Headline - Large, Prominent */}
+          <h1 className="font-serif text-4xl lg:text-6xl font-light leading-[1.1] tracking-tight text-white break-words max-w-4xl">
             {blend.primaryBlend.length === 1
               ? 'One strain already matches what you want'
               : 'This blend best matches your desired outcome'}
-          </h2>
+          </h1>
+          
+          {/* Confidence Indicator - Prominent, but secondary to headline */}
+          <div className="mt-4 pt-6 border-t border-neutral-800">
+            <div className="flex items-baseline gap-3">
+              <span className="text-xs font-sans uppercase tracking-widest text-zinc-500">
+                Confidence
+              </span>
+              <span className="text-3xl lg:text-4xl font-serif font-light text-white tracking-tight">
+                {(blend.confidenceScore * 100).toFixed(0)}<span className="text-lg font-sans text-zinc-500 ml-1">%</span>
+              </span>
+            </div>
+          </div>
         </div>
       </motion.section>
 
-      {/* 2. Composition (The Blend) */}
-      <motion.section variants={itemFade}>
+      {/* SECONDARY SECTION: Blend Composition & Metrics (30% visual attention) */}
+      <motion.section 
+        variants={itemFade}
+        className="bg-neutral-900/30 border border-neutral-800 rounded-lg p-8 lg:p-10"
+      >
         <OutcomeTransitionBanner visible={hasResolved} />
-        <h3 className="text-[10px] font-sans font-medium uppercase tracking-[0.2em] text-zinc-500 mb-12 mt-6">Blend Composition</h3>
+        
+        <div className="mt-6">
+          <h2 className="text-[10px] font-sans font-medium uppercase tracking-[0.2em] text-zinc-500 mb-8">
+            Blend Composition
+          </h2>
 
-        {/* Animated Visualizer Component */}
-        <BlendVisualizer blend={blend} isAnimating={isAnimating} />
+          {/* Animated Visualizer Component */}
+          <BlendVisualizer blend={blend} isAnimating={isAnimating} />
+        </div>
 
-        {/* LLM-Generated Explanation - Always Visible */}
-        {llmExplanation && (
-          <motion.div variants={itemFade} className="mt-10 border border-zinc-800 bg-zinc-900/30 p-6">
-            <h4 className="text-sm font-sans font-medium text-white mb-4">
-              Why this blend works for you
-            </h4>
-            <div className="text-sm font-sans text-zinc-400 leading-relaxed">
-              <TypewriterText text={llmExplanation} speed={20} />
-            </div>
-          </motion.div>
-        )}
-
-        {/* Fallback to deterministic explanation if LLM explanation not available */}
-        {!llmExplanation && deterministicExplanation && (
-          <motion.div variants={itemFade} className="mt-10 border border-zinc-800 bg-zinc-900/30 p-6">
-            <h4 className="text-sm font-sans font-medium text-white mb-4">
-              {deterministicExplanation.headline}
-            </h4>
-            <ul className="space-y-3">
-              {deterministicExplanation.bullets.map((b, i) => (
-                <li key={i} className="text-sm font-sans text-zinc-400 leading-relaxed break-words">
-                  - {b}
-                </li>
-              ))}
-            </ul>
-            {deterministicExplanation.confidenceNote && (
-              <p className="mt-4 text-sm font-sans text-zinc-400 leading-relaxed break-words">
-                {deterministicExplanation.confidenceNote}
-              </p>
-            )}
-          </motion.div>
-        )}
-
-        {/* LLM-Generated Usage Instructions - Always Visible */}
-        {llmUsageInstructions && (
-          <motion.div variants={itemFade} className="mt-10 border border-zinc-800 bg-zinc-900/30 p-6">
-            <h4 className="text-sm font-sans font-medium text-white mb-4">
-              How to use this blend
-            </h4>
-            <div className="text-sm font-sans text-zinc-400 leading-relaxed">
-              <TypewriterText text={llmUsageInstructions} speed={20} />
-            </div>
-          </motion.div>
-        )}
-
-        {/* Blend Explanation */}
-        {blend.resolutionMode === 'BLENDED' && (
-          <div className="mt-12 p-6 border border-zinc-800 bg-zinc-900/30 overflow-y-auto">
-            <h4 className="font-sans text-sm font-medium text-white mb-3">Blend Formulation</h4>
-            <p className="text-sm font-sans text-zinc-400 leading-relaxed max-w-xl">
-              This is a blended formulation where all components are mixed together. The <span className="text-white font-medium">Primary Contributor</span> provides the main effect profile. The <span className="text-white font-medium">Supporting Contributor</span> fine-tunes the experience. The <span className="text-white font-medium">Weighted Influence</span> adds complementary effects. All components work together simultaneously in a single blended product.
-            </p>
-          </div>
-        )}
-
-      </motion.section>
-
-      {/* 3. Metrics */}
-      <motion.section variants={itemFade}>
-        <h3 className="text-[10px] font-sans font-medium uppercase tracking-[0.2em] text-zinc-500 mb-12">Match Confidence</h3>
-
-        <div className="grid grid-cols-2 gap-x-12 gap-y-16">
-          <div>
-            <span className="block text-[9px] font-sans uppercase tracking-widest text-zinc-500 mb-2">Confidence</span>
-            <div className="text-5xl font-serif font-light text-white tracking-tight">
-              {(blend.confidenceScore * 100).toFixed(0)}<span className="text-lg font-sans text-zinc-500">%</span>
-            </div>
-          </div>
-
-          {intent && (
-            <>
+        {/* Metrics - Grouped with blend composition */}
+        {intent && (
+          <div className="mt-10 pt-10 border-t border-neutral-800/50">
+            <h3 className="text-[10px] font-sans font-medium uppercase tracking-[0.2em] text-zinc-500 mb-6">
+              Profile Metrics
+            </h3>
+            <div className="grid grid-cols-2 gap-x-12 gap-y-8">
               <div>
-                <span className="block text-[9px] font-sans uppercase tracking-widest text-zinc-500 mb-2">Energy Level</span>
-                <div className="text-5xl font-serif font-light text-white tracking-tight">
+                <span className="block text-[9px] font-sans uppercase tracking-widest text-zinc-500 mb-2">
+                  Energy Level
+                </span>
+                <div className="text-3xl font-serif font-light text-white tracking-tight">
                   {(intent.activationTarget * 10).toFixed(1)}
                 </div>
               </div>
               <div>
-                <span className="block text-[9px] font-sans uppercase tracking-widest text-zinc-500 mb-2">Duration</span>
-                <div className="text-5xl font-serif font-light text-white tracking-tight">
+                <span className="block text-[9px] font-sans uppercase tracking-widest text-zinc-500 mb-2">
+                  Duration
+                </span>
+                <div className="text-3xl font-serif font-light text-white tracking-tight">
                   {(intent.cognitiveEndurance * 10).toFixed(1)}
                 </div>
               </div>
-            </>
-          )}
-        </div>
-      </motion.section>
-
-      {/* Adjustment Controls */}
-      {showAdjustments && onAdjustment && (
-        <motion.section variants={itemFade} className="border-t border-zinc-800 pt-8">
-          <h3 className="text-[10px] font-sans font-medium uppercase tracking-[0.2em] text-zinc-500 mb-8">Adjust Blend</h3>
-          <div className="space-y-8">
-            {/* Energy ↔ Calm */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <div className="text-xs font-sans text-white uppercase tracking-wider">Energy ↔ Calm</div>
-                <div className="text-xs font-mono text-zinc-400">{Math.round(localIntent.activationTarget * 100)}</div>
-              </div>
-              <input
-                type="range"
-                min="0"
-                max="100"
-                value={Math.round(localIntent.activationTarget * 100)}
-                onChange={(e) => handleAdjustmentChange('activationTarget', parseInt(e.target.value) / 100)}
-                className="w-full h-1 bg-zinc-800 appearance-none cursor-pointer accent-[#C5A065] hover:accent-[#D4B075] transition-colors"
-              />
             </div>
-
-            {/* Duration ↔ Intensity */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <div className="text-xs font-sans text-white uppercase tracking-wider">Duration ↔ Intensity</div>
-                <div className="text-xs font-mono text-zinc-400">{Math.round(localIntent.cognitiveEndurance * 100)}</div>
-              </div>
-              <input
-                type="range"
-                min="0"
-                max="100"
-                value={Math.round(localIntent.cognitiveEndurance * 100)}
-                onChange={(e) => handleAdjustmentChange('cognitiveEndurance', parseInt(e.target.value) / 100)}
-                className="w-full h-1 bg-zinc-800 appearance-none cursor-pointer accent-[#C5A065] hover:accent-[#D4B075] transition-colors"
-              />
-            </div>
-
-            {/* Anxiety Sensitivity */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <div className="text-xs font-sans text-white uppercase tracking-wider">Anxiety Sensitivity</div>
-                <div className="text-xs font-mono text-zinc-400">{Math.round(localIntent.anxietySensitivity * 100)}</div>
-              </div>
-              <input
-                type="range"
-                min="0"
-                max="100"
-                value={Math.round(localIntent.anxietySensitivity * 100)}
-                onChange={(e) => handleAdjustmentChange('anxietySensitivity', parseInt(e.target.value) / 100)}
-                className="w-full h-1 bg-zinc-800 appearance-none cursor-pointer accent-[#C5A065] hover:accent-[#D4B075] transition-colors"
-              />
-            </div>
-          </div>
-        </motion.section>
-      )}
-
-      {/* 4. Tradeoffs & Follow Up */}
-      <motion.section variants={itemFade}>
-        {blend.tradeoffs.length > 0 && (
-          <div className="mb-12 overflow-y-auto">
-            <h3 className="text-[10px] font-sans font-medium uppercase tracking-[0.2em] text-zinc-500 mb-8">Notes</h3>
-            <ul className="space-y-4">
-              {blend.tradeoffs.map((tradeoff, i) => (
-                <li key={i} className="text-sm font-sans text-zinc-400 leading-relaxed flex gap-3">
-                  <span className="text-zinc-600">•</span> <span className="break-words">{tradeoff}</span>
-                </li>
-              ))}
-            </ul>
           </div>
         )}
 
-        {/* Follow-Up Actions */}
-        <div className="border-t border-zinc-800 pt-8 flex flex-col gap-4">
-          <span className="text-[10px] font-sans font-medium uppercase tracking-[0.2em] text-zinc-500">Actions</span>
+        {/* PRIMARY ACTIONS - Prominent, immediately after blend */}
+        <div className="mt-12 pt-10 border-t border-neutral-800">
+          <h3 className="text-xs font-sans font-medium uppercase tracking-widest text-zinc-400 mb-6">
+            Next Steps
+          </h3>
           <div className="flex flex-wrap gap-4">
             <button 
               onClick={handleRefineOutcome}
-              className="px-6 py-3 border border-[#C5A065] text-[#C5A065] text-xs font-sans uppercase tracking-widest hover:bg-[#C5A065] hover:text-black active:bg-[#B89555] transition-all duration-200 cursor-pointer"
+              className="px-8 py-4 border-2 border-[#C5A065] text-[#C5A065] text-sm font-sans uppercase tracking-widest hover:bg-[#C5A065] hover:text-black active:bg-[#B89555] transition-all duration-200 cursor-pointer font-medium"
             >
               Refine Outcome
             </button>
             <button 
               onClick={onShowUsageProtocol}
-              className="px-6 py-3 border border-zinc-700 text-zinc-400 text-xs font-sans uppercase tracking-widest hover:border-zinc-500 hover:text-zinc-300 active:border-zinc-400 active:text-zinc-200 transition-all duration-200 cursor-pointer"
+              className="px-8 py-4 border-2 border-zinc-700 text-zinc-300 text-sm font-sans uppercase tracking-widest hover:border-zinc-500 hover:text-white active:border-zinc-400 transition-all duration-200 cursor-pointer font-medium"
             >
               Usage Protocol
             </button>
           </div>
         </div>
+
+      </motion.section>
+
+      {/* TERTIARY SECTION: Context & Guidance (30% visual attention) */}
+      <motion.section 
+        variants={itemFade}
+        className="space-y-8"
+      >
+        {/* LLM-Generated Explanation - Always Visible */}
+        {llmExplanation && (
+          <div className="bg-neutral-900/20 border border-neutral-800/50 rounded-lg p-6 lg:p-8">
+            <h3 className="text-xs font-sans font-medium uppercase tracking-widest text-zinc-400 mb-5">
+              Why this blend works for you
+            </h3>
+            <div className="text-sm font-sans text-zinc-400 leading-[1.8] max-w-prose">
+              <TypewriterText text={llmExplanation} speed={20} />
+            </div>
+          </div>
+        )}
+
+        {/* Fallback to deterministic explanation if LLM explanation not available */}
+        {!llmExplanation && deterministicExplanation && (
+          <div className="bg-neutral-900/20 border border-neutral-800/50 rounded-lg p-6 lg:p-8">
+            <h3 className="text-xs font-sans font-medium uppercase tracking-widest text-zinc-400 mb-5">
+              {deterministicExplanation.headline}
+            </h3>
+            <div className="space-y-4 max-w-prose">
+              <ul className="space-y-3">
+                {deterministicExplanation.bullets.map((b, i) => (
+                  <li key={i} className="text-sm font-sans text-zinc-400 leading-[1.8] break-words">
+                    - {b}
+                  </li>
+                ))}
+              </ul>
+              {deterministicExplanation.confidenceNote && (
+                <p className="text-sm font-sans text-zinc-400 leading-[1.8] break-words">
+                  {deterministicExplanation.confidenceNote}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* LLM-Generated Usage Instructions - Always Visible */}
+        {llmUsageInstructions && (
+          <div className="bg-neutral-900/20 border border-neutral-800/50 rounded-lg p-6 lg:p-8">
+            <h3 className="text-xs font-sans font-medium uppercase tracking-widest text-zinc-400 mb-5">
+              How to use this blend
+            </h3>
+            <div className="text-sm font-sans text-zinc-400 leading-[1.8] max-w-prose">
+              <TypewriterText text={llmUsageInstructions} speed={20} />
+            </div>
+          </div>
+        )}
+
+        {/* Blend Formulation Info - Tertiary */}
+        {blend.resolutionMode === 'BLENDED' && (
+          <div className="bg-neutral-900/20 border border-neutral-800/50 rounded-lg p-6 lg:p-8">
+            <h3 className="text-xs font-sans font-medium uppercase tracking-widest text-zinc-400 mb-5">
+              Blend Formulation
+            </h3>
+            <p className="text-sm font-sans text-zinc-400 leading-[1.8] max-w-prose">
+              This is a blended formulation where all components are mixed together. The <span className="text-white font-medium">Primary Contributor</span> provides the main effect profile. The <span className="text-white font-medium">Supporting Contributor</span> fine-tunes the experience. The <span className="text-white font-medium">Weighted Influence</span> adds complementary effects. All components work together simultaneously in a single blended product.
+            </p>
+          </div>
+        )}
+
+        {/* Tradeoffs/Notes - Tertiary */}
+        {blend.tradeoffs.length > 0 && (
+          <div className="bg-neutral-900/20 border border-neutral-800/50 rounded-lg p-6 lg:p-8">
+            <h3 className="text-xs font-sans font-medium uppercase tracking-widest text-zinc-400 mb-5">
+              Notes
+            </h3>
+            <ul className="space-y-3 max-w-prose">
+              {blend.tradeoffs.map((tradeoff, i) => (
+                <li key={i} className="text-sm font-sans text-zinc-400 leading-[1.8] flex gap-3">
+                  <span className="text-zinc-600 flex-shrink-0">•</span>
+                  <span className="break-words">{tradeoff}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Adjustment Controls - Tertiary */}
+        {showAdjustments && onAdjustment && (
+          <div className="bg-neutral-900/20 border border-neutral-800/50 rounded-lg p-6 lg:p-8">
+            <h3 className="text-xs font-sans font-medium uppercase tracking-widest text-zinc-400 mb-8">
+              Adjust Blend
+            </h3>
+            <div className="space-y-8">
+              {/* Energy ↔ Calm */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="text-xs font-sans text-white uppercase tracking-wider">Energy ↔ Calm</div>
+                  <div className="text-xs font-mono text-zinc-400">{Math.round(localIntent.activationTarget * 100)}</div>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={Math.round(localIntent.activationTarget * 100)}
+                  onChange={(e) => handleAdjustmentChange('activationTarget', parseInt(e.target.value) / 100)}
+                  className="w-full h-1 bg-zinc-800 appearance-none cursor-pointer accent-[#C5A065] hover:accent-[#D4B075] transition-colors"
+                />
+              </div>
+
+              {/* Duration ↔ Intensity */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="text-xs font-sans text-white uppercase tracking-wider">Duration ↔ Intensity</div>
+                  <div className="text-xs font-mono text-zinc-400">{Math.round(localIntent.cognitiveEndurance * 100)}</div>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={Math.round(localIntent.cognitiveEndurance * 100)}
+                  onChange={(e) => handleAdjustmentChange('cognitiveEndurance', parseInt(e.target.value) / 100)}
+                  className="w-full h-1 bg-zinc-800 appearance-none cursor-pointer accent-[#C5A065] hover:accent-[#D4B075] transition-colors"
+                />
+              </div>
+
+              {/* Anxiety Sensitivity */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="text-xs font-sans text-white uppercase tracking-wider">Anxiety Sensitivity</div>
+                  <div className="text-xs font-mono text-zinc-400">{Math.round(localIntent.anxietySensitivity * 100)}</div>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={Math.round(localIntent.anxietySensitivity * 100)}
+                  onChange={(e) => handleAdjustmentChange('anxietySensitivity', parseInt(e.target.value) / 100)}
+                  className="w-full h-1 bg-zinc-800 appearance-none cursor-pointer accent-[#C5A065] hover:accent-[#D4B075] transition-colors"
+                />
+              </div>
+            </div>
+          </div>
+        )}
       </motion.section>
 
     </motion.div>
+    </>
   );
 }

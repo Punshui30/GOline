@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 import { ResolvedBlend, getRoleDisplayName } from './ResolutionPanel';
 
 interface BlendVisualizerProps {
@@ -92,9 +93,18 @@ export default function BlendVisualizer({ blend, isAnimating = true }: BlendVisu
                         <div className="text-sm font-sans text-zinc-400 uppercase tracking-wider">
                             {getRoleDisplayName(sortedStrains[0].role)}
                         </div>
-                        <div className="text-xl lg:text-3xl font-serif font-light text-white">
+                        <motion.div
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ 
+                                delay: 0.3,
+                                duration: 0.4,
+                                ease: 'easeOut'
+                            }}
+                            className="text-xl lg:text-3xl font-serif font-light text-white"
+                        >
                             {sortedStrains[0].name}
-                        </div>
+                        </motion.div>
                     </div>
                 </div>
             ) : (
@@ -122,9 +132,18 @@ export default function BlendVisualizer({ blend, isAnimating = true }: BlendVisu
                                     <div className="text-[10px] font-sans font-medium uppercase tracking-wider text-zinc-400">
                                         {getRoleDisplayName(strain.role)}
                                     </div>
-                                    <div className="text-sm lg:text-base font-serif font-light text-white break-words">
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 8 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ 
+                                            delay: index * 0.15 + 0.2,
+                                            duration: 0.4,
+                                            ease: 'easeOut'
+                                        }}
+                                        className="text-sm lg:text-base font-serif font-light text-white break-words"
+                                    >
                                         {strain.name}
-                                    </div>
+                                    </motion.div>
                                 </div>
                             </div>
                         );
