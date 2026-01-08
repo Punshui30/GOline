@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface AgeGateProps {
   onComplete: (userAge: number) => void;
@@ -13,6 +14,15 @@ export default function AgeGate({ onComplete }: AgeGateProps) {
   const [age, setAge] = useState('');
   const [ageError, setAgeError] = useState<string | null>(null);
   const [isFirstTime, setIsFirstTime] = useState<boolean | null>(null);
+  const [reducedMotion, setReducedMotion] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      console.log('[AGEGATE] Modal overlay mounted - does not control layout');
+      const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+      setReducedMotion(mediaQuery.matches);
+    }
+  }, []);
 
   const handleAgeSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,98 +58,128 @@ export default function AgeGate({ onComplete }: AgeGateProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm">
-      <div className="relative max-w-lg w-full mx-4 bg-zinc-900 border border-zinc-800 p-8 lg:p-12">
-        {step === 'age' && (
-          <div className="space-y-6">
-            <h2 className="font-serif text-3xl lg:text-4xl font-light text-white mb-2">Age Verification</h2>
-            <p className="text-sm font-sans text-zinc-400 leading-relaxed">
-              You must be 21 or older to use this calculator.
-            </p>
-            <form onSubmit={handleAgeSubmit} className="space-y-4">
-              <div>
-                <label htmlFor="age" className="block text-sm font-sans font-medium text-white mb-2">
-                  Enter your age
-                </label>
-                <input
-                  id="age"
-                  type="number"
-                  min="1"
-                  max="120"
-                  value={age}
-                  onChange={(e) => {
-                    setAge(e.target.value);
-                    setAgeError(null);
-                  }}
-                  className="w-full bg-zinc-800 border border-zinc-700 text-white px-4 py-3 font-sans focus:border-[#C5A065] focus:outline-none transition-colors"
-                  placeholder="21"
-                  autoFocus
-                />
-                {ageError && (
-                  <p className="mt-2 text-sm font-sans text-red-400">{ageError}</p>
-                )}
-              </div>
-              <button
-                type="submit"
-                className="w-full px-6 py-3 border border-[#C5A065] text-[#C5A065] text-xs font-sans uppercase tracking-widest hover:bg-[#C5A065] hover:text-black active:bg-[#B89555] transition-all duration-200 cursor-pointer"
+    <AnimatePresence>
+      <motion.div
+        initial={reducedMotion ? {} : { opacity: 0 }}
+        animate={reducedMotion ? {} : { opacity: 1 }}
+        exit={reducedMotion ? {} : { opacity: 0 }}
+        transition={reducedMotion ? {} : { duration: 0.3 }}
+        className="fixed inset-0 z-[100] flex items-center justify-center bg-app/95 backdrop-blur-md"
+      >
+        <motion.div
+          initial={reducedMotion ? {} : { opacity: 0, scale: 0.95, y: 8 }}
+          animate={reducedMotion ? {} : { opacity: 1, scale: 1, y: 0 }}
+          transition={reducedMotion ? {} : { duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+          className="relative max-w-lg w-full mx-4 bg-surface-elevated border border-app-border p-8 lg:p-12"
+        >
+          <AnimatePresence mode="wait">
+            {step === 'age' && (
+              <motion.div
+                key="age"
+                initial={reducedMotion ? {} : { opacity: 0, x: -8 }}
+                animate={reducedMotion ? {} : { opacity: 1, x: 0 }}
+                exit={reducedMotion ? {} : { opacity: 0, x: 8 }}
+                transition={reducedMotion ? {} : { duration: 0.3 }}
+                className="space-y-6"
               >
-                Continue
-              </button>
-            </form>
-          </div>
-        )}
+                <h2 className="font-serif text-3xl lg:text-4xl font-light text-app mb-2">Age Verification</h2>
+                <p className="text-sm font-sans text-muted leading-relaxed">
+                  You must be 21 or older to use this calculator.
+                </p>
+                <form onSubmit={handleAgeSubmit} className="space-y-4">
+                  <div>
+                    <label htmlFor="age" className="block text-sm font-sans font-medium text-app mb-2">
+                      Enter your age
+                    </label>
+                    <input
+                      id="age"
+                      type="number"
+                      min="1"
+                      max="120"
+                      value={age}
+                      onChange={(e) => {
+                        setAge(e.target.value);
+                        setAgeError(null);
+                      }}
+                      className="w-full bg-surface border border-app-border text-app px-4 py-3 font-sans focus:border-accent focus:outline-none transition-colors"
+                      placeholder="21"
+                      autoFocus
+                    />
+                    {ageError && (
+                      <p className="mt-2 text-sm font-sans text-red-400">{ageError}</p>
+                    )}
+                  </div>
+                  <button
+                    type="submit"
+                    className="w-full px-6 py-3 border border-accent text-accent text-xs font-sans uppercase tracking-widest hover:bg-accent hover:text-app-bg active:bg-accent-active transition-all duration-200 cursor-pointer"
+                  >
+                    Continue
+                  </button>
+                </form>
+              </motion.div>
+            )}
 
-        {step === 'experience' && (
-          <div className="space-y-6">
-            <h2 className="font-serif text-3xl lg:text-4xl font-light text-white mb-2">Welcome</h2>
-            <p className="text-sm font-sans text-zinc-400 leading-relaxed mb-6">
-              Have you used this calculator before?
-            </p>
-            <div className="flex flex-col gap-3">
-              <button
-                onClick={() => handleExperienceChoice('first-time')}
-                className="w-full px-6 py-3 border border-zinc-700 text-white text-sm font-sans uppercase tracking-wider hover:border-zinc-500 active:border-zinc-400 transition-all duration-200 cursor-pointer text-left"
+            {step === 'experience' && (
+              <motion.div
+                key="experience"
+                initial={reducedMotion ? {} : { opacity: 0, x: -8 }}
+                animate={reducedMotion ? {} : { opacity: 1, x: 0 }}
+                exit={reducedMotion ? {} : { opacity: 0, x: 8 }}
+                transition={reducedMotion ? {} : { duration: 0.3 }}
+                className="space-y-6"
               >
-                First time
-              </button>
-              <button
-                onClick={() => handleExperienceChoice('returning')}
-                className="w-full px-6 py-3 border border-zinc-700 text-white text-sm font-sans uppercase tracking-wider hover:border-zinc-500 active:border-zinc-400 transition-all duration-200 cursor-pointer text-left"
-              >
-                I've used it before
-              </button>
-            </div>
-          </div>
-        )}
+                <h2 className="font-serif text-3xl lg:text-4xl font-light text-app mb-2">Welcome</h2>
+                <p className="text-sm font-sans text-muted leading-relaxed mb-6">
+                  Have you used this calculator before?
+                </p>
+                <div className="flex flex-col gap-3">
+                  <button
+                    onClick={() => handleExperienceChoice('first-time')}
+                    className="w-full px-6 py-3 border border-app-border text-app text-sm font-sans uppercase tracking-wider hover:border-accent active:border-accent transition-all duration-200 cursor-pointer text-left"
+                  >
+                    First time
+                  </button>
+                  <button
+                    onClick={() => handleExperienceChoice('returning')}
+                    className="w-full px-6 py-3 border border-app-border text-app text-sm font-sans uppercase tracking-wider hover:border-accent active:border-accent transition-all duration-200 cursor-pointer text-left"
+                  >
+                    I've used it before
+                  </button>
+                </div>
+              </motion.div>
+            )}
 
-        {step === 'onboarding' && isFirstTime && (
-          <div className="space-y-6">
-            <h2 className="font-serif text-3xl lg:text-4xl font-light text-white mb-6">How this works</h2>
-            
-            {/* Consumer onboarding copy intentionally explains blends-only logic.
-                Do not reintroduce single-strain framing or business-specific language here. */}
-            <div className="space-y-4 text-sm font-sans text-zinc-400 leading-relaxed">
-              <p>
-                This system doesn't recommend a single strain—it builds intentional blends. Each strain contains many compounds that can interact differently depending on how they're combined. Some effects stack, some balance out, and some only work within certain ranges.
-              </p>
-              <p>
-                By blending multiple strains together, the system can more reliably recreate the feeling you're looking for, even when individual strains vary or aren't available. Behind the scenes, it uses real cannabis knowledge and structured math to weigh those interactions and turn your goal into a blend designed to work consistently. The result is less guesswork and a more predictable experience.
-              </p>
-            </div>
-
-            <div className="pt-4">
-              <button
-                onClick={handleOnboardingComplete}
-                className="w-full px-6 py-3 border border-[#C5A065] text-[#C5A065] text-xs font-sans uppercase tracking-widest hover:bg-[#C5A065] hover:text-black active:bg-[#B89555] transition-all duration-200 cursor-pointer"
+            {step === 'onboarding' && isFirstTime && (
+              <motion.div
+                key="onboarding"
+                initial={reducedMotion ? {} : { opacity: 0, x: -8 }}
+                animate={reducedMotion ? {} : { opacity: 1, x: 0 }}
+                exit={reducedMotion ? {} : { opacity: 0, x: 8 }}
+                transition={reducedMotion ? {} : { duration: 0.3 }}
+                className="space-y-6"
               >
-                Start
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
+                <h2 className="font-serif text-3xl lg:text-4xl font-light text-app mb-6">How this works</h2>
+                <div className="space-y-4 text-sm font-sans text-muted leading-relaxed">
+                  <p>
+                    This system doesn't recommend a single strain—it builds intentional blends. Each strain contains many compounds that can interact differently depending on how they're combined. Some effects stack, some balance out, and some only work within certain ranges.
+                  </p>
+                  <p>
+                    By blending multiple strains together, the system can more reliably recreate the feeling you're looking for, even when individual strains vary or aren't available. Behind the scenes, it uses real cannabis knowledge and structured math to weigh those interactions and turn your goal into a blend designed to work consistently. The result is less guesswork and a more predictable experience.
+                  </p>
+                </div>
+                <div className="pt-4">
+                  <button
+                    onClick={handleOnboardingComplete}
+                    className="w-full px-6 py-3 border border-accent text-accent text-xs font-sans uppercase tracking-widest hover:bg-accent hover:text-app-bg active:bg-accent-active transition-all duration-200 cursor-pointer"
+                  >
+                    Start
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
   );
 }
-
-

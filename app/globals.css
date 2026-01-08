@@ -10,27 +10,27 @@
   }
 
   html {
-    height: 100%;
-    width: 100%;
+    height: 100vh;
+    width: 100vw;
     overflow: hidden;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
   body {
-    height: 100%;
-    width: 100%;
+    height: 100vh;
+    width: 100vw;
     margin: 0;
     padding: 0;
     overflow: hidden;
-    background: #111111;
-    color: #E5E5E5;
+    background: #0a0a0a;
+    color: #e8e8e8;
     font-family: 'Inter', sans-serif;
   }
 
   #__next {
-    height: 100%;
-    width: 100%;
+    height: 100vh;
+    width: 100vw;
     overflow: hidden;
   }
 
@@ -41,68 +41,53 @@
 
 @layer base {
   :root {
-    /* Single Accent Color Token - Used Sparingly for Emphasis */
-    --accent: #C5A065;
-    --accent-hover: #D4B075;
-    --accent-active: #B89555;
-    --accent-light: #C5A065;
+    /* App-grade color system - Dark, calm, intelligent */
+    --app-bg: #0a0a0a;
+    --app-surface: #141414;
+    --app-surface-elevated: #1a1a1a;
+    --app-border: #252525;
+    --app-text: #e8e8e8;
+    --app-text-muted: #9a9a9a;
+    --app-accent: #d4af37;
+    --app-accent-hover: #e5c158;
+    --app-accent-active: #b8941f;
   }
 }
 
 @layer utilities {
-  .bg-noise {
-    background-color: #111111;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+  .bg-app {
+    background-color: var(--app-bg);
   }
 
-  /* Accent color utilities - Use sparingly */
+  .bg-surface {
+    background-color: var(--app-surface);
+  }
+
+  .bg-surface-elevated {
+    background-color: var(--app-surface-elevated);
+  }
+
+  .border-app {
+    border-color: var(--app-border);
+  }
+
+  .text-app {
+    color: var(--app-text);
+  }
+
+  .text-muted {
+    color: var(--app-text-muted);
+  }
+
   .text-accent {
-    color: var(--accent);
+    color: var(--app-accent);
   }
-  
+
   .bg-accent {
-    background-color: var(--accent);
+    background-color: var(--app-accent);
   }
-  
+
   .border-accent {
-    border-color: var(--accent);
-  }
-  
-  .text-bronze-gradient {
-    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes slideInFromBottom {
-  from {
-    opacity: 0;
-    transform: translateY(24px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+    border-color: var(--app-accent);
   }
 }

@@ -12,6 +12,7 @@ export const dynamic = 'force-dynamic';
  */
 
 import { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { OutcomeIntent, OutcomeResult } from '@/lib/goOutcomeEngine';
 import { resolveOutcome } from '@/lib/goOutcomeEngine';
 import { resolveToNamedStrains, type NamedResolutionResult } from '@/lib/namedResolution';
@@ -856,9 +857,19 @@ export default function Home() {
     }
   };
 
+  // PROOF: Console logs for replacement verification
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      console.log('[PAGE] AppShell content mounted - Fixed viewport layout');
+      console.log('[PAGE] Active layout: app/page.tsx (DESTRUCTIVE REPLACEMENT)');
+      console.log('[PAGE] AgeGate overlay:', !ageGateComplete ? 'ACTIVE' : 'COMPLETE');
+      console.log('[PAGE] Current phase:', outcomePhase);
+    }
+  }, [ageGateComplete, outcomePhase]);
+
   return (
-    <div className="h-full bg-noise text-[#E5E5E5] font-sans selection:bg-accent/30 relative">
-      {/* Age Gate Overlay */}
+    <div className="h-full bg-app text-app relative">
+      {/* Age Gate Modal Overlay - Does NOT control layout */}
       {!ageGateComplete && (
         <AgeGate
           onComplete={(age) => {
@@ -868,65 +879,87 @@ export default function Home() {
         />
       )}
 
-      {/* App Shell - Fixed Height Container */}
+      {/* App Shell Content - Always renders, owns viewport */}
       <div className="h-full flex flex-col">
-        {/* Content Area - Scrollable Panel */}
         <div className="flex-1 min-h-0 overflow-hidden">
-          {ageGateComplete && outcomePhase === 'input' && (
-            <main className="h-full overflow-y-auto">
-              <div className="w-full max-w-[1920px] mx-auto px-6 lg:px-12 xl:px-24 pb-32 pt-20 lg:pt-28">
-                {isProcessing && (
-                  <div className="mb-4">
-                    <span className="text-[10px] font-mono font-medium tracking-widest text-zinc-400">PROCESSING...</span>
-                  </div>
-                )}
-                <OutcomeInputPanel
-                  userInput={userInput}
-                  currentClarification={currentClarification}
-                  clarificationAnswers={clarificationAnswers}
-                  isProcessing={isProcessing}
-                  onInputChange={handleInputChange}
-                  onSubmit={handleAnalyze}
-                  onClarificationAnswer={handleClarificationAnswer}
-                  onClearClarification={() => {
-                    setCurrentClarification(null);
-                    setResolvedAxes(new Set());
-                    setClarificationAnswers({});
-                  }}
-                />
-              </div>
-            </main>
-          )}
+          <AnimatePresence mode="wait">
+            {ageGateComplete && outcomePhase === 'input' && (
+              <motion.main
+                key="input"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                className="h-full overflow-y-auto"
+              >
+                <div className="w-full max-w-[1920px] mx-auto px-6 lg:px-12 xl:px-24 pb-32 pt-20 lg:pt-28">
+                  {isProcessing && (
+                    <div className="mb-4">
+                      <span className="text-[10px] font-mono font-medium tracking-widest text-muted">PROCESSING...</span>
+                    </div>
+                  )}
+                  <OutcomeInputPanel
+                    userInput={userInput}
+                    currentClarification={currentClarification}
+                    clarificationAnswers={clarificationAnswers}
+                    isProcessing={isProcessing}
+                    onInputChange={handleInputChange}
+                    onSubmit={handleAnalyze}
+                    onClarificationAnswer={handleClarificationAnswer}
+                    onClearClarification={() => {
+                      setCurrentClarification(null);
+                      setResolvedAxes(new Set());
+                      setClarificationAnswers({});
+                    }}
+                  />
+                </div>
+              </motion.main>
+            )}
 
-          {ageGateComplete && outcomePhase === 'resolving' && (
-            <main className="h-full overflow-y-auto bg-zinc-950/60">
-              <div className="w-full max-w-[1920px] mx-auto px-6 lg:px-12 xl:px-24 pb-32 pt-20 lg:pt-28">
-                <ResolvingPanel />
-              </div>
-            </main>
-          )}
+            {ageGateComplete && outcomePhase === 'resolving' && (
+              <motion.main
+                key="resolving"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                className="h-full overflow-y-auto bg-surface"
+              >
+                <div className="w-full max-w-[1920px] mx-auto px-6 lg:px-12 xl:px-24 pb-32 pt-20 lg:pt-28">
+                  <ResolvingPanel />
+                </div>
+              </motion.main>
+            )}
 
-          {ageGateComplete && outcomePhase === 'result' && resolvedBlend && (
-            <main className="h-full overflow-y-auto">
-              <div className="w-full max-w-[1920px] mx-auto px-6 lg:px-12 xl:px-24 pb-32 pt-20 lg:pt-28">
-                <ResultPanel
-                  blend={resolvedBlend}
-                  intent={intent}
-                  isProcessing={isProcessing}
-                  deterministicExplanation={deterministicExplanation}
-                  llmExplanation={llmExplanation}
-                  llmUsageInstructions={llmUsageInstructions}
-                  blendNickname={blendNickname}
-                  blendHashtag={blendHashtag}
-                  shareCaption={shareCaption}
-                  onRefineOutcome={handleRefineOutcome}
-                  onShowUsageProtocol={handleShowUsageProtocol}
-                  onAdjustment={handleAdjustment}
-                  hasResolved={hasResolved}
-                />
-              </div>
-            </main>
-          )}
+            {ageGateComplete && outcomePhase === 'result' && resolvedBlend && (
+              <motion.main
+                key="result"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                className="h-full overflow-y-auto"
+              >
+                <div className="w-full max-w-[1920px] mx-auto px-6 lg:px-12 xl:px-24 pb-32 pt-20 lg:pt-28">
+                  <ResultPanel
+                    blend={resolvedBlend}
+                    intent={intent}
+                    isProcessing={isProcessing}
+                    deterministicExplanation={deterministicExplanation}
+                    llmExplanation={llmExplanation}
+                    llmUsageInstructions={llmUsageInstructions}
+                    blendNickname={blendNickname}
+                    blendHashtag={blendHashtag}
+                    shareCaption={shareCaption}
+                    onRefineOutcome={handleRefineOutcome}
+                    onShowUsageProtocol={handleShowUsageProtocol}
+                    onAdjustment={handleAdjustment}
+                    hasResolved={hasResolved}
+                  />
+                </div>
+              </motion.main>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 
@@ -935,12 +968,12 @@ export default function Home() {
         <div className="fixed bottom-12 right-12 z-50">
           <button
             onClick={isListening ? stopListening : startListening}
-            className={`flex items-center gap-4 transition-colors duration-500 ${isListening ? 'text-accent' : 'text-zinc-600 hover:text-white'}`}
+            className={`flex items-center gap-4 transition-colors duration-500 ${isListening ? 'text-accent' : 'text-muted hover:text-app'}`}
           >
             <span className="text-[10px] font-bold tracking-[0.2em] uppercase hidden lg:block">
               {isListening ? 'LISTENING' : 'VOICE INPUT'}
             </span>
-            <div className={`w-3 h-3 rounded-full transition-all duration-500 ${isListening ? 'bg-current scale-125' : 'border border-current'}`} />
+            <div className={`w-3 h-3 rounded-full transition-all duration-500 ${isListening ? 'bg-accent scale-125' : 'border border-current'}`} />
           </button>
         </div>
       )}
