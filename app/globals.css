@@ -58,6 +58,13 @@
   .border-accent {
     border-color: var(--accent);
   }
+  
+  .text-bronze-gradient {
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
 }
 
 @keyframes fadeIn {
