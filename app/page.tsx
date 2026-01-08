@@ -1,5 +1,8 @@
 'use client';
 
+// Force dynamic rendering to prevent static generation errors
+export const dynamic = 'force-dynamic';
+
 /**
  * GO Line — Guided Outcomes Calculator
  * 

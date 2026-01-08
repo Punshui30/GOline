@@ -2,6 +2,8 @@ import Link from "next/link";
 import Image from "next/image";
 import type { Metadata } from "next";
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: "Nitrogen-Based Processing Systems",
   description: "Exploratory work on nitrogen-based processing methods for cannabis extraction and product consistency.",

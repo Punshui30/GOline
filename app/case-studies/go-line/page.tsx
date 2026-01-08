@@ -3,6 +3,8 @@ import Image from "next/image";
 import type { Metadata } from "next";
 import styles from "./GoLine.module.css";
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: "GO — Guided Outcomes",
   description: "An outcome-driven cannabis product system designed around predictable, repeatable effects.",

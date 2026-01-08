@@ -2,6 +2,8 @@
 // import DAW from '@/src/components/DAW/DAW';
 import type { Metadata } from 'next';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: 'Kiwi Garage Band - Browser-Based DAW',
   description: 'A browser-based digital audio workstation with multi-track recording, virtual instruments, effects, and robust tempo control.',

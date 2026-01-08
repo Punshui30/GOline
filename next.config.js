@@ -7,6 +7,11 @@ const nextConfig = {
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
   },
   trailingSlash: true,
+  // Disable static optimization for pages that use client-side features
+  // This prevents build failures from useContext errors during SSG
+  experimental: {
+    missingSuspenseWithCSRBailout: false,
+  },
 }
 
 module.exports = nextConfig
