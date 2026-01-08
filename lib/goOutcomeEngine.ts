@@ -22,7 +22,20 @@ import { assessRiskProfile } from '@/lib/outcomeBrain/riskWeighting';
 import { evaluateConstraints } from '@/lib/outcomeBrain/constraintSatisfaction';
 import { generateOutcomeExplanation } from '@/lib/outcomeBrain/explainability';
 
+// Blend math evaluation layer
+import { evaluateBlend, type BlendEvaluation } from '@/lib/blendMath';
+
 // --- INTERFACES ---
+
+/**
+ * BlendComponent represents a component in a blend candidate
+ */
+interface BlendComponent {
+  strainId: string;
+  strain: Strain;
+  weight: number; // 0-1 normalized weight
+  deviationScore?: number; // Score for diversity penalty calculation
+}
 
 export interface OutcomeIntent {
   activation: number; // 0-1
@@ -150,110 +163,344 @@ function computeBlendVector(strains: Strain[], ratios: number[]) {
 }
 
 /**
- * Resolve Outcome using Combinatorial Optimization
+ * Calculate deviation score for a strain when used as a stabilizer
+ * Lower deviation = less disturbance to the outcome
+ */
+function calculateDeviationScore(
+  stabilizer: Strain,
+  primaryStrain: Strain,
+  intent: OutcomeIntent
+): number {
+  const primaryVec = getStrainVector(primaryStrain);
+  const stabilizerVec = getStrainVector(stabilizer);
+  
+  // Calculate how much the stabilizer would shift the blend vector
+  // We blend at 70% primary, 30% stabilizer
+  const blendedVec = {
+    activation: primaryVec.activation * 0.7 + stabilizerVec.activation * 0.3,
+    anxietyRisk: primaryVec.anxietyRisk * 0.7 + stabilizerVec.anxietyRisk * 0.3,
+    body: primaryVec.body * 0.7 + stabilizerVec.body * 0.3,
+    focus: primaryVec.focus * 0.7 + stabilizerVec.focus * 0.3,
+    calm: primaryVec.calm * 0.7 + stabilizerVec.calm * 0.3,
+  };
+  
+  // Calculate how much this deviates from the pure primary strain's distance
+  const primaryDistance = calculateDistance(primaryVec, intent);
+  const blendedDistance = calculateDistance(blendedVec, intent);
+  
+  // Return the absolute deviation (how much it changes the distance)
+  return Math.abs(blendedDistance - primaryDistance);
+}
+
+/**
+ * Enforce minimum 2 components in a blend
+ * If less than 2, pad with a stabilizer that least disturbs the outcome
+ */
+function enforceBlendMinimum(
+  components: BlendComponent[],
+  library: Strain[],
+  intent: OutcomeIntent
+): BlendComponent[] {
+  if (components.length >= 2) return components;
+
+  const primary = components[0];
+
+  // Find stabilizer that least disturbs outcome
+  const stabilizerCandidates = library
+    .filter(s => s.id !== primary.strainId)
+    .map(strain => ({
+      strainId: strain.id,
+      strain,
+      weight: 0.3,
+      deviationScore: calculateDeviationScore(strain, primary.strain, intent)
+    }))
+    .sort((a, b) => (a.deviationScore || Infinity) - (b.deviationScore || Infinity));
+
+  if (stabilizerCandidates.length === 0) {
+    // Fallback: use any other strain if no stabilizer found
+    const fallback = library.find(s => s.id !== primary.strainId);
+    if (fallback) {
+      return [
+        { ...primary, weight: 0.7 },
+        { strainId: fallback.id, strain: fallback, weight: 0.3 }
+      ];
+    }
+    // This should never happen, but return as-is if no fallback
+    return components;
+  }
+
+  const stabilizer = stabilizerCandidates[0];
+
+  return [
+    { ...primary, weight: 0.7 },
+    { ...stabilizer, weight: 0.3 }
+  ];
+}
+
+/**
+ * Generate blend candidates directly (no single-strain ranking)
+ * Generates pairwise and triple blends
+ */
+function generateBlendCandidates(
+  library: Strain[],
+  maxCandidates: number = 500
+): Array<{ strains: Strain[]; ratios: number[] }> {
+  const blends: Array<{ strains: Strain[]; ratios: number[] }> = [];
+  
+  // Cap library size to prevent combinatorial explosion
+  const candidatePool = library.slice(0, 20);
+
+  // Pairwise blends with varied ratios
+  for (let i = 0; i < candidatePool.length && blends.length < maxCandidates; i++) {
+    for (let j = i + 1; j < candidatePool.length && blends.length < maxCandidates; j++) {
+      // Generate multiple ratio combinations
+      const ratios = [
+        [60, 40],
+        [70, 30],
+        [50, 50],
+        [80, 20],
+        [40, 60]
+      ];
+      
+      for (const [r1, r2] of ratios) {
+        if (blends.length >= maxCandidates) break;
+        blends.push({
+          strains: [candidatePool[i], candidatePool[j]],
+          ratios: [r1, r2]
+        });
+      }
+    }
+  }
+
+  // Triple blends (more selective to stay within limit)
+  for (let i = 0; i < candidatePool.length && blends.length < maxCandidates; i++) {
+    for (let j = i + 1; j < candidatePool.length && blends.length < maxCandidates; j++) {
+      for (let k = j + 1; k < candidatePool.length && blends.length < maxCandidates; k++) {
+        // Fewer ratio combinations for triples
+        const ratios = [
+          [50, 30, 20],
+          [40, 35, 25],
+          [45, 30, 25],
+          [60, 25, 15]
+        ];
+        
+        for (const [r1, r2, r3] of ratios) {
+          if (blends.length >= maxCandidates) break;
+          blends.push({
+            strains: [candidatePool[i], candidatePool[j], candidatePool[k]],
+            ratios: [r1, r2, r3]
+          });
+        }
+      }
+    }
+  }
+
+  return blends;
+}
+
+/**
+ * Calculate diversity penalty for a strain based on usage statistics
+ * Penalizes over-used strains without introducing randomness
+ */
+function calculateDiversityPenalty(
+  strainId: string,
+  usageStats: Record<string, number>
+): number {
+  const recentFrequency = usageStats[strainId] ?? 0;
+  // Cap penalty at 0.25 (25% reduction) to avoid completely excluding good matches
+  return Math.min(recentFrequency * 0.05, 0.25);
+}
+
+// Global usage statistics tracking (simple in-memory)
+// In production, this would be persisted and reset periodically
+const usageStatistics: Record<string, number> = {};
+
+/**
+ * Resolve Outcome using Blend-First Combinatorial Optimization
+ * NEVER returns a single strain - always returns a blend of 2+ components
  */
 export function resolveOutcome(intent: OutcomeIntent): OutcomeResult {
   const allStrains = Object.values(STRAIN_LIBRARY);
 
-  // 1. Pre-Score Single Strains to reduce search space
-  // We calculate the distance of each strain (at 100%) to the intent.
-  // We pick the Top K to perform combinatorial mixing on.
-  const scoredStrains = allStrains.map(strain => ({
+  // --- BLEND-FIRST GENERATION ---
+  // Generate blend candidates directly, no single-strain ranking
+  const blendCandidates = generateBlendCandidates(allStrains, 500);
+
+  // Track candidates with their evaluations
+  interface CandidateSolution {
+    strains: Strain[];
+    ratios: number[];
+    distance: number;
+    adjustedDistance: number; // Distance after diversity penalty
+    evaluation?: BlendEvaluation;
+    primaryStrainId: string; // For diversity tracking
+  }
+
+  // Evaluate all blend candidates
+  const evaluatedCandidates: CandidateSolution[] = blendCandidates.map(blend => {
+    const vec = computeBlendVector(blend.strains, blend.ratios);
+    const baseDistance = calculateDistance(vec, intent);
+    
+    // Apply diversity penalty to primary strain (highest ratio)
+    const primaryIndex = blend.ratios.indexOf(Math.max(...blend.ratios));
+    const primaryStrainId = blend.strains[primaryIndex].id;
+    const diversityPenalty = calculateDiversityPenalty(primaryStrainId, usageStatistics);
+    const adjustedDistance = baseDistance + diversityPenalty;
+
+    return {
+      strains: blend.strains,
+      ratios: blend.ratios,
+      distance: baseDistance,
+      adjustedDistance,
+      primaryStrainId
+    };
+  });
+
+  // Sort by adjusted distance (accounts for diversity)
+  evaluatedCandidates.sort((a, b) => a.adjustedDistance - b.adjustedDistance);
+
+  // Take top candidates within reasonable threshold for blend math evaluation
+  const bestAdjustedDistance = evaluatedCandidates[0].adjustedDistance;
+  const threshold = bestAdjustedDistance * 1.05; // 5% threshold
+  const topCandidates = evaluatedCandidates.filter(c => c.adjustedDistance <= threshold).slice(0, 50); // Cap at 50 for evaluation
+
+  // --- BLEND MATH EVALUATION LAYER ---
+  // Evaluate top candidates using blend math
+  for (const candidate of topCandidates) {
+    try {
+      candidate.evaluation = evaluateBlend(candidate.strains, candidate.ratios);
+    } catch (e) {
+      // If evaluation fails, continue without it
+      console.warn('Blend evaluation failed for candidate:', e);
+    }
+  }
+
+  // Select best solution using blend math evaluation
+  // Preference order:
+  // 1. Lower adjusted distance (primary - includes diversity)
+  // 2. Higher stability (tie-breaker)
+  // 3. Lower risk (tie-breaker)
+  // 4. Higher confidence (tie-breaker)
+  // 5. More components (prefer richer blends)
+  const bestSolution = topCandidates.reduce((best, candidate) => {
+    // Primary: adjusted distance comparison (accounts for diversity)
+    if (candidate.adjustedDistance < best.adjustedDistance) return candidate;
+    if (candidate.adjustedDistance > best.adjustedDistance) return best;
+
+    // Tie-breaking: prefer candidates with evaluation data
+    if (!candidate.evaluation && best.evaluation) return best;
+    if (candidate.evaluation && !best.evaluation) return candidate;
+    if (!candidate.evaluation || !best.evaluation) {
+      // If neither has evaluation, prefer more components
+      return candidate.strains.length > best.strains.length ? candidate : best;
+    }
+
+    // Tie-breaking with evaluation metrics
+    const candEval = candidate.evaluation;
+    const bestEval = best.evaluation;
+
+    // Prefer higher stability
+    if (candEval.stability > bestEval.stability + 0.05) return candidate;
+    if (bestEval.stability > candEval.stability + 0.05) return best;
+
+    // Prefer lower risk
+    if (candEval.risk < bestEval.risk - 0.05) return candidate;
+    if (bestEval.risk < candEval.risk - 0.05) return best;
+
+    // Prefer higher confidence
+    if (candEval.confidence > bestEval.confidence + 0.03) return candidate;
+    if (bestEval.confidence > candEval.confidence + 0.03) return best;
+
+    // Final tie-breaker: prefer more components
+    return candidate.strains.length > best.strains.length ? candidate : best;
+  }, topCandidates[0]);
+
+  // Update usage statistics for diversity tracking
+  if (bestSolution.primaryStrainId) {
+    usageStatistics[bestSolution.primaryStrainId] = (usageStatistics[bestSolution.primaryStrainId] || 0) + 1;
+  }
+
+  // --- ENFORCE BLEND MINIMUM (CRITICAL GUARD) ---
+  // Convert to BlendComponent format for enforceBlendMinimum
+  const blendComponents: BlendComponent[] = bestSolution.strains.map((strain, idx) => ({
+    strainId: strain.id,
     strain,
-    distance: calculateDistance(getStrainVector(strain), intent)
+    weight: bestSolution.ratios[idx] / 100,
+    deviationScore: 0
   }));
 
-  // Sort by Distance ASC (Lowest is best)
-  scoredStrains.sort((a, b) => a.distance - b.distance);
+  // Enforce minimum 2 components - this should never add components if our generation is correct
+  // but it's a critical safety guard
+  const enforcedComponents = enforceBlendMinimum(blendComponents, allStrains, intent);
 
-  // Optimization Window: Dynamic Best + 15% Tolerance (Max 12)
-  // This prevents arbitrary cutoffs and allows mathematically viable candidates
-  // even if they aren't #1.
-  const bestDistance = scoredStrains[0].distance;
-  const cutoffDistance = bestDistance > 0 ? bestDistance * 1.15 : 0.1; // Allow small window if 0
-
-  const candidateStrains = scoredStrains
-    .filter(s => s.distance <= cutoffDistance || s.distance < 0.15) // Keep good matches
-    .slice(0, 12) // Cap at 12 to keep 8C3 / 12C3 reasonable
-    .map(s => s.strain);
-
-  let bestSolution = {
-    strains: [] as Strain[],
-    ratios: [] as number[],
-    distance: Infinity
-  };
-
-  // --- SOLVER ---
-
-  // Strategy A: Single Strain (100%)
-  for (const strain of candidateStrains) {
-    const dist = calculateDistance(getStrainVector(strain), intent);
-    if (dist < bestSolution.distance) {
-      bestSolution = { strains: [strain], ratios: [100], distance: dist };
-    }
-  }
-
-  // Strategy B: 2-Strain Blend
-  // Ratios: 10% increments from 10 to 90.
-  for (let i = 0; i < candidateStrains.length; i++) {
-    for (let j = i + 1; j < candidateStrains.length; j++) {
-      const s1 = candidateStrains[i];
-      const s2 = candidateStrains[j];
-
-      for (let r = 10; r <= 90; r += 10) {
-        const r1 = r;
-        const r2 = 100 - r;
-        const vec = computeBlendVector([s1, s2], [r1, r2]);
-        const dist = calculateDistance(vec, intent);
-
-        if (dist < bestSolution.distance) {
-          bestSolution = { strains: [s1, s2], ratios: [r1, r2], distance: dist };
-        }
-      }
-    }
-  }
-
-  // Strategy C: 3-Strain Blend
-  // Ratios: Step 20% to save cycles.
-  // (i, j, k)
-  // r1 from 10 to 80
-  // r2 from 10 to (90 - r1)
-  // r3 = remainder
-  for (let i = 0; i < candidateStrains.length; i++) {
-    for (let j = i + 1; j < candidateStrains.length; j++) {
-      for (let k = j + 1; k < candidateStrains.length; k++) {
-        const s1 = candidateStrains[i];
-        const s2 = candidateStrains[j];
-        const s3 = candidateStrains[k];
-
-        for (let r1 = 20; r1 <= 60; r1 += 20) {
-          for (let r2 = 20; r2 <= (80 - r1); r2 += 20) {
-            const r3 = 100 - r1 - r2;
-            if (r3 < 10) continue;
-
-            const vec = computeBlendVector([s1, s2, s3], [r1, r2, r3]);
-            const dist = calculateDistance(vec, intent);
-
-            if (dist < bestSolution.distance) {
-              bestSolution = { strains: [s1, s2, s3], ratios: [r1, r2, r3], distance: dist };
-            }
-          }
-        }
-      }
+  // Convert back to strains and ratios
+  let finalStrains = enforcedComponents.map(c => c.strain);
+  let finalRatios = enforcedComponents.map(c => Math.round(c.weight * 100));
+  
+  // Normalize ratios to sum to 100
+  const totalRatio = finalRatios.reduce((sum, r) => sum + r, 0);
+  if (totalRatio !== 100) {
+    finalRatios = finalRatios.map(r => Math.round((r / totalRatio) * 100));
+    // Fix rounding errors
+    const actualTotal = finalRatios.reduce((sum, r) => sum + r, 0);
+    if (actualTotal !== 100) {
+      finalRatios[0] += (100 - actualTotal);
     }
   }
 
   // --- FINALIZE ---
-  // The solution is the mathematical optimum within the search space.
+  // The solution is the mathematical optimum within the search space, refined by blend math evaluation.
+
+  // Re-evaluate final blend if components were modified by enforceBlendMinimum
+  let finalEvaluation = bestSolution.evaluation;
+  if (finalStrains.length !== bestSolution.strains.length || 
+      finalStrains.some((s, i) => s.id !== bestSolution.strains[i].id)) {
+    try {
+      finalEvaluation = evaluateBlend(finalStrains, finalRatios);
+    } catch (e) {
+      console.warn('Failed to re-evaluate enforced blend:', e);
+    }
+  }
 
   // Convert to Result Schema
-  // Calculate Confidence: Exponential Decay (Higher distance = Rapidly lower confidence)
+  // Base Confidence: Exponential Decay (Higher distance = Rapidly lower confidence)
   // exp(-distance) -> Dist 0 = 1.0, Dist 1 = 0.36, Dist 0.5 = 0.6
-  const confidenceScore = Math.exp(-bestSolution.distance);
+  let confidenceScore = Math.exp(-bestSolution.distance);
+
+  // Strengthen confidence with blend math evaluation
+  if (finalEvaluation) {
+    // Blend math evaluation provides additional confidence signal
+    // Weight: 70% base distance, 30% blend math confidence
+    const baseConfidence = confidenceScore;
+    const mathConfidence = finalEvaluation.confidence;
+    confidenceScore = baseConfidence * 0.7 + mathConfidence * 0.3;
+    
+    // Penalize high-risk blends
+    if (finalEvaluation.risk > 0.5) {
+      confidenceScore *= (1 - (finalEvaluation.risk - 0.5));
+    }
+  }
 
   const notes: string[] = [];
   if (confidenceScore < 0.6) notes.push("Complex intent match - result is approximate.");
-  if (bestSolution.strains.length === 1) notes.push("Single cultivar provides optimal mathematical fit.");
+  
+  // Ensure we never note single-strain solutions
+  if (finalStrains.length === 1) {
+    notes.push("Note: Single-strain solution detected - this should not happen. Blend enforced.");
+  }
+  
+  // Add blend math insights to notes
+  if (finalEvaluation) {
+    if (finalEvaluation.stability < 0.6) {
+      notes.push("Blend stability is moderate - effects may vary.");
+    }
+    if (finalEvaluation.risk > 0.5) {
+      notes.push("Higher risk profile - start with lower doses.");
+    }
+    if (finalEvaluation.biphasicIssues.length > 0) {
+      notes.push(...finalEvaluation.biphasicIssues.map(issue => `Note: ${issue}`));
+    }
+  }
 
 
   // Generate Additive Explanation (Brain Layers)
@@ -265,7 +512,7 @@ export function resolveOutcome(intent: OutcomeIntent): OutcomeResult {
   // OR map our `Strain` to `CanonicalCultivar` shape roughly.
 
   // Mapping for Brain Layers (Optional)
-  const mappedReferenceStrains = bestSolution.strains.map(s => ({
+  const mappedReferenceStrains = finalStrains.map(s => ({
     id: s.id,
     displayName: s.name,
     thcPercent: s.thc,
@@ -276,23 +523,56 @@ export function resolveOutcome(intent: OutcomeIntent): OutcomeResult {
   let explanation;
   try {
     // Run the explanation logic
-    const doseAnalysis = analyzeBlendDoseZones(mappedReferenceStrains, bestSolution.ratios);
-    const saturation = analyzeSignalDensity(mappedReferenceStrains, bestSolution.ratios, doseAnalysis);
+    const doseAnalysis = analyzeBlendDoseZones(mappedReferenceStrains, finalRatios);
+    const saturation = analyzeSignalDensity(mappedReferenceStrains, finalRatios, doseAnalysis);
     const risk = assessRiskProfile(doseAnalysis, saturation, intent);
-    // ... skipping full pipeline for speed, generating simplistic explanation
+    
+    // Incorporate blend math evaluation into explanation
+    let explanationText = `Selected ${finalStrains.map(s => s.name).join(' + ')} to minimize distance to target vectors.`;
+    
+    if (finalEvaluation) {
+      const evalParts: string[] = [];
+      if (finalEvaluation.entourageEffects.length > 0) {
+        evalParts.push(...finalEvaluation.entourageEffects);
+      }
+      if (finalEvaluation.stability > 0.75) {
+        evalParts.push(`High stability blend with predictable effects.`);
+      }
+      if (evalParts.length > 0) {
+        explanationText += ` ${evalParts.join(' ')}`;
+      }
+    }
+    
     explanation = {
-      explanation: `Selected ${bestSolution.strains.map(s => s.name).join(' + ')} to minimize distance to target vectors.`
+      explanation: explanationText
     };
   } catch (e) {
     // Ignore brain layer errors
+    // Fallback to basic explanation with blend math insights
+    let explanationText = `Selected ${finalStrains.map(s => s.name).join(' + ')} to minimize distance to target vectors.`;
+    if (finalEvaluation?.entourageEffects.length) {
+      explanationText += ` ${finalEvaluation.entourageEffects.join(' ')}`;
+    }
+    explanation = { explanation: explanationText };
+  }
+
+  // CRITICAL: Final assertion - this should NEVER happen after enforceBlendMinimum
+  if (finalStrains.length < 2) {
+    console.error('CRITICAL BUG: Resolver returned single-strain solution. This violates blend-only requirement.');
+    // Emergency fallback: force a second component
+    const emergencyStabilizer = allStrains.find(s => s.id !== finalStrains[0].id);
+    if (emergencyStabilizer) {
+      finalStrains = [finalStrains[0], emergencyStabilizer];
+      finalRatios = [70, 30];
+    }
   }
 
   return {
-    selectedCultivars: bestSolution.strains.map(s => ({
+    selectedCultivars: finalStrains.map(s => ({
       id: s.id,
       displayName: s.name
     })),
-    ratios: bestSolution.ratios,
+    ratios: finalRatios,
     confidenceScore,
     notes,
     explanation
