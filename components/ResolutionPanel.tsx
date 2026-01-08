@@ -58,6 +58,8 @@ export interface ResolvedBlend {
   failure?: any;
   // Alternate viable blends (top 3-5, excluding primary)
   alternates?: ResolvedBlend[];
+  // Stack segments for sequential visualization
+  stackSegments?: ResolvedCultivar[];
 }
 
 interface ResolutionPanelProps {

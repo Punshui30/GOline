@@ -44,7 +44,7 @@ export function convertToResolvedBlend(
   // IMPORTANT: LLM must not choose strains. It only explains math-selected blends.
   // Alternates are already selected by the deterministic engine.
   const alternates: ResolvedBlend[] = [];
-  
+
   // CRITICAL: Log outcome structure for verification
   console.log('[CONVERT] Outcome structure:', {
     hasOutcome: !!outcome,
@@ -53,10 +53,10 @@ export function convertToResolvedBlend(
     hasPrimary: outcome && 'primary' in outcome && !!outcome.primary,
     hasFailure: outcome && 'failure' in outcome && !!outcome.failure,
   });
-  
+
   // ASSERT: Verify alternates are present if outcome has them
   const expectedAlternates = outcome && 'alternates' in outcome ? outcome.alternates?.length || 0 : 0;
-  
+
   if (outcome && 'alternates' in outcome && outcome.alternates) {
     for (const altCandidate of outcome.alternates) {
       // Convert BlendCandidate directly to ResolvedBlend format
@@ -65,12 +65,12 @@ export function convertToResolvedBlend(
         .map((ratio, idx) => ({ ratio, idx }))
         .sort((a, b) => b.ratio - a.ratio)
         .map(item => item.idx);
-      
+
       const altCultivars: ResolvedCultivar[] = altCandidate.selectedCultivars.map((cultivar, idx) => {
         let role: CultivarRole = 'Synergist';
         if (sortedIndices[0] === idx) role = 'Anchor';
         else if (sortedIndices[1] === idx) role = 'Modifier';
-        
+
         return {
           id: cultivar.id,
           name: cultivar.displayName,
@@ -81,7 +81,7 @@ export function convertToResolvedBlend(
           weightGrams: (altCandidate.ratios[idx] / 100) * 1.0,
         };
       });
-      
+
       alternates.push({
         resolutionMode: 'BLENDED',
         confidenceScore: altCandidate.confidenceScore,
@@ -93,9 +93,9 @@ export function convertToResolvedBlend(
         stack: [],
       });
     }
-    
+
     console.log(`[CONVERT] Converted ${alternates.length} alternate candidates`);
-    
+
     // ASSERT: Alternates should not be dropped during conversion
     if (expectedAlternates > 0 && alternates.length === 0) {
       console.error('[CONVERT][ASSERT] Alternates dropped during conversion', {
@@ -104,7 +104,7 @@ export function convertToResolvedBlend(
         outcomeAlternates: outcome.alternates,
       });
     }
-    
+
     // ASSERT: All alternates should be converted
     if (expectedAlternates > 0 && alternates.length !== expectedAlternates) {
       console.error('[CONVERT][ASSERT] Not all alternates were converted', {
@@ -130,16 +130,27 @@ export function convertToResolvedBlend(
     // Keep raw data available if needed
     cultivars: cultivars,
     stack: named.stack ? [named.stack] : [],
+    stackSegments: named.stackingOptions?.[0]?.segments.map(s => {
+      const original = cultivars.find(c => c.name === s.strainName);
+      return {
+        id: s.strainId,
+        name: s.strainName,
+        role: original?.role || 'Synergist',
+        percentage: s.percentage,
+        explanation: s.purpose,
+        chemotypeId: s.strainId,
+      };
+    }),
     alternates: alternates.length > 0 ? alternates : undefined,
   };
-  
+
   console.log('[CONVERT] Final ResolvedBlend:', {
     primaryBlendCount: result.primaryBlend.length,
     primaryStrains: result.primaryBlend.map(c => c.name),
     hasAlternates: !!result.alternates,
     alternateCount: result.alternates?.length || 0,
   });
-  
+
   // ASSERT: Final result should have alternates if they were in the outcome
   if (expectedAlternates > 0 && (!result.alternates || result.alternates.length === 0)) {
     console.error('[CONVERT][ASSERT] Alternates dropped during conversion', {
@@ -148,7 +159,7 @@ export function convertToResolvedBlend(
       outcomeHasAlternates: outcome && 'alternates' in outcome && !!outcome.alternates,
     });
   }
-  
+
   // ASSERT: All alternates should be preserved
   if (expectedAlternates > 0 && result.alternates && result.alternates.length !== expectedAlternates) {
     console.error('[CONVERT][ASSERT] Not all alternates preserved in final result', {
@@ -157,6 +168,6 @@ export function convertToResolvedBlend(
       missing: expectedAlternates - result.alternates.length,
     });
   }
-  
+
   return result;
 }
