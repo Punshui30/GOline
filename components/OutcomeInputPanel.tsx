@@ -157,9 +157,9 @@ export default function OutcomeInputPanel({
         </div>
       </div>
 
-      <div className="mb-10 border-b border-go focus-within:border-energy transition-colors duration-500 py-6">
-        <label className="block text-[10px] font-sans font-semibold text-go-subtle uppercase tracking-[0.2em] mb-4">
-          Desired Outcome
+      <div className="mb-10 p-6 rounded-xl bg-glass-elevated border border-go focus-within:border-energy focus-within:shadow-[0_0_15px_rgba(212,175,55,0.1)] transition-all duration-500">
+        <label className="block text-xs font-sans text-go-muted mb-4 tracking-wide">
+          Describe the mental or physical state you want to achieve
         </label>
         <OutcomeIntentInput
           value={userInput}

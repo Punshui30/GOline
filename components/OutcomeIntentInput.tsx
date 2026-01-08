@@ -47,7 +47,7 @@ export default function OutcomeIntentInput({
           resize-none
           bg-transparent
           text-white
-          placeholder-white/30
+          placeholder-slate-400
           text-base
           leading-relaxed
           focus:outline-none
