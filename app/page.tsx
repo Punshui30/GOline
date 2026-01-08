@@ -917,7 +917,7 @@ export default function Home() {
       )}
 
       {/* Onboarding Overlay - Blocks interaction until complete or skipped */}
-      {ageGateComplete && showOnboarding && (
+      {ageGateComplete && false && showOnboarding && (
         <OnboardingOverlay
           onComplete={handleOnboardingComplete}
           onSkip={handleOnboardingSkip}
