@@ -117,8 +117,8 @@ export function convertToResolvedBlend(
     console.log('[CONVERT] WARNING: No alternates in outcome or outcome is missing');
   }
 
-  const result = {
-    resolutionMode: named.resolutionMode === 'STACKED' ? 'BLENDED' : 'SINGLE_TARGET', // Simplification for UI
+  const result: ResolvedBlend = {
+    resolutionMode: (named.resolutionMode === 'STACKED' ? 'BLENDED' : 'SINGLE_TARGET') as 'BLENDED' | 'SINGLE_TARGET' | 'FALLBACK', // Simplification for UI
     confidenceScore: named.confidenceScore,
     primaryBlend: cultivars,
     tradeoffs: named.tradeoffs,

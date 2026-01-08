@@ -185,13 +185,19 @@ export default function ResolutionPanel({ blend, intent, isComputing, onRefineOu
   const selectedStrainIds = blend ? blend.primaryBlend.map(c => c.id) : [];
 
   // ACTIVE STATE
+  console.log("ResolutionPanel rendered", {
+    hasBlend: !!blend,
+    primaryBlendCount: blend?.primaryBlend?.length || 0,
+    alternatesCount: blend?.alternates?.length || 0,
+  });
+
   return (
     <>
       {/* Dispensary Menu Background - Visual Context */}
       <DispensaryMenuBackground selectedStrainIds={selectedStrainIds} />
       
       <motion.div
-        className="relative flex flex-col gap-20 mb-32 text-[#E5E5E5] overflow-y-auto min-h-0 z-10"
+        className="relative flex flex-col gap-20 mb-32 text-[#E5E5E5] z-10"
         variants={staggerContainer}
         initial="initial"
         animate="animate"
