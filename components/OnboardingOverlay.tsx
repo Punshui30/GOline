@@ -37,17 +37,17 @@ export default function OnboardingOverlay({ onComplete, onSkip }: OnboardingOver
   return (
     <AnimatePresence>
       <motion.div
-        initial={reducedMotion ? {} : { opacity: 0 }}
-        animate={reducedMotion ? {} : { opacity: 1 }}
-        exit={reducedMotion ? {} : { opacity: 0 }}
-        transition={reducedMotion ? {} : { duration: 0.3 }}
-        className="fixed inset-0 z-[90] flex items-center justify-center bg-go/95 backdrop-blur-xl pointer-events-auto"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.3 }}
+        className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#0A0A0A] text-white"
       >
         <motion.div
           initial={reducedMotion ? {} : { opacity: 0, scale: 0.95, y: 8 }}
           animate={reducedMotion ? {} : { opacity: 1, scale: 1, y: 0 }}
           transition={reducedMotion ? {} : { duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
-          className="relative max-w-2xl w-full mx-4 bg-glass-elevated border border-go rounded-xl p-8 lg:p-12 shadow-2xl"
+          className="relative max-w-2xl w-full mx-4 bg-[#111216] border border-white/10 rounded-xl p-8 lg:p-12 shadow-2xl"
         >
           <AnimatePresence mode="wait">
             {step === 1 && (
@@ -140,9 +140,8 @@ export default function OnboardingOverlay({ onComplete, onSkip }: OnboardingOver
               {[1, 2, 3].map((s) => (
                 <div
                   key={s}
-                  className={`w-2 h-2 rounded-full transition-go ${
-                    s === step ? 'bg-amber' : 'bg-go-border'
-                  }`}
+                  className={`w-2 h-2 rounded-full transition-go ${s === step ? 'bg-amber' : 'bg-go-border'
+                    }`}
                 />
               ))}
             </div>
