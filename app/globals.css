@@ -44,19 +44,21 @@
 
 @layer base {
   :root {
-    /* GO Brand Color System - Dark, Organic, Premium */
+    /* GO Brand Color System - Dark, Organic, Premium (Increased Contrast) */
     --go-bg: #0d0d0d;
-    --go-surface: rgba(20, 20, 20, 0.6);
-    --go-surface-elevated: rgba(25, 25, 25, 0.7);
-    --go-border: rgba(255, 255, 255, 0.08);
-    --go-border-strong: rgba(255, 255, 255, 0.12);
-    --go-text: #e5e5e5;
-    --go-text-muted: #a0a0a0;
-    --go-text-subtle: #707070;
+    --go-surface: rgba(25, 25, 25, 0.75);
+    --go-surface-elevated: rgba(30, 30, 30, 0.85);
+    --go-border: rgba(255, 255, 255, 0.12);
+    --go-border-strong: rgba(255, 255, 255, 0.18);
+    --go-text: #f5f5f5;
+    --go-text-muted: #c0c0c0;
+    --go-text-subtle: #909090;
     --go-amber: #d4af37;
     --go-amber-hover: #e5c158;
     --go-amber-active: #c19d2a;
-    --go-amber-glow: rgba(212, 175, 55, 0.15);
+    --go-amber-glow: rgba(212, 175, 55, 0.25);
+    --go-amber-border: rgba(212, 175, 55, 0.5);
+    --go-amber-border-strong: rgba(212, 175, 55, 0.7);
   }
 }
 
@@ -66,17 +68,19 @@
     background-color: var(--go-bg);
   }
 
-  /* Glass Morphism Surfaces */
+  /* Glass Morphism Surfaces - Increased Contrast */
   .bg-glass {
     background: var(--go-surface);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05);
   }
 
   .bg-glass-elevated {
     background: var(--go-surface-elevated);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 0 0 1px rgba(212, 175, 55, 0.05);
   }
 
   /* Borders */
@@ -114,8 +118,24 @@
     border-color: var(--go-amber);
   }
 
+  .border-amber-subtle {
+    border-color: var(--go-amber-border);
+  }
+
+  .border-amber-strong {
+    border-color: var(--go-amber-border-strong);
+  }
+
   .bg-amber-glow {
     background-color: var(--go-amber-glow);
+  }
+
+  .shadow-amber {
+    box-shadow: 0 0 12px var(--go-amber-glow), 0 0 24px rgba(212, 175, 55, 0.1);
+  }
+
+  .shadow-amber-sm {
+    box-shadow: 0 0 6px var(--go-amber-glow);
   }
 
   /* Transitions */

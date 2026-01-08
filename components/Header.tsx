@@ -18,7 +18,7 @@ export default function Header() {
   }, []);
 
   return (
-    <header className="relative z-50 bg-glass border-b border-go backdrop-blur-xl">
+    <header className="relative z-50 bg-glass border-b border-go-strong backdrop-blur-xl">
       <div className="px-6 lg:px-12 xl:px-24 py-4 flex items-center gap-4 h-16">
         <motion.div
           initial={reducedMotion ? {} : { opacity: 0, y: -8, scale: 0.96 }}

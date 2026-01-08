@@ -101,7 +101,7 @@ export default function AgeGate({ onComplete }: AgeGateProps) {
                         setAge(e.target.value);
                         setAgeError(null);
                       }}
-                      className="w-full bg-glass border border-go text-go px-4 py-3 font-sans rounded-lg focus:border-amber focus:outline-none focus:ring-1 focus:ring-amber/20 transition-go"
+                      className="w-full bg-glass border border-go-strong text-go px-4 py-3 font-sans rounded-lg focus:border-amber-strong focus:outline-none focus:ring-2 focus:ring-amber/30 focus:shadow-amber-sm transition-go"
                       placeholder="21"
                       autoFocus
                     />
@@ -111,7 +111,7 @@ export default function AgeGate({ onComplete }: AgeGateProps) {
                   </div>
                   <button
                     type="submit"
-                    className="w-full px-6 py-3 border border-amber text-amber text-xs font-sans uppercase tracking-widest hover:bg-amber hover:text-go-bg active:bg-amber-active transition-go cursor-pointer rounded-lg"
+                    className="w-full px-6 py-3 border-2 border-amber text-amber text-xs font-sans uppercase tracking-widest hover:bg-amber hover:text-go-bg active:bg-amber-active hover:shadow-amber-sm transition-go cursor-pointer rounded-lg font-medium"
                   >
                     Continue
                   </button>
@@ -135,13 +135,13 @@ export default function AgeGate({ onComplete }: AgeGateProps) {
                 <div className="flex flex-col gap-3">
                   <button
                     onClick={() => handleExperienceChoice('first-time')}
-                    className="w-full px-6 py-3 border border-go text-go text-sm font-sans uppercase tracking-wider hover:border-amber active:border-amber transition-go cursor-pointer text-left rounded-lg"
+                    className="w-full px-6 py-3 border-2 border-go-strong text-go text-sm font-sans uppercase tracking-wider hover:border-amber-subtle active:border-amber-strong hover:text-amber transition-go cursor-pointer text-left rounded-lg"
                   >
                     First time
                   </button>
                   <button
                     onClick={() => handleExperienceChoice('returning')}
-                    className="w-full px-6 py-3 border border-go text-go text-sm font-sans uppercase tracking-wider hover:border-amber active:border-amber transition-go cursor-pointer text-left rounded-lg"
+                    className="w-full px-6 py-3 border-2 border-go-strong text-go text-sm font-sans uppercase tracking-wider hover:border-amber-subtle active:border-amber-strong hover:text-amber transition-go cursor-pointer text-left rounded-lg"
                   >
                     I've used it before
                   </button>
@@ -170,7 +170,7 @@ export default function AgeGate({ onComplete }: AgeGateProps) {
                 <div className="pt-4">
                   <button
                     onClick={handleOnboardingComplete}
-                    className="w-full px-6 py-3 border border-amber text-amber text-xs font-sans uppercase tracking-widest hover:bg-amber hover:text-go-bg active:bg-amber-active transition-go cursor-pointer rounded-lg"
+                    className="w-full px-6 py-3 border-2 border-amber text-amber text-xs font-sans uppercase tracking-widest hover:bg-amber hover:text-go-bg active:bg-amber-active hover:shadow-amber-sm transition-go cursor-pointer rounded-lg font-medium"
                   >
                     Start
                   </button>
