@@ -868,7 +868,7 @@ export default function Home() {
   }, [ageGateComplete, outcomePhase]);
 
   return (
-    <div className="h-full bg-app text-app relative">
+    <div className="h-full bg-go text-go relative">
       {/* Age Gate Modal Overlay - Does NOT control layout */}
       {!ageGateComplete && (
         <AgeGate
@@ -926,7 +926,7 @@ export default function Home() {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.3 }}
-                className="h-full overflow-y-auto bg-surface"
+                className="h-full overflow-y-auto bg-glass"
               >
                 <div className="w-full max-w-[1920px] mx-auto px-6 lg:px-12 xl:px-24 pb-32 pt-20 lg:pt-28">
                   <ResolvingPanel />
@@ -978,41 +978,41 @@ export default function Home() {
                   {/* Visible App Structure Skeleton */}
                   <div className="space-y-8">
                     {/* Title Section */}
-                    <div className="border-b border-app-border pb-8">
-                      <h1 className="font-serif text-4xl lg:text-5xl font-light text-app mb-2">
+                    <div className="border-b border-go pb-8 transition-go">
+                      <h1 className="font-serif text-4xl lg:text-5xl font-light text-go mb-2">
                         GO — Guided Outcome Calculator
                       </h1>
-                      <p className="text-sm font-sans text-muted">
+                      <p className="text-sm font-sans text-go-muted">
                         Translate your intent into structured cannabis blends
                       </p>
                     </div>
 
-                    {/* Main Input Panel */}
-                    <div className="bg-surface-elevated border border-app-border rounded-lg p-8 lg:p-12">
+                    {/* Main Input Panel - Glass Morphism */}
+                    <div className="bg-glass-elevated border border-go rounded-xl p-8 lg:p-12 transition-go hover:border-go-strong shadow-lg">
                       <div className="space-y-6">
                         <div>
-                          <label className="block text-xs font-sans font-medium text-muted uppercase tracking-wider mb-3">
+                          <label className="block text-xs font-sans font-medium text-go-muted uppercase tracking-wider mb-3">
                             Desired Outcome
                           </label>
-                          <div className="h-12 bg-surface border border-app-border rounded flex items-center px-4">
-                            <span className="text-app text-sm">
+                          <div className="h-12 bg-glass border border-go rounded-lg flex items-center px-4 transition-go hover:border-amber/30 focus-within:border-amber/50">
+                            <span className="text-go text-sm">
                               Waiting for age verification...
                             </span>
                           </div>
                         </div>
                         <div className="flex gap-4">
-                          <div className="flex-1 h-12 bg-surface border border-app-border rounded"></div>
-                          <div className="w-32 h-12 bg-accent/20 border border-accent rounded"></div>
+                          <div className="flex-1 h-12 bg-glass border border-go rounded-lg transition-go hover:border-go-strong"></div>
+                          <div className="w-32 h-12 bg-amber-glow border border-amber/40 rounded-lg transition-go hover:border-amber/60"></div>
                         </div>
                       </div>
                     </div>
 
-                    {/* Results Container Placeholder */}
-                    <div className="bg-surface-elevated border border-app-border rounded-lg p-8 lg:p-12">
+                    {/* Results Container Placeholder - Glass Morphism */}
+                    <div className="bg-glass-elevated border border-go rounded-xl p-8 lg:p-12 transition-go hover:border-go-strong shadow-lg">
                       <div className="space-y-4">
-                        <div className="h-6 bg-surface rounded w-1/3"></div>
-                        <div className="h-4 bg-surface rounded w-2/3"></div>
-                        <div className="h-4 bg-surface rounded w-1/2"></div>
+                        <div className="h-6 bg-glass rounded-lg w-1/3 border border-go/50"></div>
+                        <div className="h-4 bg-glass rounded-lg w-2/3 border border-go/50"></div>
+                        <div className="h-4 bg-glass rounded-lg w-1/2 border border-go/50"></div>
                       </div>
                     </div>
                   </div>
@@ -1028,12 +1028,12 @@ export default function Home() {
         <div className="fixed bottom-12 right-12 z-50">
           <button
             onClick={isListening ? stopListening : startListening}
-            className={`flex items-center gap-4 transition-colors duration-500 ${isListening ? 'text-accent' : 'text-muted hover:text-app'}`}
+            className={`flex items-center gap-4 transition-go ${isListening ? 'text-amber' : 'text-go-muted hover:text-go'}`}
           >
             <span className="text-[10px] font-bold tracking-[0.2em] uppercase hidden lg:block">
               {isListening ? 'LISTENING' : 'VOICE INPUT'}
             </span>
-            <div className={`w-3 h-3 rounded-full transition-all duration-500 ${isListening ? 'bg-accent scale-125' : 'border border-current'}`} />
+            <div className={`w-3 h-3 rounded-full transition-go ${isListening ? 'bg-amber scale-125 shadow-lg shadow-amber/30' : 'border border-current'}`} />
           </button>
         </div>
       )}

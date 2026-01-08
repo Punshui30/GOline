@@ -23,8 +23,11 @@
     margin: 0;
     padding: 0;
     overflow: hidden;
-    background: #0a0a0a;
-    color: #e8e8e8;
+    background: #0d0d0d;
+    background-image: 
+      radial-gradient(at 0% 0%, rgba(212, 175, 55, 0.03) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, rgba(212, 175, 55, 0.02) 0px, transparent 50%);
+    color: #e5e5e5;
     font-family: 'Inter', sans-serif;
   }
 
@@ -41,53 +44,82 @@
 
 @layer base {
   :root {
-    /* App-grade color system - Dark, calm, intelligent */
-    --app-bg: #0a0a0a;
-    --app-surface: #141414;
-    --app-surface-elevated: #1a1a1a;
-    --app-border: #252525;
-    --app-text: #e8e8e8;
-    --app-text-muted: #9a9a9a;
-    --app-accent: #d4af37;
-    --app-accent-hover: #e5c158;
-    --app-accent-active: #b8941f;
+    /* GO Brand Color System - Dark, Organic, Premium */
+    --go-bg: #0d0d0d;
+    --go-surface: rgba(20, 20, 20, 0.6);
+    --go-surface-elevated: rgba(25, 25, 25, 0.7);
+    --go-border: rgba(255, 255, 255, 0.08);
+    --go-border-strong: rgba(255, 255, 255, 0.12);
+    --go-text: #e5e5e5;
+    --go-text-muted: #a0a0a0;
+    --go-text-subtle: #707070;
+    --go-amber: #d4af37;
+    --go-amber-hover: #e5c158;
+    --go-amber-active: #c19d2a;
+    --go-amber-glow: rgba(212, 175, 55, 0.15);
   }
 }
 
 @layer utilities {
-  .bg-app {
-    background-color: var(--app-bg);
+  /* Background */
+  .bg-go {
+    background-color: var(--go-bg);
   }
 
-  .bg-surface {
-    background-color: var(--app-surface);
+  /* Glass Morphism Surfaces */
+  .bg-glass {
+    background: var(--go-surface);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
   }
 
-  .bg-surface-elevated {
-    background-color: var(--app-surface-elevated);
+  .bg-glass-elevated {
+    background: var(--go-surface-elevated);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
   }
 
-  .border-app {
-    border-color: var(--app-border);
+  /* Borders */
+  .border-go {
+    border-color: var(--go-border);
   }
 
-  .text-app {
-    color: var(--app-text);
+  .border-go-strong {
+    border-color: var(--go-border-strong);
   }
 
-  .text-muted {
-    color: var(--app-text-muted);
+  /* Text */
+  .text-go {
+    color: var(--go-text);
   }
 
-  .text-accent {
-    color: var(--app-accent);
+  .text-go-muted {
+    color: var(--go-text-muted);
   }
 
-  .bg-accent {
-    background-color: var(--app-accent);
+  .text-go-subtle {
+    color: var(--go-text-subtle);
   }
 
-  .border-accent {
-    border-color: var(--app-accent);
+  /* Amber Accent */
+  .text-amber {
+    color: var(--go-amber);
+  }
+
+  .bg-amber {
+    background-color: var(--go-amber);
+  }
+
+  .border-amber {
+    border-color: var(--go-amber);
+  }
+
+  .bg-amber-glow {
+    background-color: var(--go-amber-glow);
+  }
+
+  /* Transitions */
+  .transition-go {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 }

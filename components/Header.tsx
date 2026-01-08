@@ -18,7 +18,7 @@ export default function Header() {
   }, []);
 
   return (
-    <header className="relative z-50 bg-surface border-b border-app-border">
+    <header className="relative z-50 bg-glass border-b border-go backdrop-blur-xl">
       <div className="px-6 lg:px-12 xl:px-24 py-4 flex items-center gap-4 h-16">
         <motion.div
           initial={reducedMotion ? {} : { opacity: 0, y: -8, scale: 0.96 }}
@@ -32,9 +32,9 @@ export default function Header() {
             alt="GO Line"
             width={144}
             height={80}
-            className="h-10 lg:h-12 w-auto object-contain"
+            className="h-10 lg:h-12 w-auto object-contain transition-go hover:opacity-90"
           />
-          <span className="text-[10px] font-sans font-medium text-muted uppercase tracking-widest">GO // 2.1</span>
+          <span className="text-[10px] font-sans font-medium text-go-muted uppercase tracking-widest">GO // 2.1</span>
         </motion.div>
       </div>
     </header>

@@ -64,13 +64,13 @@ export default function AgeGate({ onComplete }: AgeGateProps) {
         animate={reducedMotion ? {} : { opacity: 1 }}
         exit={reducedMotion ? {} : { opacity: 0 }}
         transition={reducedMotion ? {} : { duration: 0.3 }}
-        className="fixed inset-0 z-[100] flex items-center justify-center bg-app/95 backdrop-blur-md"
+        className="fixed inset-0 z-[100] flex items-center justify-center bg-go/95 backdrop-blur-xl"
       >
         <motion.div
           initial={reducedMotion ? {} : { opacity: 0, scale: 0.95, y: 8 }}
           animate={reducedMotion ? {} : { opacity: 1, scale: 1, y: 0 }}
           transition={reducedMotion ? {} : { duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
-          className="relative max-w-lg w-full mx-4 bg-surface-elevated border border-app-border p-8 lg:p-12"
+          className="relative max-w-lg w-full mx-4 bg-glass-elevated border border-go rounded-xl p-8 lg:p-12 shadow-2xl"
         >
           <AnimatePresence mode="wait">
             {step === 'age' && (
@@ -82,13 +82,13 @@ export default function AgeGate({ onComplete }: AgeGateProps) {
                 transition={reducedMotion ? {} : { duration: 0.3 }}
                 className="space-y-6"
               >
-                <h2 className="font-serif text-3xl lg:text-4xl font-light text-app mb-2">Age Verification</h2>
-                <p className="text-sm font-sans text-muted leading-relaxed">
+                <h2 className="font-serif text-3xl lg:text-4xl font-light text-go mb-2">Age Verification</h2>
+                <p className="text-sm font-sans text-go-muted leading-relaxed">
                   You must be 21 or older to use this calculator.
                 </p>
                 <form onSubmit={handleAgeSubmit} className="space-y-4">
                   <div>
-                    <label htmlFor="age" className="block text-sm font-sans font-medium text-app mb-2">
+                    <label htmlFor="age" className="block text-sm font-sans font-medium text-go mb-2">
                       Enter your age
                     </label>
                     <input
@@ -101,7 +101,7 @@ export default function AgeGate({ onComplete }: AgeGateProps) {
                         setAge(e.target.value);
                         setAgeError(null);
                       }}
-                      className="w-full bg-surface border border-app-border text-app px-4 py-3 font-sans focus:border-accent focus:outline-none transition-colors"
+                      className="w-full bg-glass border border-go text-go px-4 py-3 font-sans rounded-lg focus:border-amber focus:outline-none focus:ring-1 focus:ring-amber/20 transition-go"
                       placeholder="21"
                       autoFocus
                     />
@@ -111,7 +111,7 @@ export default function AgeGate({ onComplete }: AgeGateProps) {
                   </div>
                   <button
                     type="submit"
-                    className="w-full px-6 py-3 border border-accent text-accent text-xs font-sans uppercase tracking-widest hover:bg-accent hover:text-app-bg active:bg-accent-active transition-all duration-200 cursor-pointer"
+                    className="w-full px-6 py-3 border border-amber text-amber text-xs font-sans uppercase tracking-widest hover:bg-amber hover:text-go-bg active:bg-amber-active transition-go cursor-pointer rounded-lg"
                   >
                     Continue
                   </button>
@@ -128,20 +128,20 @@ export default function AgeGate({ onComplete }: AgeGateProps) {
                 transition={reducedMotion ? {} : { duration: 0.3 }}
                 className="space-y-6"
               >
-                <h2 className="font-serif text-3xl lg:text-4xl font-light text-app mb-2">Welcome</h2>
-                <p className="text-sm font-sans text-muted leading-relaxed mb-6">
+                <h2 className="font-serif text-3xl lg:text-4xl font-light text-go mb-2">Welcome</h2>
+                <p className="text-sm font-sans text-go-muted leading-relaxed mb-6">
                   Have you used this calculator before?
                 </p>
                 <div className="flex flex-col gap-3">
                   <button
                     onClick={() => handleExperienceChoice('first-time')}
-                    className="w-full px-6 py-3 border border-app-border text-app text-sm font-sans uppercase tracking-wider hover:border-accent active:border-accent transition-all duration-200 cursor-pointer text-left"
+                    className="w-full px-6 py-3 border border-go text-go text-sm font-sans uppercase tracking-wider hover:border-amber active:border-amber transition-go cursor-pointer text-left rounded-lg"
                   >
                     First time
                   </button>
                   <button
                     onClick={() => handleExperienceChoice('returning')}
-                    className="w-full px-6 py-3 border border-app-border text-app text-sm font-sans uppercase tracking-wider hover:border-accent active:border-accent transition-all duration-200 cursor-pointer text-left"
+                    className="w-full px-6 py-3 border border-go text-go text-sm font-sans uppercase tracking-wider hover:border-amber active:border-amber transition-go cursor-pointer text-left rounded-lg"
                   >
                     I've used it before
                   </button>
@@ -158,8 +158,8 @@ export default function AgeGate({ onComplete }: AgeGateProps) {
                 transition={reducedMotion ? {} : { duration: 0.3 }}
                 className="space-y-6"
               >
-                <h2 className="font-serif text-3xl lg:text-4xl font-light text-app mb-6">How this works</h2>
-                <div className="space-y-4 text-sm font-sans text-muted leading-relaxed">
+                <h2 className="font-serif text-3xl lg:text-4xl font-light text-go mb-6">How this works</h2>
+                <div className="space-y-4 text-sm font-sans text-go-muted leading-relaxed">
                   <p>
                     This system doesn't recommend a single strain—it builds intentional blends. Each strain contains many compounds that can interact differently depending on how they're combined. Some effects stack, some balance out, and some only work within certain ranges.
                   </p>
@@ -170,7 +170,7 @@ export default function AgeGate({ onComplete }: AgeGateProps) {
                 <div className="pt-4">
                   <button
                     onClick={handleOnboardingComplete}
-                    className="w-full px-6 py-3 border border-accent text-accent text-xs font-sans uppercase tracking-widest hover:bg-accent hover:text-app-bg active:bg-accent-active transition-all duration-200 cursor-pointer"
+                    className="w-full px-6 py-3 border border-amber text-amber text-xs font-sans uppercase tracking-widest hover:bg-amber hover:text-go-bg active:bg-amber-active transition-go cursor-pointer rounded-lg"
                   >
                     Start
                   </button>
