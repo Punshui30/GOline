@@ -881,8 +881,10 @@ export default function Home() {
 
       {/* App Shell Content - Always renders, owns viewport */}
       <div className="h-full flex flex-col">
+        {/* Main Content Region - Always visible */}
         <div className="flex-1 min-h-0 overflow-hidden">
           <AnimatePresence mode="wait">
+            {/* Input Phase */}
             {ageGateComplete && outcomePhase === 'input' && (
               <motion.main
                 key="input"
@@ -916,6 +918,7 @@ export default function Home() {
               </motion.main>
             )}
 
+            {/* Resolving Phase */}
             {ageGateComplete && outcomePhase === 'resolving' && (
               <motion.main
                 key="resolving"
@@ -931,6 +934,7 @@ export default function Home() {
               </motion.main>
             )}
 
+            {/* Result Phase */}
             {ageGateComplete && outcomePhase === 'result' && resolvedBlend && (
               <motion.main
                 key="result"
@@ -956,6 +960,62 @@ export default function Home() {
                     onAdjustment={handleAdjustment}
                     hasResolved={hasResolved}
                   />
+                </div>
+              </motion.main>
+            )}
+
+            {/* Default Skeleton - Visible when age gate is active (underneath overlay) */}
+            {!ageGateComplete && (
+              <motion.main
+                key="skeleton"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 0.3 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                className="h-full overflow-y-auto"
+              >
+                <div className="w-full max-w-[1920px] mx-auto px-6 lg:px-12 xl:px-24 pb-32 pt-20 lg:pt-28">
+                  {/* Visible App Structure Skeleton */}
+                  <div className="space-y-8">
+                    {/* Title Section */}
+                    <div className="border-b border-app-border pb-8">
+                      <h1 className="font-serif text-4xl lg:text-5xl font-light text-app mb-2">
+                        GO — Guided Outcome Calculator
+                      </h1>
+                      <p className="text-sm font-sans text-muted">
+                        Translate your intent into structured cannabis blends
+                      </p>
+                    </div>
+
+                    {/* Main Input Panel */}
+                    <div className="bg-surface-elevated border border-app-border rounded-lg p-8 lg:p-12">
+                      <div className="space-y-6">
+                        <div>
+                          <label className="block text-xs font-sans font-medium text-muted uppercase tracking-wider mb-3">
+                            Desired Outcome
+                          </label>
+                          <div className="h-12 bg-surface border border-app-border rounded flex items-center px-4">
+                            <span className="text-app text-sm">
+                              Waiting for age verification...
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex gap-4">
+                          <div className="flex-1 h-12 bg-surface border border-app-border rounded"></div>
+                          <div className="w-32 h-12 bg-accent/20 border border-accent rounded"></div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Results Container Placeholder */}
+                    <div className="bg-surface-elevated border border-app-border rounded-lg p-8 lg:p-12">
+                      <div className="space-y-4">
+                        <div className="h-6 bg-surface rounded w-1/3"></div>
+                        <div className="h-4 bg-surface rounded w-2/3"></div>
+                        <div className="h-4 bg-surface rounded w-1/2"></div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </motion.main>
             )}
