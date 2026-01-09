@@ -24,14 +24,13 @@ import { ClarificationAxis, parseResolvedAxes, getAxisFromQuestionType } from '@
 import { presets, type Preset, type BaselineCalibration as PresetBaselineCalibration } from '@/lib/presets';
 import PreRollStack, { type StackSegment } from '@/components/PreRollStack';
 import CompositionBreakdown, { type BlendComponent } from '@/components/CompositionBreakdown';
-import SecretInventoryPortal, { type InventoryItem } from '@/components/SecretInventoryPortal';
 import CinematicRightPanel from '@/components/CinematicRightPanel';
 import OnboardingModal from '@/components/OnboardingModal'; // Keeping if needed, but likely unused
 import OnboardingOverlay from '@/components/OnboardingOverlay';
 import AgeGate from '@/components/AgeGate';
 import StrainInsightCard from '@/components/StrainInsightCard';
 import BlendExecutionCalculator from '@/components/BlendExecutionCalculator';
-import SecretInventoryPortal from '@/components/SecretInventoryPortal';
+import SecretInventoryPortalComponent, { type InventoryItem } from '@/components/SecretInventoryPortal';
 import { STRAIN_LIBRARY } from '@/lib/strainLibrary';
 import { generateEffectiveExplanation } from '@/lib/generateEffectiveExplanation';
 
@@ -835,7 +834,7 @@ export default function GOLineCalculator() {
 
       </div>
 
-      <SecretInventoryPortal
+      <SecretInventoryPortalComponent
         isOpen={showInventoryPortal}
         onClose={() => setShowInventoryPortal(false)}
         onSave={(items) => setInventory(items)}
