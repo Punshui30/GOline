@@ -38,21 +38,18 @@ export default function CinematicRightPanel({ phase, blend }: CinematicRightPane
                 <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_2px,3px_100%] opacity-10" />
             </div>
 
-            {/* LAYER 2: Ambient Analysis (Drifting Text) */}
-            <AnimatePresence>
-                {/* Always show ambient text for atmosphere, maybe? No, user said "scrolling text needs to be a lot smaller...". Usually active during resolving or idle? Keeping logical condition for now. */}
-                {(isResolving || !hasResult) && (
-                    <div className="absolute inset-0 z-20 pointer-events-none overflow-hidden flex flex-col justify-center opacity-30">
-                        {/* Multiple lines of scrolling text */}
-                        <AmbientText text="ANALYZING TERPENE PROFILE // " direction={1} speed={20} />
-                        <AmbientText text="CALCULATING SYNERGY VECTORS // " direction={-1} speed={25} />
-                        <AmbientText text="OPTIMIZING BIOAVAILABILITY // " direction={1} speed={30} />
-                        <AmbientText text="MATCHING USER INTENT // " direction={-1} speed={22} />
-                        <AmbientText text="RESOLVING COMPOSITION // " direction={1} speed={28} />
-                        <AmbientText text="QUERYING STRAIN DATABASE // " direction={-1} speed={35} />
+            {/* LAYER 2: IDLE STATE (Instructional Microcopy) */}
+            {!isResolving && !hasResult && (
+                <div className="absolute inset-0 z-20 flex flex-col items-center justify-center text-center pointer-events-none p-8">
+                    <div className="w-16 h-16 rounded-full border border-white/10 flex items-center justify-center mb-4 opacity-20">
+                        <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
                     </div>
-                )}
-            </AnimatePresence>
+                    <p className="text-xs text-white/40 font-mono tracking-widest uppercase max-w-[200px] leading-relaxed">
+                        System Ready<br />
+                        Awaiting Input
+                    </p>
+                </div>
+            )}
 
             {/* LAYER 3: HUD / Results (Overlay) */}
             <AnimatePresence>
@@ -82,34 +79,6 @@ export default function CinematicRightPanel({ phase, blend }: CinematicRightPane
                     <ConeExecutionPanel blend={blend} />
                 )}
             </div>
-        </div>
-    );
-}
-
-function AmbientText({ text, direction = 1, speed = 20 }: { text: string, direction?: number, speed?: number }) {
-    // Create a generic repeated string for marquee effect
-    const content = Array(10).fill(text).join(' ');
-
-    return (
-        <div className="w-full overflow-hidden py-1">
-            <motion.div
-                className="whitespace-nowrap text-[10px] font-mono font-bold text-white/20 tracking-[0.2em]"
-                initial={{ x: direction > 0 ? -100 : 0 }}
-                animate={{ x: direction > 0 ? 0 : -1000 }} // Simple infinite scroll simulation requires seamless loop or reset. 
-            // For simplicity, let's use a very long duration ping-pong or just standard drift.
-            // Reverting to ping-pong drift as it's easier to impl perfectly without calc.
-            // User asked for "scrolling text" but "within container".
-            // Let's use the drift style but smaller.
-            />
-            {/* Retrying Implementation for standard drift */}
-            <motion.div
-                className="whitespace-nowrap text-[10px] font-mono font-bold text-white/20 tracking-[0.2em]"
-                initial={{ x: direction === 1 ? '-20%' : '0%' }}
-                animate={{ x: direction === 1 ? '0%' : '-20%' }}
-                transition={{ duration: speed, repeat: Infinity, repeatType: "reverse", ease: "linear" }}
-            >
-                {content}
-            </motion.div>
         </div>
     );
 }

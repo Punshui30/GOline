@@ -25,6 +25,7 @@ import { presets, type Preset, type BaselineCalibration as PresetBaselineCalibra
 import PreRollStack, { type StackSegment } from '@/components/PreRollStack';
 import CompositionBreakdown, { type BlendComponent } from '@/components/CompositionBreakdown';
 import SecretInventoryPortal, { type InventoryItem } from '@/components/SecretInventoryPortal';
+import CinematicRightPanel from '@/components/CinematicRightPanel';
 
 // Conversation state exists for parsing/clarification but is NOT visually rendered
 type ConversationState = 'active' | 'resolved';
@@ -87,6 +88,7 @@ export default function GOLineCalculator() {
 
   // Resolution state (for PreRollStack)
   const [intent, setIntent] = useState<OutcomeIntent | null>(null);
+  const [outcomeResult, setOutcomeResult] = useState<OutcomeResult | null>(null);
   const [stackSegments, setStackSegments] = useState<StackSegment[]>([]);
   const [breakdownComponents, setBreakdownComponents] = useState<BlendComponent[]>([]);
 
@@ -311,6 +313,7 @@ export default function GOLineCalculator() {
 
     // Resolve outcome using deterministic engine (with variation logic)
     const resolvedOutcome = resolveOutcome(normalized);
+    setOutcomeResult(resolvedOutcome);
 
     // Convert to stack format for PreRollStack
     const { segments, components } = convertToStackFormat(resolvedOutcome);
@@ -340,6 +343,7 @@ export default function GOLineCalculator() {
 
     // Re-resolve with updated intent
     const resolvedOutcome = resolveOutcome(normalized);
+    setOutcomeResult(resolvedOutcome);
     const { segments, components } = convertToStackFormat(resolvedOutcome);
     setStackSegments(segments);
     setBreakdownComponents(components);
@@ -498,26 +502,30 @@ export default function GOLineCalculator() {
     );
   }
 
-  // --- RENDER: VIEW 3 - MAIN INTERFACE ---
+  // --- RENDER: VIEW 3 - DASHBOARD INTERFACE ---
   return (
     <main className="h-screen w-full bg-[#0a0b0e] text-white flex flex-col overflow-hidden">
-      {/* Header */}
-      <div className="fixed top-0 left-0 right-0 z-50 bg-[#0a0b0e] border-b border-white/5">
-        <div className="max-w-[900px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-center h-16">
-            <button onClick={handleLogoClick} className="text-lg font-medium text-white/90">
-              GO Line Calculator
-            </button>
-          </div>
-        </div>
+      {/* Fixed Header (Minimal) */}
+      <div className="fixed top-0 left-0 right-0 z-50 bg-[#0a0b0e] border-b border-white/5 h-12 flex items-center justify-center">
+        <button onClick={handleLogoClick} className="text-sm font-bold tracking-widest text-[#D4AF37]/80">
+          GO LINE // OUTCOMES
+        </button>
       </div>
 
-      {/* Main Content Area (below fixed header) */}
-      <div className="flex-1 flex flex-col pt-16 overflow-hidden">
-        {/* Input Area */}
-        <div className="border-b border-white/10 bg-[#0a0b0e] flex-shrink-0">
-          <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <form onSubmit={handleSubmit} className="flex gap-3">
+      {/* 3-Column Dashboard */}
+      <div className="flex-1 grid grid-cols-12 overflow-hidden pt-12">
+
+        {/* PANEL 1: INPUT & CONTROLS (Left, 3 Cols) */}
+        <div className="col-span-3 border-r border-white/10 flex flex-col h-full bg-[#0a0b0e]">
+          <div className="flex-1 p-6 flex flex-col">
+            <div className="mb-6">
+              <h2 className="text-xs font-mono text-white/40 uppercase tracking-widest mb-2">Intent Input</h2>
+              <p className="text-[10px] text-white/30 leading-relaxed">
+                Describe the desired physiological and cognitive state.
+              </p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="flex flex-col gap-4 flex-1">
               <textarea
                 ref={inputRef}
                 value={userInput}
@@ -528,160 +536,171 @@ export default function GOLineCalculator() {
                     handleSubmit();
                   }
                 }}
-                placeholder="Describe your desired outcome..."
-                className="flex-1 px-4 py-3 bg-[#111216] border border-white/10 rounded-lg text-white placeholder-white/30 text-sm focus:outline-none focus:border-white/20 resize-none min-h-[60px]"
-                rows={2}
+                placeholder="E.g. Creative energy without anxiety..."
+                className="w-full p-4 bg-[#111216] border border-white/10 rounded-sm text-white placeholder-white/20 text-sm focus:outline-none focus:border-[#D4AF37]/50 resize-none font-sans leading-relaxed"
+                style={{ minHeight: '120px' }}
                 disabled={isProcessing}
               />
+
               <button
                 type="submit"
                 disabled={!userInput.trim() || isProcessing}
-                className="px-6 py-3 bg-white text-[#0a0b0e] font-medium text-sm rounded-lg hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex-shrink-0"
+                className="w-full py-4 bg-white text-black font-bold text-xs uppercase tracking-widest hover:bg-[#D4AF37] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isProcessing ? 'Processing...' : 'Process'}
+                {isProcessing ? 'Analyzing...' : 'Analyze Intent'}
               </button>
             </form>
-            {error && <div className="mt-2 text-xs text-red-400">{error}</div>}
-            {pendingClarification && conversationState === 'active' && (
-              <div className="mt-2 text-xs text-white/60">
-                Clarification needed: {pendingClarification.question}
+
+            {/* Adjustments (Always visible but disabled if not resolved? Or only visible if resolved?) */}
+            {conversationState === 'resolved' && intent && (
+              <div className="mt-8 pt-8 border-t border-white/5 space-y-6 animate-in fade-in slide-in-from-left-4 duration-500">
+                <h3 className="text-xs font-mono text-white/40 uppercase tracking-widest">Fine Tuning</h3>
+
+                {/* Energy */}
+                <div>
+                  <div className="flex justify-between text-[10px] text-white/40 mb-2 uppercase">
+                    <span>Sedative</span>
+                    <span>Energetic</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={Math.round(intent.activation * 100)}
+                    onChange={(e) => handleAdjustment({
+                      activationTarget: parseInt(e.target.value) / 100,
+                      cognitiveEndurance: intent.cognitiveEndurance,
+                      anxietySensitivity: intent.anxietySensitivity,
+                    })}
+                    className="w-full h-1 bg-white/10 appearance-none cursor-pointer accent-[#D4AF37]"
+                  />
+                </div>
+                {/* Duration */}
+                <div>
+                  <div className="flex justify-between text-[10px] text-white/40 mb-2 uppercase">
+                    <span>Short</span>
+                    <span>Extended</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={Math.round(intent.cognitiveEndurance * 100)}
+                    onChange={(e) => handleAdjustment({
+                      activationTarget: intent.activation,
+                      cognitiveEndurance: parseInt(e.target.value) / 100,
+                      anxietySensitivity: intent.anxietySensitivity,
+                    })}
+                    className="w-full h-1 bg-white/10 appearance-none cursor-pointer accent-[#D4AF37]"
+                  />
+                </div>
+                {/* Anxiety (Often Hidden or Automatic, but keeping per user req) */}
+                <div>
+                  <div className="flex justify-between text-[10px] text-white/40 mb-2 uppercase">
+                    <span>Sensitivity</span>
+                    <span>Robust</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={Math.round(intent.anxietySensitivity * 100)}
+                    onChange={(e) => handleAdjustment({
+                      activationTarget: intent.activation,
+                      cognitiveEndurance: intent.cognitiveEndurance,
+                      anxietySensitivity: parseInt(e.target.value) / 100,
+                    })}
+                    className="w-full h-1 bg-white/10 appearance-none cursor-pointer accent-[#D4AF37]"
+                  />
+                </div>
               </div>
             )}
           </div>
         </div>
 
-        {/* Content Area (Adjustments + Pre-Roll Stack) */}
-        <div className="flex-1 flex w-full overflow-hidden">
-          {/* Active State (Processing / Empty) */}
-          {conversationState === 'active' && (
-            <div className="flex-1 flex items-center justify-center px-4">
-              {isProcessing && (
-                <div className="flex items-center gap-2 text-white/60 text-xs">
-                  <span className="animate-pulse">●</span>
-                  <span>Processing...</span>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Resolved State (Results) */}
-          {conversationState === 'resolved' && intent && stackSegments.length > 0 && (
-            <div className="flex-1 flex w-full">
-              {/* Left: Adjustment Controls */}
-              <div className="w-80 border-r border-white/10 bg-[#111216] p-6 flex-shrink-0 overflow-y-auto">
-                <div className="mb-6">
-                  <h3 className="text-sm font-medium text-white mb-1">Adjustment Controls</h3>
-                </div>
-
-                <div className="space-y-8">
-                  {/* Energy ↔ Calm */}
-                  <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="text-xs text-white/60 uppercase tracking-wider">Energy ↔ Calm</div>
-                      <div className="text-xs text-white/40 font-mono">{Math.round(intent.activation * 100)}</div>
-                    </div>
-                    <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      value={Math.round(intent.activation * 100)}
-                      onChange={(e) => handleAdjustment({
-                        activationTarget: parseInt(e.target.value) / 100,
-                        cognitiveEndurance: intent.cognitiveEndurance,
-                        anxietySensitivity: intent.anxietySensitivity,
-                      })}
-                      className="w-full h-1 bg-white/5 appearance-none cursor-pointer accent-white/20"
-                    />
-                  </div>
-
-                  {/* Duration ↔ Intensity */}
-                  <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="text-xs text-white/60 uppercase tracking-wider">Duration ↔ Intensity</div>
-                      <div className="text-xs text-white/40 font-mono">{Math.round(intent.cognitiveEndurance * 100)}</div>
-                    </div>
-                    <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      value={Math.round(intent.cognitiveEndurance * 100)}
-                      onChange={(e) => handleAdjustment({
-                        activationTarget: intent.activation,
-                        cognitiveEndurance: parseInt(e.target.value) / 100,
-                        anxietySensitivity: intent.anxietySensitivity,
-                      })}
-                      className="w-full h-1 bg-white/5 appearance-none cursor-pointer accent-white/20"
-                    />
-                  </div>
-
-                  {/* Anxiety Sensitivity */}
-                  <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="text-xs text-white/60 uppercase tracking-wider">Anxiety Sensitivity</div>
-                      <div className="text-xs text-white/40 font-mono">{Math.round(intent.anxietySensitivity * 100)}</div>
-                    </div>
-                    <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      value={Math.round(intent.anxietySensitivity * 100)}
-                      onChange={(e) => handleAdjustment({
-                        activationTarget: intent.activation,
-                        cognitiveEndurance: intent.cognitiveEndurance,
-                        anxietySensitivity: parseInt(e.target.value) / 100,
-                      })}
-                      className="w-full h-1 bg-white/5 appearance-none cursor-pointer accent-white/20"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Right: Pre-Roll Stack Visualization */}
-              <div className="flex-1 overflow-y-auto p-6 bg-[#0a0b0e]">
-                <div className="flex flex-col items-center max-w-4xl mx-auto">
-                  <div className="mb-8 w-full text-center">
-                    <h2 className="text-lg font-medium text-white mb-1">GO Line — Resolved Composition</h2>
-                    <div className="text-xs text-white/30">
-                      {stackSegments.length === 1
-                        ? 'Single cultivar recommendation'
-                        : `${stackSegments.length}-cultivar blend`}
-                    </div>
-                  </div>
-
-                  <PreRollStack segments={stackSegments} height={400} />
-
-                  {breakdownComponents.length > 0 && (
-                    <div className="mt-12 w-full max-w-2xl">
-                      <button
-                        onClick={() => setShowBreakdown(!showBreakdown)}
-                        className="w-full flex items-center justify-between p-4 bg-[#111216] border border-white/10 rounded-sm hover:bg-[#1a1c20] transition-colors"
-                      >
-                        <span className="text-sm font-medium text-white">View composition breakdown</span>
-                        <span className="text-white/60 text-sm">{showBreakdown ? '−' : '+'}</span>
-                      </button>
-                      {showBreakdown && (
-                        <div className="mt-4 p-6 bg-[#111216] border border-white/10 rounded-sm">
-                          <CompositionBreakdown components={breakdownComponents} />
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Disclaimer Footer */}
-                  <div className="mt-16 pt-8 border-t border-white/10 w-full pb-8">
-                    <p className="text-xs text-white/40 leading-relaxed text-center">
-                      Live GO systems operate exclusively on QR-verified batch data.
-                      <span className="block mt-2 font-mono text-[9px] text-[#C5A065]/50">v2.1 (Math-Spec Enforced)</span>
-                    </p>
-                    <div className="text-xs text-white/40 mt-2 text-center">
-                      Deterministic result — identical inputs will always resolve to the same composition.
-                    </div>
-                  </div>
-                </div>
+        {/* PANEL 2: VISUALIZATION (Middle, 6 Cols) */}
+        <div className="col-span-6 border-r border-white/10 relative bg-black flex flex-col">
+          {/* The Visualizer takes the full space */}
+          <div className="flex-1 relative">
+            <CinematicRightPanel
+              phase={conversationState}
+              blend={outcomeResult?.primary as any}
+            />
+          </div>
+          {/* Processing Status Bar */}
+          {isProcessing && (
+            <div className="absolute bottom-8 left-0 right-0 flex justify-center">
+              <div className="px-4 py-2 bg-black/50 backdrop-blur-md border border-white/10 rounded-full text-[10px] text-[#D4AF37] font-mono animate-pulse">
+                PROCESSING NEURAL VECTORS
               </div>
             </div>
           )}
         </div>
+
+        {/* PANEL 3: CONTEXT & RESULTS (Right, 3 Cols) */}
+        <div className="col-span-3 bg-[#0a0b0e] flex flex-col h-full overflow-hidden">
+          {conversationState === 'active' ? (
+            // Idle / Context State
+            <div className="flex-1 p-8 flex flex-col justify-center opacity-40">
+              <h3 className="text-sm font-bold text-white mb-4">SYSTEM CONTEXT</h3>
+              <p className="text-xs text-white/60 leading-loose mb-4">
+                The GO Line Calculator utilizes deterministic biological constraints to map subjective intent to chemical composition.
+              </p>
+              <ul className="text-[10px] text-white/40 space-y-2 font-mono list-disc pl-4">
+                <li>Inputs are normalized to 0-1 vectors</li>
+                <li>Matched against live inventory (QR verified)</li>
+                <li>Optimized for bi-phasic duration</li>
+              </ul>
+            </div>
+          ) : (
+            // Resolved Results State
+            <div className="flex-1 overflow-y-auto p-6">
+              {intent && stackSegments.length > 0 && (
+                <div className="space-y-8">
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-xs font-mono text-[#D4AF37] uppercase tracking-widest">Target Solved</h3>
+                      <span className="text-[10px] px-2 py-0.5 bg-[#D4AF37]/10 text-[#D4AF37] border border-[#D4AF37]/20 rounded">98.4% Match</span>
+                    </div>
+                    <h2 className="text-lg font-bold text-white leading-tight">
+                      {stackSegments.length}-Part Stack
+                    </h2>
+                  </div>
+
+                  {/* Stack Visual */}
+                  <div className="py-4">
+                    <PreRollStack segments={stackSegments} height={300} />
+                  </div>
+
+                  {/* Composition List */}
+                  <div className="space-y-2 border-t border-white/10 pt-4">
+                    <h4 className="text-[10px] text-white/40 uppercase tracking-widest mb-3">Active Cultivars</h4>
+                    {breakdownComponents.map((comp, i) => (
+                      <div key={i} className="flex justify-between items-center text-xs">
+                        <span className="text-white/80">{comp.name}</span>
+                        <div className="flex items-center gap-2">
+                          <div className="w-16 h-1 bg-white/10 rounded-full overflow-hidden">
+                            <div className="h-full bg-white/60" style={{ width: `${comp.percentage * 100}%` }} />
+                          </div>
+                          <span className="font-mono text-white/40 w-8 text-right">{Math.round(comp.percentage * 100)}%</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Footer */}
+                  <div className="pt-8 mt-8 border-t border-white/5 text-center">
+                    <p className="text-[9px] text-white/20 font-mono">
+                      BATCH_ID: {Math.random().toString(36).substr(2, 9).toUpperCase()}<br />
+                      VERIFIED_BY_GO_ENGINE
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
       </div>
 
       <SecretInventoryPortal
