@@ -1,74 +1,104 @@
 'use client';
 
-import React, { Suspense, useRef } from 'react';
+import React, { useRef } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { Environment, PerspectiveCamera, OrbitControls, useGLTF, Float } from '@react-three/drei';
+import { Environment, PerspectiveCamera, OrbitControls, Float, RoundedBox } from '@react-three/drei';
 import * as THREE from 'three';
 
-// Fallback Placeholder Robot (if GLB missing)
-function PlaceholderRobot(props: any) {
-    const meshRef = useRef<THREE.Mesh>(null);
+function ProceduralRobot(props: any) {
+    const group = useRef<THREE.Group>(null);
 
+    // Subtle breathing animation + Floating handled by parent
     useFrame((state) => {
-        if (meshRef.current) {
-            meshRef.current.rotation.y += 0.005;
-            meshRef.current.position.y = Math.sin(state.clock.elapsedTime) * 0.1;
-        }
+        // Optional local animations
+    });
+
+    const bodyMaterial = new THREE.MeshStandardMaterial({
+        color: "#1a1a1a",
+        roughness: 0.3,
+        metalness: 0.8
+    });
+
+    const accentMaterial = new THREE.MeshStandardMaterial({
+        color: "#D4AF37", // Gold
+        roughness: 0.2,
+        metalness: 1
+    });
+
+    const glowMaterial = new THREE.MeshStandardMaterial({
+        color: "#00ff88",
+        emissive: "#00ff88",
+        emissiveIntensity: 2,
+        toneMapped: false
     });
 
     return (
-        <mesh ref={meshRef} {...props}>
-            <boxGeometry args={[1.5, 2, 1]} />
-            <meshStandardMaterial color="#2a2a2a" roughness={0.2} metalness={0.8} />
-            <mesh position={[0, 0.5, 0.6]}>
-                <boxGeometry args={[1.2, 0.5, 0.2]} />
-                <meshBasicMaterial color="#00ff00" />
-            </mesh>
-        </mesh>
+        <group ref={group} {...props}>
+            {/* HEAD */}
+            <group position={[0, 1.8, 0]}>
+                <RoundedBox args={[0.8, 0.9, 0.9]} radius={0.1}>
+                    <primitive object={bodyMaterial} attach="material" />
+                </RoundedBox>
+                {/* Visor */}
+                <mesh position={[0, 0.1, 0.45]} rotation={[0, 0, 0]}>
+                    <boxGeometry args={[0.7, 0.15, 0.05]} />
+                    <primitive object={glowMaterial} attach="material" />
+                </mesh>
+                {/* Antenna */}
+                <mesh position={[0.3, 0.5, 0]}>
+                    <cylinderGeometry args={[0.02, 0.02, 0.5]} />
+                    <primitive object={accentMaterial} attach="material" />
+                </mesh>
+            </group>
+
+            {/* TORSO */}
+            <group position={[0, 0.5, 0]}>
+                {/* Main Body */}
+                <RoundedBox args={[1.2, 1.5, 0.8]} radius={0.15}>
+                    <primitive object={bodyMaterial} attach="material" />
+                </RoundedBox>
+                {/* Chest Plate - Gold */}
+                <mesh position={[0, 0.3, 0.41]}>
+                    <boxGeometry args={[0.8, 0.6, 0.05]} />
+                    <primitive object={accentMaterial} attach="material" />
+                </mesh>
+                {/* Core Reactor */}
+                <mesh position={[0, 0.3, 0.44]}>
+                    <circleGeometry args={[0.15, 32]} />
+                    <primitive object={glowMaterial} attach="material" />
+                </mesh>
+            </group>
+
+            {/* SHOULDERS */}
+            <group position={[-0.8, 1, 0]}>
+                <sphereGeometry args={[0.35]} />
+                <primitive object={bodyMaterial} attach="material" />
+            </group>
+            <group position={[0.8, 1, 0]}>
+                <sphereGeometry args={[0.35]} />
+                <primitive object={bodyMaterial} attach="material" />
+            </group>
+
+        </group>
     );
 }
 
-// Basic Error Boundary to catch 404s
-class ErrorBoundary extends React.Component<{ fallback: React.ReactNode, children: React.ReactNode }, { hasError: boolean }> {
-    constructor(props: any) {
-        super(props);
-        this.state = { hasError: false };
-    }
-    static getDerivedStateFromError() {
-        return { hasError: true };
-    }
-    render() {
-        if (this.state.hasError) return this.props.fallback;
-        return this.props.children;
-    }
-}
-
-// GLB Loader Component
-function RobotModel({ url }: { url: string }) {
-    const { scene } = useGLTF(url);
-    return <primitive object={scene} scale={2} />;
-}
-
-export default function RobotScene({ modelUrl }: { modelUrl?: string }) {
+export default function RobotScene() {
     return (
         <div className="w-full h-full">
             <Canvas>
-                <PerspectiveCamera makeDefault position={[0, 0, 5]} fov={45} />
-                <OrbitControls enableZoom={false} enablePan={false} autoRotate autoRotateSpeed={0.5} />
+                <PerspectiveCamera makeDefault position={[0, 0, 6]} fov={40} />
+                <OrbitControls enableZoom={false} enablePan={false} autoRotate autoRotateSpeed={0.5} minPolarAngle={Math.PI / 3} maxPolarAngle={Math.PI / 2} />
 
-                {/* Environment & Lighting */}
+                {/* Lighting */}
                 <ambientLight intensity={0.5} />
-                <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} intensity={100} castShadow />
-                <pointLight position={[-10, -10, -10]} intensity={50} color="blue" />
+                <spotLight position={[5, 5, 5]} angle={0.25} penumbra={1} intensity={50} castShadow />
+                <pointLight position={[-5, -5, 5]} intensity={20} color="#D4AF37" />
+
                 <Environment preset="city" />
 
-                {/* Floating Animation Wrapper */}
-                <Float speed={2} rotationIntensity={0.5} floatIntensity={0.5}>
-                    <Suspense fallback={<PlaceholderRobot />}>
-                        <ErrorBoundary fallback={<PlaceholderRobot />}>
-                            {modelUrl ? <RobotModel url={modelUrl} /> : <PlaceholderRobot />}
-                        </ErrorBoundary>
-                    </Suspense>
+                <Float speed={2} rotationIntensity={0.2} floatIntensity={0.2}>
+                    <ProceduralRobot />
                 </Float>
             </Canvas>
         </div>
