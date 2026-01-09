@@ -1,14 +1,23 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import type { ResolvedBlend, ResolvedCultivar } from '@/components/ResolutionPanel';
+import type { ResolvedBlend } from '@/components/ResolutionPanel';
+import type { BlendCandidate } from '@/lib/goOutcomeEngine';
 
 interface StackedBlendHUDProps {
-    blend: ResolvedBlend;
+    blend: ResolvedBlend | BlendCandidate;
 }
 
 export default function StackedBlendHUD({ blend }: StackedBlendHUDProps) {
-    const steps = blend.primaryBlend;
+    // Adapter: Start with empty, check type
+    const steps = 'selectedCultivars' in blend
+        ? blend.selectedCultivars.map((c, i) => ({
+            id: c.id,
+            name: c.displayName,
+            role: c.role,
+            percentage: blend.ratios?.[i] || 0
+        }))
+        : blend.primaryBlend;
 
     return (
         <div className="flex flex-col items-center justify-center p-8 space-y-8 select-none">

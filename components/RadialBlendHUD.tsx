@@ -2,9 +2,10 @@
 
 import { motion } from 'framer-motion';
 import type { ResolvedBlend } from '@/components/ResolutionPanel';
+import type { BlendCandidate } from '@/lib/goOutcomeEngine';
 
 interface RadialBlendHUDProps {
-    blend: ResolvedBlend;
+    blend: ResolvedBlend | BlendCandidate;
 }
 
 // Polar to Cartesian Helper
@@ -38,7 +39,14 @@ export default function RadialBlendHUD({ blend }: RadialBlendHUDProps) {
     const strokeWidth = 12; // Thin, technical
 
     // Data Mapping
-    const strains = blend.primaryBlend;
+    const strains = 'selectedCultivars' in blend
+        ? blend.selectedCultivars.map((c, i) => ({
+            id: c.id,
+            name: c.displayName,
+            role: c.role,
+            percentage: blend.ratios?.[i] || 0
+        }))
+        : blend.primaryBlend;
     // Calculate start/end angles based on ratio (percentage of 360)
     let currentAngle = 0;
 
