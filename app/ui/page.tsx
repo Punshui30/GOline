@@ -36,6 +36,8 @@ const MOCK_BLEND: ResolvedBlend = {
       id: 'blue-dream',
       name: 'Blue Dream',
       role: 'Anchor',
+      rank: 1,
+      weight: 0.6,
       percentage: 60,
       explanation: 'Primary energy and focus profile',
       chemotypeId: 'blue-dream',
@@ -43,7 +45,9 @@ const MOCK_BLEND: ResolvedBlend = {
     {
       id: 'granddaddy-purple',
       name: 'Granddaddy Purple',
-      role: 'Modifier',
+      role: 'Modulator',
+      rank: 2,
+      weight: 0.4,
       percentage: 40,
       explanation: 'Balancing body relaxation and calm',
       chemotypeId: 'granddaddy-purple',
@@ -81,7 +85,7 @@ export default function UISandbox() {
   const handleSubmit = () => {
     setIsProcessing(true);
     setPhase('resolving');
-    
+
     // Auto-transition to result after delay
     setTimeout(() => {
       setIsProcessing(false);
@@ -125,8 +129,8 @@ export default function UISandbox() {
                 onInputChange={setUserInput}
                 onModeChange={setMode}
                 onSubmit={handleSubmit}
-                onClarificationAnswer={() => {}}
-                onClearClarification={() => {}}
+                onClarificationAnswer={() => { }}
+                onClearClarification={() => { }}
               />
             </motion.div>
           )}
@@ -169,25 +173,22 @@ export default function UISandbox() {
           <div className="flex gap-2">
             <button
               onClick={() => setPhase('input')}
-              className={`px-3 py-1 rounded ${
-                phase === 'input' ? 'bg-[#C5A065] text-black' : 'bg-zinc-800 text-zinc-300'
-              }`}
+              className={`px-3 py-1 rounded ${phase === 'input' ? 'bg-[#C5A065] text-black' : 'bg-zinc-800 text-zinc-300'
+                }`}
             >
               Input
             </button>
             <button
               onClick={() => setPhase('resolving')}
-              className={`px-3 py-1 rounded ${
-                phase === 'resolving' ? 'bg-[#C5A065] text-black' : 'bg-zinc-800 text-zinc-300'
-              }`}
+              className={`px-3 py-1 rounded ${phase === 'resolving' ? 'bg-[#C5A065] text-black' : 'bg-zinc-800 text-zinc-300'
+                }`}
             >
               Resolving
             </button>
             <button
               onClick={() => setPhase('result')}
-              className={`px-3 py-1 rounded ${
-                phase === 'result' ? 'bg-[#C5A065] text-black' : 'bg-zinc-800 text-zinc-300'
-              }`}
+              className={`px-3 py-1 rounded ${phase === 'result' ? 'bg-[#C5A065] text-black' : 'bg-zinc-800 text-zinc-300'
+                }`}
             >
               Result
             </button>

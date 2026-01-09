@@ -15,7 +15,7 @@ import type { DeterministicExplanation } from '@/lib/outcomeBrain/deterministicE
 import { staggerContainer, itemFade } from '@/lib/motion';
 
 // Interfaces matching the new "Editorial" data structure
-export type CultivarRole = 'primary' | 'secondary' | 'supporting';
+export type CultivarRole = 'primary' | 'secondary' | 'supporting' | 'driver' | 'modulator' | 'anchor' | 'Anchor' | 'Modulator' | 'Driver';
 
 // Map internal role names to consumer-friendly display names
 export function getRoleDisplayName(role: CultivarRole): string {
