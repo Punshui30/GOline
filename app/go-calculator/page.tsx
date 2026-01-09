@@ -29,6 +29,7 @@ import CinematicRightPanel from '@/components/CinematicRightPanel';
 import OnboardingModal from '@/components/OnboardingModal';
 import StrainInsightCard from '@/components/StrainInsightCard';
 import { STRAIN_LIBRARY } from '@/lib/strainLibrary';
+import { generateEffectiveExplanation } from '@/lib/generateEffectiveExplanation';
 
 // Conversation state exists for parsing/clarification but is NOT visually rendered
 type ConversationState = 'active' | 'resolved';
@@ -104,6 +105,7 @@ export default function GOLineCalculator() {
   // Secret inventory portal state
   const [showInventoryPortal, setShowInventoryPortal] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showCalcDetails, setShowCalcDetails] = useState(false);
   const [logoClickCount, setLogoClickCount] = useState(0);
   const [logoClickTimer, setLogoClickTimer] = useState<NodeJS.Timeout | null>(null);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
@@ -689,6 +691,14 @@ export default function GOLineCalculator() {
                   <span className="text-xs font-bold text-[#D4AF37]">98.4%</span>
                 </div>
 
+                {/* Analysis Explainer */}
+                <div className="py-2">
+                  <h3 className="text-[10px] text-white/60 uppercase tracking-wider mb-3">Why this blend was chosen</h3>
+                  <p className="text-xs text-white/80 leading-relaxed font-sans border-l-2 border-[#D4AF37]/50 pl-4 py-1">
+                    {outcomeResult?.primary ? generateEffectiveExplanation(outcomeResult.primary as any) : ''}
+                  </p>
+                </div>
+
                 {/* Mode-Specific Display */}
                 {consumptionMode === 'stack' ? (
                   <div className="bg-[#111216] border border-white/10 rounded-sm p-4">
@@ -703,15 +713,19 @@ export default function GOLineCalculator() {
                     <div className="space-y-4 border-t border-white/10 pt-6">
                       <h4 className="text-[10px] text-white/40 uppercase tracking-widest mb-4">Formulation Insights</h4>
 
-                      {outcomeResult?.primary?.primaryBlend?.map((cultivar: any, i: number) => {
+                      {outcomeResult?.primary?.selectedCultivars?.map((cultivar: any, i: number) => {
                         const strainData = STRAIN_LIBRARY[cultivar.id];
                         if (!strainData) return null;
+
+                        // Ratios are typically 0-100 (e.g. 60, 40). Convert to decimal 0-1 for Card.
+                        const rawRatio = outcomeResult.primary.ratios?.[i] ?? 0;
+                        const percentage = rawRatio > 1 ? rawRatio / 100 : rawRatio;
 
                         return (
                           <StrainInsightCard
                             key={cultivar.id}
                             strain={strainData}
-                            percentage={cultivar.percentage}
+                            percentage={percentage}
                             role={cultivar.role}
                             index={i}
                           />
@@ -720,6 +734,27 @@ export default function GOLineCalculator() {
                     </div>
                   </div>
                 )}
+
+                {/* Calculation Methodology (Collapsible) */}
+                <div className="mt-8 border-t border-white/5 pt-4">
+                  <button
+                    onClick={() => setShowCalcDetails(!showCalcDetails)}
+                    className="flex items-center justify-between w-full text-left group"
+                  >
+                    <span className="text-[10px] text-white/40 group-hover:text-white/60 uppercase tracking-widest transition-colors">
+                      How this recommendation is calculated
+                    </span>
+                    <span className="text-white/40 text-xs font-mono">{showCalcDetails ? '[-]' : '[+]'}</span>
+                  </button>
+
+                  {showCalcDetails && (
+                    <div className="mt-4 text-[11px] text-white/60 leading-relaxed space-y-3 font-sans animate-in slide-in-from-top-1 fade-in duration-300">
+                      <p>Cannabis effects aren’t linear. Terpenes and cannabinoids don’t just add up — they interact. Some amplify each other, some counteract, and some change behavior entirely depending on dose.</p>
+                      <p className="pl-3 border-l border-white/10 italic text-white/50">For example: Certain terpenes can reduce anxiety at low levels but increase it at higher ones.</p>
+                      <p>This system models those interactions — including counterbalancing, biphasic behavior, and known entourage effects — to arrive at a recommendation that fits the outcome you described, using what’s actually available right now.</p>
+                    </div>
+                  )}
+                </div>
 
                 {/* Technical Metadata */}
                 <div className="pt-8 border-t border-white/5">
