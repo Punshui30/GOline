@@ -30,6 +30,7 @@ import OnboardingModal from '@/components/OnboardingModal'; // Keeping if needed
 import OnboardingOverlay from '@/components/OnboardingOverlay';
 import AgeGate from '@/components/AgeGate';
 import StrainInsightCard from '@/components/StrainInsightCard';
+import BlendExecutionCalculator from '@/components/BlendExecutionCalculator';
 import { STRAIN_LIBRARY } from '@/lib/strainLibrary';
 import { generateEffectiveExplanation } from '@/lib/generateEffectiveExplanation';
 
@@ -780,6 +781,11 @@ export default function GOLineCalculator() {
                       );
                     })}
                   </div>
+                </div>
+
+                {/* Phase 4: Execution */}
+                <div className="mt-4">
+                  <BlendExecutionCalculator blend={outcomeResult?.primary as any} />
                 </div>
 
                 {/* Calculation Methodology (Collapsible) */}
