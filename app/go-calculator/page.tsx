@@ -250,9 +250,9 @@ export default function GOLineCalculator() {
     if (outcome.failure) {
       throw new Error(`Resolution failed: ${outcome.failure.reason || 'Unknown error'}`);
     }
-    
+
     const primary = outcome.primary;
-    
+
     // Validate: must have named strains
     if (!primary.selectedCultivars || primary.selectedCultivars.length === 0) {
       throw new Error('Resolution without cultivar names is invalid');
@@ -500,7 +500,7 @@ export default function GOLineCalculator() {
 
   // --- RENDER: VIEW 3 - MAIN INTERFACE ---
   return (
-    <main className="min-h-screen w-full bg-[#0a0b0e] text-white flex flex-col">
+    <main className="h-screen w-full bg-[#0a0b0e] text-white flex flex-col overflow-hidden">
       {/* Header */}
       <div className="fixed top-0 left-0 right-0 z-50 bg-[#0a0b0e] border-b border-white/5">
         <div className="max-w-[900px] mx-auto px-4 sm:px-6 lg:px-8">
@@ -512,9 +512,10 @@ export default function GOLineCalculator() {
         </div>
       </div>
 
-      <div className="flex flex-col min-h-screen pt-16">
+      {/* Main Content Area (below fixed header) */}
+      <div className="flex-1 flex flex-col pt-16 overflow-hidden">
         {/* Input Area */}
-        <div className="border-b border-white/10 bg-[#0a0b0e]">
+        <div className="border-b border-white/10 bg-[#0a0b0e] flex-shrink-0">
           <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <form onSubmit={handleSubmit} className="flex gap-3">
               <textarea
@@ -528,14 +529,14 @@ export default function GOLineCalculator() {
                   }
                 }}
                 placeholder="Describe your desired outcome..."
-                className="flex-1 px-4 py-3 bg-[#111216] border border-white/10 rounded-lg text-white placeholder-white/30 text-sm focus:outline-none focus:border-white/20 resize-none"
+                className="flex-1 px-4 py-3 bg-[#111216] border border-white/10 rounded-lg text-white placeholder-white/30 text-sm focus:outline-none focus:border-white/20 resize-none min-h-[60px]"
                 rows={2}
                 disabled={isProcessing}
               />
               <button
                 type="submit"
                 disabled={!userInput.trim() || isProcessing}
-                className="px-6 py-3 bg-white text-[#0a0b0e] font-medium text-sm rounded-lg hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="px-6 py-3 bg-white text-[#0a0b0e] font-medium text-sm rounded-lg hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex-shrink-0"
               >
                 {isProcessing ? 'Processing...' : 'Process'}
               </button>
@@ -549,8 +550,8 @@ export default function GOLineCalculator() {
           </div>
         </div>
 
-        {/* Content Area */}
-        <div className="flex-1 flex w-full">
+        {/* Content Area (Adjustments + Pre-Roll Stack) */}
+        <div className="flex-1 flex w-full overflow-hidden">
           {/* Active State (Processing / Empty) */}
           {conversationState === 'active' && (
             <div className="flex-1 flex items-center justify-center px-4">
@@ -567,7 +568,7 @@ export default function GOLineCalculator() {
           {conversationState === 'resolved' && intent && stackSegments.length > 0 && (
             <div className="flex-1 flex w-full">
               {/* Left: Adjustment Controls */}
-              <div className="w-80 border-r border-white/10 bg-[#111216] p-6 overflow-y-auto">
+              <div className="w-80 border-r border-white/10 bg-[#111216] p-6 flex-shrink-0 overflow-y-auto">
                 <div className="mb-6">
                   <h3 className="text-sm font-medium text-white mb-1">Adjustment Controls</h3>
                 </div>

@@ -1,7 +1,6 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import RobotScene from '@/components/RobotScene';
 import type { ResolvedBlend } from '@/components/ResolutionPanel';
 import RadialBlendHUD from './RadialBlendHUD';
 import StackedBlendHUD from './StackedBlendHUD';
@@ -24,10 +23,12 @@ export default function CinematicRightPanel({ phase, blend }: CinematicRightPane
     );
 
     return (
-        <div className="relative w-full h-full overflow-hidden bg-black select-none">
-            {/* LAYER 0: R3F Mesh (Base) */}
-            <div className="absolute inset-0 z-0">
-                <RobotScene />
+        <div className="relative w-full h-full overflow-hidden bg-black select-none border-l border-white/10">
+            {/* LAYER 0: Background (Static Dark Aesthetic) */}
+            <div className="absolute inset-0 z-0 bg-[#050505]">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-gray-900/20 via-black to-black opacity-80" />
+                {/* Grid Overlay */}
+                <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:40px_40px] opacity-20" />
             </div>
 
             {/* LAYER 1: Post-Process / Vignette */}
@@ -39,11 +40,16 @@ export default function CinematicRightPanel({ phase, blend }: CinematicRightPane
 
             {/* LAYER 2: Ambient Analysis (Drifting Text) */}
             <AnimatePresence>
-                {isResolving && (
-                    <div className="absolute inset-0 z-20 pointer-events-none overflow-hidden">
-                        <AmbientText text="ANALYZING TERPENES" top="20%" duration={8} />
-                        <AmbientText text="CALCULATING VECTORS" top="40%" left="60%" duration={12} delay={1} />
-                        <AmbientText text="MATCHING PROFILE" top="70%" left="20%" duration={10} delay={2} />
+                {/* Always show ambient text for atmosphere, maybe? No, user said "scrolling text needs to be a lot smaller...". Usually active during resolving or idle? Keeping logical condition for now. */}
+                {(isResolving || !hasResult) && (
+                    <div className="absolute inset-0 z-20 pointer-events-none overflow-hidden flex flex-col justify-center opacity-30">
+                        {/* Multiple lines of scrolling text */}
+                        <AmbientText text="ANALYZING TERPENE PROFILE // " direction={1} speed={20} />
+                        <AmbientText text="CALCULATING SYNERGY VECTORS // " direction={-1} speed={25} />
+                        <AmbientText text="OPTIMIZING BIOAVAILABILITY // " direction={1} speed={30} />
+                        <AmbientText text="MATCHING USER INTENT // " direction={-1} speed={22} />
+                        <AmbientText text="RESOLVING COMPOSITION // " direction={1} speed={28} />
+                        <AmbientText text="QUERYING STRAIN DATABASE // " direction={-1} speed={35} />
                     </div>
                 )}
             </AnimatePresence>
@@ -80,17 +86,30 @@ export default function CinematicRightPanel({ phase, blend }: CinematicRightPane
     );
 }
 
-function AmbientText({ text, top = '50%', left = '10%', duration, delay = 0 }: { text: string, top?: string, left?: string, duration: number, delay?: number }) {
+function AmbientText({ text, direction = 1, speed = 20 }: { text: string, direction?: number, speed?: number }) {
+    // Create a generic repeated string for marquee effect
+    const content = Array(10).fill(text).join(' ');
+
     return (
-        <motion.div
-            className="absolute text-[100px] font-bold text-white/5 whitespace-nowrap pointer-events-none"
-            style={{ top, left }}
-            initial={{ x: -100, opacity: 0 }}
-            animate={{ x: 100, opacity: 0.1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration, delay, repeat: Infinity, repeatType: "reverse" }}
-        >
-            {text}
-        </motion.div>
+        <div className="w-full overflow-hidden py-1">
+            <motion.div
+                className="whitespace-nowrap text-[10px] font-mono font-bold text-white/20 tracking-[0.2em]"
+                initial={{ x: direction > 0 ? -100 : 0 }}
+                animate={{ x: direction > 0 ? 0 : -1000 }} // Simple infinite scroll simulation requires seamless loop or reset. 
+            // For simplicity, let's use a very long duration ping-pong or just standard drift.
+            // Reverting to ping-pong drift as it's easier to impl perfectly without calc.
+            // User asked for "scrolling text" but "within container".
+            // Let's use the drift style but smaller.
+            />
+            {/* Retrying Implementation for standard drift */}
+            <motion.div
+                className="whitespace-nowrap text-[10px] font-mono font-bold text-white/20 tracking-[0.2em]"
+                initial={{ x: direction === 1 ? '-20%' : '0%' }}
+                animate={{ x: direction === 1 ? '0%' : '-20%' }}
+                transition={{ duration: speed, repeat: Infinity, repeatType: "reverse", ease: "linear" }}
+            >
+                {content}
+            </motion.div>
+        </div>
     );
 }
