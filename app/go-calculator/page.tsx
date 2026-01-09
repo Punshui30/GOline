@@ -524,7 +524,7 @@ export default function GOLineCalculator() {
 
   // --- RENDER: VIEW 3 - STRICT DASHBOARD ---
   return (
-    <main className="fixed inset-0 w-full h-full bg-[#0a0b0e] text-white flex flex-col overflow-hidden">
+    <main className="fixed inset-0 w-screen h-screen bg-[#0a0b0e] text-white flex flex-col overflow-hidden overscroll-none">
       {/* Header */}
       <div className="h-12 border-b border-white/5 bg-[#0a0b0e] flex items-center justify-center shrink-0 z-50">
         <div className="text-xs font-bold tracking-[0.2em] text-[#D4AF37]/80">GO LINE // {consumptionMode === 'blend' ? 'HARMONIC' : 'SEQUENTIAL'}</div>
@@ -675,12 +675,8 @@ export default function GOLineCalculator() {
           {/* Scrollable Content */}
           <div className="flex-1 overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-white/10">
             {conversationState === 'active' ? (
-              // Empty / Idle State - Subtle Frame
-              <div className="h-full border border-dashed border-white/5 rounded-lg flex items-center justify-center opacity-30">
-                <div className="text-[10px] text-white/40 font-mono text-center">
-                  AWAITING<br />CALCULATION
-                </div>
-              </div>
+              // Idle State: Empty and clean as requested
+              <div className="h-full w-full" />
             ) : (
               // Result State
               <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">

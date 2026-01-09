@@ -1,20 +1,21 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import type { ResolvedBlend } from '@/components/ResolutionPanel';
+import type { BlendCandidate } from '@/lib/goOutcomeEngine';
 import RadialBlendHUD from './RadialBlendHUD';
-import StackedBlendHUD from './StackedBlendHUD';
+import StackedBlendHUD from './('./StackedBlendHUD');
 import ConeExecutionPanel from './ConeExecutionPanel';
 
 interface CinematicRightPanelProps {
     phase: string;
-    blend?: ResolvedBlend | null;
+    blend?: BlendCandidate | null;
     mode: 'blend' | 'stack';
 }
 
 export default function CinematicRightPanel({ phase, blend, mode }: CinematicRightPanelProps) {
-    const isResolving = phase === 'resolving';
-    const hasResult = phase === 'result' && blend && blend.primaryBlend && blend.primaryBlend.length > 0;
+    const isResolving = phase === 'resolving'; // Keep solving if used, but active/resolved is main.
+    // 'active' = idle/input. 'resolved' = result.
+    const hasResult = phase === 'resolved' && blend && blend.selectedCultivars && blend.selectedCultivars.length > 0;
 
     // Use explicit mode passed from parent
     const isStack = mode === 'stack';
