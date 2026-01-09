@@ -106,6 +106,7 @@ export default function GOLineCalculator() {
   const [showInventoryPortal, setShowInventoryPortal] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showCalcDetails, setShowCalcDetails] = useState(false);
+  const [showPromptTips, setShowPromptTips] = useState(false);
   const [logoClickCount, setLogoClickCount] = useState(0);
   const [logoClickTimer, setLogoClickTimer] = useState<NodeJS.Timeout | null>(null);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
@@ -546,34 +547,43 @@ export default function GOLineCalculator() {
           </div>
 
           {/* Scrollable Form Area */}
-          <div className="flex-1 overflow-y-auto px-6 pb-24 scrollbar-thin scrollbar-thumb-white/10">
+          <div className="flex-1 overflow-y-auto px-6 pb-6 scrollbar-thin scrollbar-thumb-white/10">
 
-            {/* Prompt Mode Guidance */}
-            <div className="py-6 space-y-4">
-              <div className="text-[10px] uppercase tracking-widest text-white/40 mb-3">You can start from any of these:</div>
-              <div className="space-y-3">
-                <div className="text-xs text-white/80 border-l border-white/10 pl-3 font-sans">
-                  <span className="block text-white/40 text-[9px] uppercase mb-1 font-mono">Desired feeling</span>
-                  “Relaxed but alert, no anxiety”
+            {/* Prompt Mode Guidance (Collapsible) */}
+            <div className="py-6">
+              <button
+                onClick={() => setShowPromptTips(!showPromptTips)}
+                className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-white/40 hover:text-white/60 transition-colors mb-3 group w-full text-left"
+              >
+                <span>You can start from any of these</span>
+                <span className="text-white/20 group-hover:text-white/40 font-mono">{showPromptTips ? '[-]' : '[+]'}</span>
+              </button>
+
+              {showPromptTips && (
+                <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                  <div className="text-xs text-white/80 border-l border-white/10 pl-3 font-sans">
+                    <span className="block text-white/40 text-[9px] uppercase mb-1 font-mono">Desired feeling</span>
+                    “Relaxed but alert, no anxiety”
+                  </div>
+                  <div className="text-xs text-white/80 border-l border-white/10 pl-3 font-sans">
+                    <span className="block text-white/40 text-[9px] uppercase mb-1 font-mono">Problem → solution</span>
+                    “Pain relief and anti-nausea, but no jitters”
+                  </div>
+                  <div className="text-xs text-white/80 border-l border-white/10 pl-3 font-sans">
+                    <span className="block text-white/40 text-[9px] uppercase mb-1 font-mono">Memory-based reference</span>
+                    “Something like Blue Dream, but calmer”
+                  </div>
+                  <div className="text-xs text-white/80 border-l border-white/10 pl-3 font-sans">
+                    <span className="block text-white/40 text-[9px] uppercase mb-1 font-mono">Functional goal</span>
+                    “Focused and creative without racing thoughts”
+                  </div>
+                  <div className="text-xs text-white/80 border-l border-white/10 pl-3 font-sans">
+                    <span className="block text-white/40 text-[9px] uppercase mb-1 font-mono">Product-based reference</span>
+                    “I liked this product — can you recreate the feeling?”
+                    <div className="text-[9px] text-white/30 mt-1 italic">Labels with THC / terpene percentages work especially well.</div>
+                  </div>
                 </div>
-                <div className="text-xs text-white/80 border-l border-white/10 pl-3 font-sans">
-                  <span className="block text-white/40 text-[9px] uppercase mb-1 font-mono">Problem → solution</span>
-                  “Pain relief and anti-nausea, but no jitters”
-                </div>
-                <div className="text-xs text-white/80 border-l border-white/10 pl-3 font-sans">
-                  <span className="block text-white/40 text-[9px] uppercase mb-1 font-mono">Memory-based reference</span>
-                  “Something like Blue Dream, but calmer”
-                </div>
-                <div className="text-xs text-white/80 border-l border-white/10 pl-3 font-sans">
-                  <span className="block text-white/40 text-[9px] uppercase mb-1 font-mono">Functional goal</span>
-                  “Focused and creative without racing thoughts”
-                </div>
-                <div className="text-xs text-white/80 border-l border-white/10 pl-3 font-sans">
-                  <span className="block text-white/40 text-[9px] uppercase mb-1 font-mono">Product-based reference</span>
-                  “I liked this product — can you recreate the feeling?”
-                  <div className="text-[9px] text-white/30 mt-1 italic">Labels with THC / terpene percentages work especially well.</div>
-                </div>
-              </div>
+              )}
             </div>
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-6">
