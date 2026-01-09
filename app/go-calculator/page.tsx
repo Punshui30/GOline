@@ -467,25 +467,35 @@ export default function GOLineCalculator() {
   // --- RENDER: VIEW 2 - CALIBRATION ---
   if (presetSelected && !calibrationComplete) {
     return (
-      <main className="min-h-screen w-full bg-[#0a0b0e] text-white flex flex-col">
-        {/* Header */}
-        <div className="fixed top-0 left-0 right-0 z-50 bg-[#0a0b0e] border-b border-white/5">
-          <div className="max-w-[900px] mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-center h-16">
-              <button onClick={handleLogoClick} className="text-lg font-medium text-white/90">
-                GO Line Calculator
-              </button>
-            </div>
-          </div>
+      <main className="fixed inset-0 w-screen h-screen bg-[#0a0b0e] text-white flex flex-col font-sans overflow-hidden">
+        {/* Background Layers (Cinematic) */}
+        <div className="absolute inset-0 z-0 pointer-events-none">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-gray-900/20 via-black to-black opacity-80" />
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:40px_40px] opacity-20" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/50" />
         </div>
 
-        <div className="pt-24 pb-8 px-4 sm:px-6 lg:px-8 flex-1">
-          <div className="max-w-[900px] mx-auto">
-            <div className="bg-[#111216] border border-white/10 rounded-sm p-6">
+        {/* Header (Standardized) */}
+        <div className="h-12 border-b border-white/5 bg-[#0a0b0e]/80 backdrop-blur-sm flex items-center justify-center shrink-0 z-50 relative">
+          <button onClick={handleLogoClick} className="text-xs font-bold tracking-[0.2em] text-[#D4AF37]/80 hover:text-[#D4AF37] transition-colors">
+            GO LINE // CALCULATOR
+          </button>
+        </div>
+
+        {/* Content Container */}
+        <div className="relative z-10 flex-1 flex flex-col items-center justify-center p-6 bg-black/20">
+          <div className="max-w-[700px] w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
+
+            <div className="bg-[#111216]/90 backdrop-blur-md border border-white/10 rounded-sm p-8 shadow-2xl relative overflow-hidden">
+              {/* Decorative top accent */}
+              <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[#D4AF37]/50 to-transparent" />
+
               {selectedPreset && (
-                <div className="mb-4 pb-4 border-b border-white/10">
-                  <div className="text-xs text-white/50 mb-1">Selected preset:</div>
-                  <div className="text-sm font-medium text-white/80">{selectedPreset.name}</div>
+                <div className="mb-8 pb-6 border-b border-white/5 flex items-center justify-between">
+                  <div>
+                    <div className="text-[10px] text-[#D4AF37] uppercase tracking-widest mb-2">Selected Preset Profile</div>
+                    <div className="text-xl font-light text-white">{selectedPreset.name}</div>
+                  </div>
                   <button
                     onClick={() => {
                       setSelectedPreset(null);
@@ -493,60 +503,79 @@ export default function GOLineCalculator() {
                       setUserInput('');
                       setPresetSelected(false);
                     }}
-                    className="text-xs text-white/50 hover:text-white/70 underline mt-2"
+                    className="text-[10px] uppercase tracking-wider text-white/40 hover:text-white transition-colors border-b border-white/10 hover:border-white/40 pb-0.5"
                   >
-                    Change preset
+                    Change selection
                   </button>
                 </div>
               )}
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                <div>
-                  <label className="block text-xs text-white/60 mb-2">THC Tolerance</label>
-                  <select
-                    value={baselineCalibration.thcTolerance || ''}
-                    onChange={(e) => setBaselineCalibration({ ...baselineCalibration, thcTolerance: e.target.value as any })}
-                    className="w-full px-3 py-2 bg-[#0a0b0e] border border-white/10 rounded-sm text-white text-sm focus:outline-none focus:border-white/20"
-                  >
-                    <option value="">Skip</option>
-                    <option value="low">Low</option>
-                    <option value="moderate">Moderate</option>
-                    <option value="high">High</option>
-                  </select>
+              <div className="mb-6">
+                <h3 className="text-sm font-medium text-white mb-2">Fine-tune your baseline (Optional)</h3>
+                <p className="text-xs text-white/40 leading-relaxed mb-6">
+                  Adjust these settings if you have specific tolerance or sensitivity requirements different from the preset defaults.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div className="space-y-2">
+                  <label className="block text-[10px] text-white/40 uppercase tracking-wider">THC Tolerance</label>
+                  <div className="relative">
+                    <select
+                      value={baselineCalibration.thcTolerance || ''}
+                      onChange={(e) => setBaselineCalibration({ ...baselineCalibration, thcTolerance: e.target.value as any })}
+                      className="w-full px-4 py-3 bg-[#0a0b0e] border border-white/10 rounded-sm text-white text-xs focus:outline-none focus:border-[#D4AF37]/50 appearance-none hover:border-white/20 transition-colors"
+                    >
+                      <option value="">Default (Preset)</option>
+                      <option value="low">Low</option>
+                      <option value="moderate">Moderate</option>
+                      <option value="high">High</option>
+                    </select>
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-white/20 text-[10px]">▼</div>
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-xs text-white/60 mb-2">Anxiety Sensitivity</label>
-                  <select
-                    value={baselineCalibration.anxietySensitivity || ''}
-                    onChange={(e) => setBaselineCalibration({ ...baselineCalibration, anxietySensitivity: e.target.value as any })}
-                    className="w-full px-3 py-2 bg-[#0a0b0e] border border-white/10 rounded-sm text-white text-sm focus:outline-none focus:border-white/20"
-                  >
-                    <option value="">Skip</option>
-                    <option value="low">Low</option>
-                    <option value="moderate">Moderate</option>
-                    <option value="high">High</option>
-                  </select>
+                <div className="space-y-2">
+                  <label className="block text-[10px] text-white/40 uppercase tracking-wider">Anxiety Sensitivity</label>
+                  <div className="relative">
+                    <select
+                      value={baselineCalibration.anxietySensitivity || ''}
+                      onChange={(e) => setBaselineCalibration({ ...baselineCalibration, anxietySensitivity: e.target.value as any })}
+                      className="w-full px-4 py-3 bg-[#0a0b0e] border border-white/10 rounded-sm text-white text-xs focus:outline-none focus:border-[#D4AF37]/50 appearance-none hover:border-white/20 transition-colors"
+                    >
+                      <option value="">Default (Preset)</option>
+                      <option value="low">Low</option>
+                      <option value="moderate">Moderate</option>
+                      <option value="high">High</option>
+                    </select>
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-white/20 text-[10px]">▼</div>
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-xs text-white/60 mb-2">Experience Level</label>
-                  <select
-                    value={baselineCalibration.experienceLevel || ''}
-                    onChange={(e) => setBaselineCalibration({ ...baselineCalibration, experienceLevel: e.target.value as any })}
-                    className="w-full px-3 py-2 bg-[#0a0b0e] border border-white/10 rounded-sm text-white text-sm focus:outline-none focus:border-white/20"
-                  >
-                    <option value="">Skip</option>
-                    <option value="occasional">Occasional</option>
-                    <option value="regular">Regular</option>
-                    <option value="experienced">Experienced</option>
-                  </select>
+                <div className="space-y-2">
+                  <label className="block text-[10px] text-white/40 uppercase tracking-wider">Experience Level</label>
+                  <div className="relative">
+                    <select
+                      value={baselineCalibration.experienceLevel || ''}
+                      onChange={(e) => setBaselineCalibration({ ...baselineCalibration, experienceLevel: e.target.value as any })}
+                      className="w-full px-4 py-3 bg-[#0a0b0e] border border-white/10 rounded-sm text-white text-xs focus:outline-none focus:border-[#D4AF37]/50 appearance-none hover:border-white/20 transition-colors"
+                    >
+                      <option value="">Default (Preset)</option>
+                      <option value="occasional">Occasional</option>
+                      <option value="regular">Regular</option>
+                      <option value="experienced">Experienced</option>
+                    </select>
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-white/20 text-[10px]">▼</div>
+                  </div>
                 </div>
               </div>
-              <button
-                onClick={handleCalibrationComplete}
-                className="px-4 py-2 bg-white/10 text-white text-sm rounded-sm hover:bg-white/20 transition-colors"
-              >
-                Continue
-              </button>
+
+              <div className="flex justify-end pt-4 border-t border-white/5">
+                <button
+                  onClick={handleCalibrationComplete}
+                  className="px-8 py-3 bg-[#D4AF37] text-black font-bold text-xs uppercase tracking-widest hover:bg-[#b5952f] transition-colors rounded-sm shadow-[0_0_20px_rgba(212,175,55,0.2)] hover:shadow-[0_0_30px_rgba(212,175,55,0.4)]"
+                >
+                  Initialize System
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -559,6 +588,7 @@ export default function GOLineCalculator() {
       </main>
     );
   }
+
 
   // --- RENDER: VIEW 3 - STRICT DASHBOARD ---
   return (
