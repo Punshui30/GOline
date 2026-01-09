@@ -26,6 +26,7 @@ import PreRollStack, { type StackSegment } from '@/components/PreRollStack';
 import CompositionBreakdown, { type BlendComponent } from '@/components/CompositionBreakdown';
 import SecretInventoryPortal, { type InventoryItem } from '@/components/SecretInventoryPortal';
 import CinematicRightPanel from '@/components/CinematicRightPanel';
+import OnboardingModal from '@/components/OnboardingModal';
 
 // Conversation state exists for parsing/clarification but is NOT visually rendered
 type ConversationState = 'active' | 'resolved';
@@ -93,17 +94,32 @@ export default function GOLineCalculator() {
   const [breakdownComponents, setBreakdownComponents] = useState<BlendComponent[]>([]);
 
   // UI state
+  const [consumptionMode, setConsumptionMode] = useState<'blend' | 'stack'>('blend');
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showBreakdown, setShowBreakdown] = useState(false);
 
   // Secret inventory portal state
   const [showInventoryPortal, setShowInventoryPortal] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const [logoClickCount, setLogoClickCount] = useState(0);
   const [logoClickTimer, setLogoClickTimer] = useState<NodeJS.Timeout | null>(null);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
 
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  // Check onboarding status on mount
+  useEffect(() => {
+    const hasSeen = localStorage.getItem('hasSeenOnboarding');
+    if (!hasSeen) {
+      setShowOnboarding(true);
+    }
+  }, []);
+
+  const handleOnboardingClose = () => {
+    localStorage.setItem('hasSeenOnboarding', 'true');
+    setShowOnboarding(false);
+  };
 
   // Logo click detection (6 clicks within 3 seconds)
   const handleLogoClick = () => {
@@ -502,30 +518,43 @@ export default function GOLineCalculator() {
     );
   }
 
-  // --- RENDER: VIEW 3 - DASHBOARD INTERFACE ---
+  // --- RENDER: VIEW 3 - STRICT DASHBOARD ---
   return (
-    <main className="h-screen w-full bg-[#0a0b0e] text-white flex flex-col overflow-hidden">
-      {/* Fixed Header (Minimal) */}
-      <div className="fixed top-0 left-0 right-0 z-50 bg-[#0a0b0e] border-b border-white/5 h-12 flex items-center justify-center">
-        <button onClick={handleLogoClick} className="text-sm font-bold tracking-widest text-[#D4AF37]/80">
-          GO LINE // OUTCOMES
-        </button>
+    <main className="fixed inset-0 w-full h-full bg-[#0a0b0e] text-white flex flex-col overflow-hidden">
+      {/* Header */}
+      <div className="h-12 border-b border-white/5 bg-[#0a0b0e] flex items-center justify-center shrink-0 z-50">
+        <div className="text-xs font-bold tracking-[0.2em] text-[#D4AF37]/80">GO LINE // {consumptionMode === 'blend' ? 'HARMONIC' : 'SEQUENTIAL'}</div>
       </div>
 
-      {/* 3-Column Dashboard */}
-      <div className="flex-1 grid grid-cols-12 overflow-hidden pt-12">
+      {/* 3-Column Grid - Height locked to remaining space */}
+      <div className="flex-1 grid grid-cols-12 overflow-hidden relative">
 
-        {/* PANEL 1: INPUT & CONTROLS (Left, 3 Cols) */}
-        <div className="col-span-3 border-r border-white/10 flex flex-col h-full bg-[#0a0b0e]">
-          <div className="flex-1 p-6 flex flex-col">
-            <div className="mb-6">
-              <h2 className="text-xs font-mono text-white/40 uppercase tracking-widest mb-2">Intent Input</h2>
-              <p className="text-[10px] text-white/30 leading-relaxed">
-                Describe the desired physiological and cognitive state.
-              </p>
+        {/* PANEL 1: INPUT (Left, 3 cols) - Scrollable internally */}
+        <div className="col-span-3 border-r border-white/10 bg-[#0a0b0e] flex flex-col h-full overflow-hidden">
+
+          {/* Header / Mode Toggle - Sticky Top */}
+          <div className="p-6 pb-4 shrink-0 bg-[#0a0b0e]">
+            <div className="flex bg-white/5 p-1 rounded-full border border-white/5 mb-6">
+              <button
+                onClick={() => setConsumptionMode('blend')}
+                className={`flex-1 py-2 text-[10px] uppercase font-bold tracking-wider rounded-full transition-all ${consumptionMode === 'blend' ? 'bg-white text-black shadow-lg' : 'text-white/40 hover:text-white'}`}
+              >
+                Blend
+              </button>
+              <button
+                onClick={() => setConsumptionMode('stack')}
+                className={`flex-1 py-2 text-[10px] uppercase font-bold tracking-wider rounded-full transition-all ${consumptionMode === 'stack' ? 'bg-white text-black shadow-lg' : 'text-white/40 hover:text-white'}`}
+              >
+                Stack
+              </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4 flex-1">
+            <h2 className="text-xs font-mono text-white/40 uppercase tracking-widest mb-1">Intent Input</h2>
+          </div>
+
+          {/* Scrollable Form Area */}
+          <div className="flex-1 overflow-y-auto px-6 pb-24 scrollbar-thin scrollbar-thumb-white/10">
+            <form onSubmit={handleSubmit} className="flex flex-col gap-6">
               <textarea
                 ref={inputRef}
                 value={userInput}
@@ -536,26 +565,15 @@ export default function GOLineCalculator() {
                     handleSubmit();
                   }
                 }}
-                placeholder="E.g. Creative energy without anxiety..."
-                className="w-full p-4 bg-[#111216] border border-white/10 rounded-sm text-white placeholder-white/20 text-sm focus:outline-none focus:border-[#D4AF37]/50 resize-none font-sans leading-relaxed"
-                style={{ minHeight: '120px' }}
+                placeholder={consumptionMode === 'blend' ? "Describe the desired feeling state..." : "Describe the journey logic..."}
+                className="w-full p-4 bg-[#111216] border border-white/10 rounded-sm text-sm text-white placeholder-white/20 focus:outline-none focus:border-[#D4AF37]/50 resize-none font-sans leading-relaxed min-h-[160px]"
                 disabled={isProcessing}
               />
-
-              <button
-                type="submit"
-                disabled={!userInput.trim() || isProcessing}
-                className="w-full py-4 bg-white text-black font-bold text-xs uppercase tracking-widest hover:bg-[#D4AF37] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isProcessing ? 'Analyzing...' : 'Analyze Intent'}
-              </button>
             </form>
 
-            {/* Adjustments (Always visible but disabled if not resolved? Or only visible if resolved?) */}
+            {/* Adjustment Controls (Conditional) */}
             {conversationState === 'resolved' && intent && (
-              <div className="mt-8 pt-8 border-t border-white/5 space-y-6 animate-in fade-in slide-in-from-left-4 duration-500">
-                <h3 className="text-xs font-mono text-white/40 uppercase tracking-widest">Fine Tuning</h3>
-
+              <div className="mt-8 pt-8 border-t border-white/5 space-y-8 animate-in fade-in">
                 {/* Energy */}
                 <div>
                   <div className="flex justify-between text-[10px] text-white/40 mb-2 uppercase">
@@ -594,7 +612,7 @@ export default function GOLineCalculator() {
                     className="w-full h-1 bg-white/10 appearance-none cursor-pointer accent-[#D4AF37]"
                   />
                 </div>
-                {/* Anxiety (Often Hidden or Automatic, but keeping per user req) */}
+                {/* Anxiety */}
                 <div>
                   <div className="flex justify-between text-[10px] text-white/40 mb-2 uppercase">
                     <span>Sensitivity</span>
@@ -616,89 +634,93 @@ export default function GOLineCalculator() {
               </div>
             )}
           </div>
+
+          {/* Fixed Bottom CTA */}
+          <div className="p-6 border-t border-white/10 bg-[#0a0b0e] shrink-0">
+            <button
+              onClick={() => handleSubmit()}
+              disabled={!userInput.trim() || isProcessing}
+              className="w-full py-4 bg-white text-black font-bold text-xs uppercase tracking-widest hover:bg-[#D4AF37] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isProcessing ? 'Calculating...' : `Calculate ${consumptionMode}`}
+            </button>
+          </div>
         </div>
 
-        {/* PANEL 2: VISUALIZATION (Middle, 6 Cols) */}
-        <div className="col-span-6 border-r border-white/10 relative bg-black flex flex-col">
-          {/* The Visualizer takes the full space */}
-          <div className="flex-1 relative">
+        {/* PANEL 2: VISUALIZATION (Middle, 6 cols) - Locked, No Scroll */}
+        <div className="col-span-6 border-r border-white/10 bg-black relative h-full overflow-hidden flex flex-col">
+          <div className="flex-1 relative w-full h-full">
             <CinematicRightPanel
               phase={conversationState}
               blend={outcomeResult?.primary as any}
+              mode={consumptionMode}
             />
           </div>
-          {/* Processing Status Bar */}
-          {isProcessing && (
-            <div className="absolute bottom-8 left-0 right-0 flex justify-center">
-              <div className="px-4 py-2 bg-black/50 backdrop-blur-md border border-white/10 rounded-full text-[10px] text-[#D4AF37] font-mono animate-pulse">
-                PROCESSING NEURAL VECTORS
-              </div>
-            </div>
-          )}
         </div>
 
-        {/* PANEL 3: CONTEXT & RESULTS (Right, 3 Cols) */}
+        {/* PANEL 3: RESULTS (Right, 3 cols) - Scrollable internally */}
         <div className="col-span-3 bg-[#0a0b0e] flex flex-col h-full overflow-hidden">
-          {conversationState === 'active' ? (
-            // Idle / Context State
-            <div className="flex-1 p-8 flex flex-col justify-center opacity-40">
-              <h3 className="text-sm font-bold text-white mb-4">SYSTEM CONTEXT</h3>
-              <p className="text-xs text-white/60 leading-loose mb-4">
-                The GO Line Calculator utilizes deterministic biological constraints to map subjective intent to chemical composition.
-              </p>
-              <ul className="text-[10px] text-white/40 space-y-2 font-mono list-disc pl-4">
-                <li>Inputs are normalized to 0-1 vectors</li>
-                <li>Matched against live inventory (QR verified)</li>
-                <li>Optimized for bi-phasic duration</li>
-              </ul>
-            </div>
-          ) : (
-            // Resolved Results State
-            <div className="flex-1 overflow-y-auto p-6">
-              {intent && stackSegments.length > 0 && (
-                <div className="space-y-8">
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-xs font-mono text-[#D4AF37] uppercase tracking-widest">Target Solved</h3>
-                      <span className="text-[10px] px-2 py-0.5 bg-[#D4AF37]/10 text-[#D4AF37] border border-[#D4AF37]/20 rounded">98.4% Match</span>
-                    </div>
-                    <h2 className="text-lg font-bold text-white leading-tight">
-                      {stackSegments.length}-Part Stack
-                    </h2>
-                  </div>
 
-                  {/* Stack Visual */}
-                  <div className="py-4">
+          {/* Header */}
+          <div className="p-6 border-b border-white/5 shrink-0">
+            <h2 className="text-xs font-mono text-white/40 uppercase tracking-widest">
+              {conversationState === 'active' ? 'Output Context' : 'Composition Analysis'}
+            </h2>
+          </div>
+
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-white/10">
+            {conversationState === 'active' ? (
+              // Empty / Idle State - Subtle Frame
+              <div className="h-full border border-dashed border-white/5 rounded-lg flex items-center justify-center opacity-30">
+                <div className="text-[10px] text-white/40 font-mono text-center">
+                  AWAITING<br />CALCULATION
+                </div>
+              </div>
+            ) : (
+              // Result State
+              <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
+
+                {/* Match Badge */}
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] text-white/40 font-mono">CONFIDENCE</span>
+                  <span className="text-xs font-bold text-[#D4AF37]">98.4%</span>
+                </div>
+
+                {/* Mode-Specific Display */}
+                {consumptionMode === 'stack' ? (
+                  <div className="bg-[#111216] border border-white/10 rounded-sm p-4">
+                    <h3 className="text-[10px] text-white/60 mb-4 uppercase tracking-wider">Sequential Stack</h3>
                     <PreRollStack segments={stackSegments} height={300} />
                   </div>
-
-                  {/* Composition List */}
-                  <div className="space-y-2 border-t border-white/10 pt-4">
-                    <h4 className="text-[10px] text-white/40 uppercase tracking-widest mb-3">Active Cultivars</h4>
-                    {breakdownComponents.map((comp, i) => (
-                      <div key={i} className="flex justify-between items-center text-xs">
-                        <span className="text-white/80">{comp.name}</span>
-                        <div className="flex items-center gap-2">
-                          <div className="w-16 h-1 bg-white/10 rounded-full overflow-hidden">
-                            <div className="h-full bg-white/60" style={{ width: `${comp.percentage * 100}%` }} />
+                ) : (
+                  <div className="bg-[#111216] border border-white/10 rounded-sm p-4">
+                    <h3 className="text-[10px] text-white/60 mb-4 uppercase tracking-wider">Harmonic Blend</h3>
+                    {/* In blend mode, we show composition breakdown immediately instead of stack */}
+                    <div className="space-y-3">
+                      {breakdownComponents.map((comp, i) => (
+                        <div key={i} className="flex justify-end items-center text-xs">
+                          <span className="text-white/60 mr-2 text-right">{comp.name}</span>
+                          <div className="w-20 h-1 bg-white/10 rounded-full overflow-hidden">
+                            <div className="h-full bg-[#D4AF37]" style={{ width: `${comp.percentage * 100}%` }} />
                           </div>
-                          <span className="font-mono text-white/40 w-8 text-right">{Math.round(comp.percentage * 100)}%</span>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
+                )}
 
-                  {/* Footer */}
-                  <div className="pt-8 mt-8 border-t border-white/5 text-center">
-                    <p className="text-[9px] text-white/20 font-mono">
-                      BATCH_ID: {Math.random().toString(36).substr(2, 9).toUpperCase()}<br />
-                      VERIFIED_BY_GO_ENGINE
-                    </p>
-                  </div>
+                {/* Technical Metadata */}
+                <div className="pt-8 border-t border-white/5">
+                  <p className="text-[9px] text-white/30 font-mono leading-relaxed">
+                    RESOLVED_AT: {new Date().toISOString().split('T')[1].split('.')[0]}<br />
+                    MODE: {consumptionMode.toUpperCase()}<br />
+                    VECTOR_ID: {Math.random().toString(16).substr(2, 6).toUpperCase()}
+                  </p>
                 </div>
-              )}
-            </div>
-          )}
+              </div>
+            )}
+          </div>
         </div>
 
       </div>

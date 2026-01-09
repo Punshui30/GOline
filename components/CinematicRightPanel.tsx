@@ -9,18 +9,15 @@ import ConeExecutionPanel from './ConeExecutionPanel';
 interface CinematicRightPanelProps {
     phase: string;
     blend?: ResolvedBlend | null;
+    mode: 'blend' | 'stack';
 }
 
-export default function CinematicRightPanel({ phase, blend }: CinematicRightPanelProps) {
+export default function CinematicRightPanel({ phase, blend, mode }: CinematicRightPanelProps) {
     const isResolving = phase === 'resolving';
     const hasResult = phase === 'result' && blend && blend.primaryBlend && blend.primaryBlend.length > 0;
 
-    // Heuristic for Stack vs Blend
-    // A stack usually has explicit "Phase" roles or notes from the engine
-    const isStack = hasResult && blend && blend.primaryBlend.some(s =>
-        (s.explanation && s.explanation.includes('Phase')) ||
-        (s.role === 'primary' && blend.stackingOptions) // Legacy check
-    );
+    // Use explicit mode passed from parent
+    const isStack = mode === 'stack';
 
     return (
         <div className="relative w-full h-full overflow-hidden bg-black select-none border-l border-white/10">
@@ -38,16 +35,16 @@ export default function CinematicRightPanel({ phase, blend }: CinematicRightPane
                 <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_2px,3px_100%] opacity-10" />
             </div>
 
-            {/* LAYER 2: IDLE STATE (Instructional Microcopy) */}
+            {/* LAYER 2: IDLE STATE (Purely Visual - No Instructional Text) */}
             {!isResolving && !hasResult && (
-                <div className="absolute inset-0 z-20 flex flex-col items-center justify-center text-center pointer-events-none p-8">
-                    <div className="w-16 h-16 rounded-full border border-white/10 flex items-center justify-center mb-4 opacity-20">
-                        <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+                <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
+                    {/* Pulsing Core - "System Ready" State Visual - Subtle Application */}
+                    <div className="relative">
+                        <div className="w-1 h-1 bg-white/20 rounded-full animate-ping absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+                        <div className="w-32 h-32 rounded-full border border-white/5 flex items-center justify-center opacity-20">
+                            <div className="w-24 h-24 rounded-full border border-white/5" />
+                        </div>
                     </div>
-                    <p className="text-xs text-white/40 font-mono tracking-widest uppercase max-w-[200px] leading-relaxed">
-                        System Ready<br />
-                        Awaiting Input
-                    </p>
                 </div>
             )}
 
