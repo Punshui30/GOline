@@ -994,6 +994,7 @@ export default function Home() {
               <CinematicRightPanel
                 phase={outcomePhase}
                 blend={resolvedBlend}
+                mode={consumptionMode}
               />
             </div>
           )}
