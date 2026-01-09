@@ -27,7 +27,7 @@ export default function CinematicRightPanel({ phase, blend }: CinematicRightPane
         <div className="relative w-full h-full overflow-hidden bg-black select-none">
             {/* LAYER 0: R3F Mesh (Base) */}
             <div className="absolute inset-0 z-0">
-                <RobotScene modelUrl="/robot.glb" />
+                <RobotScene />
             </div>
 
             {/* LAYER 1: Post-Process / Vignette */}
