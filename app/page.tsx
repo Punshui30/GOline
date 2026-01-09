@@ -993,7 +993,7 @@ export default function Home() {
             <div className="col-span-12 lg:col-span-4 overflow-hidden h-full relative border-l border-white/5 bg-black">
               <CinematicRightPanel
                 phase={outcomePhase}
-                blend={resolvedBlend}
+                blend={resolvedBlend as any}
                 mode={consumptionMode}
               />
             </div>
