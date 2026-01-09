@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { SplineScene } from '@/components/ui/splite';
+import RobotScene from '@/components/RobotScene';
 import type { ResolvedBlend } from '@/components/ResolutionPanel';
 import RadialBlendHUD from './RadialBlendHUD';
 import StackedBlendHUD from './StackedBlendHUD';
@@ -25,12 +25,9 @@ export default function CinematicRightPanel({ phase, blend }: CinematicRightPane
 
     return (
         <div className="relative w-full h-full overflow-hidden bg-black select-none">
-            {/* LAYER 0: Spline Scene (Base) */}
+            {/* LAYER 0: R3F Mesh (Base) */}
             <div className="absolute inset-0 z-0">
-                <SplineScene
-                    scene="https://prod.spline.design/U9O6K7fXziMEU7Wu/scene.splinecode"
-                    className="w-full h-full"
-                />
+                <RobotScene modelUrl="/robot.glb" />
             </div>
 
             {/* LAYER 1: Post-Process / Vignette */}
