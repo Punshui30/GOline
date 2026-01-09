@@ -46,6 +46,7 @@ export interface BlendCandidate {
   confidenceScore: number; // 0-1
   distance: number; // Distance from target (inverted similarity)
   notes: string[];
+  explanation?: string;
 }
 
 export interface OutcomeResult {
