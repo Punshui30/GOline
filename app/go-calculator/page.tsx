@@ -141,11 +141,11 @@ export default function GOLineCalculator() {
       setAgeGateComplete(true);
     }
 
-    // 2. Check Onboarding (Session-based)
-    const onboardingSeen = sessionStorage.getItem('go_onboarding_session');
-    if (!onboardingSeen) {
-      setShowOnboarding(true);
-    }
+    // 2. Check Onboarding (Session-based) - REMOVED per user request for explicit trigger
+    // const onboardingSeen = sessionStorage.getItem('go_onboarding_session');
+    // if (!onboardingSeen) {
+    //   setShowOnboarding(true);
+    // }
   }, []);
 
   const handleAgeComplete = (age: number) => {
@@ -238,6 +238,7 @@ export default function GOLineCalculator() {
   const handlePresetSelect = (preset: Preset) => {
     setSelectedPreset(preset);
     setPresetSelected(true);
+    setShowOnboarding(false); // Disable onboarding for presets
     // Pre-fill baseline calibration from preset
     setBaselineCalibration(preset.baselineCalibration);
     // Pre-fill initial intent text (will be sent as first message after calibration)
@@ -455,6 +456,16 @@ export default function GOLineCalculator() {
     }
   };
 
+  // --- RENDER: AGE GATE (Strict Blocking) ---
+  if (!ageGateComplete) {
+    return (
+      <AgeGate onComplete={(age) => {
+        setAgeGateComplete(true);
+        if (typeof window !== 'undefined') localStorage.setItem('go_age_verified', 'true');
+      }} />
+    );
+  }
+
   // --- RENDER: VIEW 1 - PRESET SELECTION ---
   if (!presetSelected && !calibrationComplete) {
     return (
@@ -504,7 +515,10 @@ export default function GOLineCalculator() {
 
             <div className="text-center">
               <button
-                onClick={() => setPresetSelected(true)}
+                onClick={() => {
+                  setPresetSelected(true);
+                  setShowOnboarding(true); // Enable onboarding for scratch
+                }}
                 className="text-[10px] uppercase tracking-[0.2em] text-white/30 hover:text-[#D4AF37] transition-colors border-b border-transparent hover:border-[#D4AF37] pb-1"
               >
                 Skip presets and start from scratch
@@ -651,10 +665,8 @@ export default function GOLineCalculator() {
   // --- RENDER: VIEW 3 - STRICT DASHBOARD ---
   return (
     <main className="fixed inset-0 w-screen h-screen bg-[#0a0b0e] text-white flex flex-col overflow-hidden overscroll-none">
-      {/* 1. Age Gate - Blocking */}
-      {!ageGateComplete && (
-        <AgeGate onComplete={handleAgeComplete} />
-      )}
+      {/* 1. Age Gate - Blocking (Handled at top level now) */}
+
 
       {/* 2. Onboarding Overlay - Session Based, Dashboard Visible Behind */}
       {ageGateComplete && showOnboarding && (
