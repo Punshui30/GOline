@@ -3,9 +3,10 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { ResolvedBlend } from '@/components/ResolutionPanel';
+import type { BlendCandidate } from '@/lib/goOutcomeEngine';
 
 interface ConeExecutionPanelProps {
-    blend: ResolvedBlend;
+    blend: ResolvedBlend | BlendCandidate;
 }
 
 export default function ConeExecutionPanel({ blend }: ConeExecutionPanelProps) {
@@ -13,6 +14,15 @@ export default function ConeExecutionPanel({ blend }: ConeExecutionPanelProps) {
     const [targetWeight, setTargetWeight] = useState(1.0); // grams
 
     const presets = [0.5, 0.75, 1.0, 1.25];
+
+    // Adapter for legacy ResolvedBlend vs new BlendCandidate
+    const steps = 'selectedCultivars' in blend
+        ? blend.selectedCultivars.map((c, i) => ({
+            id: c.id,
+            name: c.displayName,
+            percentage: blend.ratios?.[i] || 0
+        }))
+        : blend.primaryBlend;
 
     return (
         <div className="absolute bottom-8 right-8 z-50 flex flex-col items-end pointer-events-auto">
@@ -38,8 +48,8 @@ export default function ConeExecutionPanel({ blend }: ConeExecutionPanelProps) {
                                     key={w}
                                     onClick={() => setTargetWeight(w)}
                                     className={`px-3 py-1 text-xs font-mono rounded border transition-colors ${targetWeight === w
-                                            ? 'bg-amber text-black border-amber'
-                                            : 'bg-transparent text-white/60 border-white/20 hover:border-amber/50'
+                                        ? 'bg-amber text-black border-amber'
+                                        : 'bg-transparent text-white/60 border-white/20 hover:border-amber/50'
                                         }`}
                                 >
                                     {w}g
@@ -49,7 +59,7 @@ export default function ConeExecutionPanel({ blend }: ConeExecutionPanelProps) {
 
                         {/* Calculation Display */}
                         <div className="space-y-4 mb-6">
-                            {blend.primaryBlend.map(strain => {
+                            {steps.map(strain => {
                                 const grams = (targetWeight * (strain.percentage / 100)); // Simple Math
                                 return (
                                     <div key={strain.id} className="flex justify-between items-baseline">
