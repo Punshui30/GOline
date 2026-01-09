@@ -784,7 +784,7 @@ export default function GOLineCalculator() {
 
       {/* BUILD FINGERPRINT */}
       <div className="fixed bottom-2 right-2 text-[9px] text-white/20 font-mono pointer-events-none z-[100]">
-        GO CALC BUILD — 2026-01-08-A
+        GO CALC BUILD — 2026-01-08-B
       </div>
     </main>
   );
