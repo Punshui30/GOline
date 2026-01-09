@@ -400,36 +400,54 @@ export default function GOLineCalculator() {
   // --- RENDER: VIEW 1 - PRESET SELECTION ---
   if (!presetSelected && !calibrationComplete) {
     return (
-      <main className="min-h-screen w-full bg-[#0a0b0e] text-white flex flex-col">
-        {/* Header */}
-        <div className="fixed top-0 left-0 right-0 z-50 bg-[#0a0b0e] border-b border-white/5">
-          <div className="max-w-[900px] mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-center h-16">
-              <button onClick={handleLogoClick} className="text-lg font-medium text-white/90">
-                GO Line Calculator
-              </button>
-            </div>
-          </div>
+      <main className="fixed inset-0 w-screen h-screen bg-[#0a0b0e] text-white flex flex-col font-sans overflow-hidden">
+        {/* Background Layers (Cinematic) */}
+        <div className="absolute inset-0 z-0 pointer-events-none">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-gray-900/20 via-black to-black opacity-80" />
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:40px_40px] opacity-20" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/50" />
         </div>
 
-        <div className="pt-24 pb-8 px-4 sm:px-6 lg:px-8 flex-1">
-          <div className="max-w-[900px] mx-auto">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-6">
+        {/* Header (Standardized) */}
+        <div className="h-12 border-b border-white/5 bg-[#0a0b0e]/80 backdrop-blur-sm flex items-center justify-center shrink-0 z-50 relative">
+          <button onClick={handleLogoClick} className="text-xs font-bold tracking-[0.2em] text-[#D4AF37]/80 hover:text-[#D4AF37] transition-colors">
+            GO LINE // CALCULATOR
+          </button>
+        </div>
+
+        {/* Content Container */}
+        <div className="relative z-10 flex-1 flex flex-col items-center justify-center p-6 overflow-y-auto">
+          <div className="max-w-[1000px] w-full animate-in fade-in slide-in-from-bottom-4 duration-700">
+
+            <div className="text-center mb-12">
+              <h1 className="text-2xl font-light text-white mb-2 tracking-wide">Select Your Starting Point</h1>
+              <p className="text-white/40 text-sm tracking-wide">Choose a preset profile or start from a blank slate</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-10">
               {presets.map((preset) => (
                 <button
                   key={preset.id}
                   onClick={() => handlePresetSelect(preset)}
-                  className="px-4 py-3 bg-[#111216] border border-white/10 rounded-sm text-left hover:bg-[#1a1c20] hover:border-white/20 transition-colors"
+                  className="group relative flex flex-col items-start p-6 bg-white/5 border border-white/10 hover:border-[#D4AF37]/50 hover:bg-white/10 transition-all duration-300 rounded-sm text-left"
                 >
-                  <div className="text-sm font-medium text-white/90 mb-1">{preset.name}</div>
-                  <div className="text-xs text-white/60">{preset.description}</div>
+                  <div className="absolute top-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <span className="text-[#D4AF37] text-[10px] uppercase tracking-widest">Select</span>
+                  </div>
+                  <div className="text-sm font-bold text-white/90 mb-2 tracking-widest uppercase group-hover:text-[#D4AF37] transition-colors">
+                    {preset.name}
+                  </div>
+                  <div className="text-xs text-white/50 leading-relaxed font-sans group-hover:text-white/70">
+                    {preset.description}
+                  </div>
                 </button>
               ))}
             </div>
+
             <div className="text-center">
               <button
                 onClick={() => setPresetSelected(true)}
-                className="text-xs text-white/50 hover:text-white/70 underline"
+                className="text-[10px] uppercase tracking-[0.2em] text-white/30 hover:text-[#D4AF37] transition-colors border-b border-transparent hover:border-[#D4AF37] pb-1"
               >
                 Skip presets and start from scratch
               </button>
