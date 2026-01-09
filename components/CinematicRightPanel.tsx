@@ -4,19 +4,21 @@ import { motion, AnimatePresence } from 'framer-motion';
 import type { BlendCandidate } from '@/lib/goOutcomeEngine';
 import RadialBlendHUD from './RadialBlendHUD';
 import SmokeEffect from './SmokeEffect';
+import FloatingSymbols from './FloatingSymbols';
 
 import ConeExecutionPanel from './ConeExecutionPanel';
 
 interface CinematicRightPanelProps {
-    phase: 'idle' | 'active' | 'resolved';
+    phase: 'idle' | 'active' | 'resolved' | 'synthesizing';
     blend?: BlendCandidate | null;
-    mode: 'pre-roll' | 'flower' | 'concentrate';
+    mode: 'blend' | 'stack' | 'pre-roll' | 'flower' | 'concentrate';
 }
 
 export default function CinematicRightPanel({ phase, blend, mode }: CinematicRightPanelProps) {
     // 'active' = idle/input. 'resolved' = result.
     const hasResult = phase === 'resolved' && blend && blend.selectedCultivars && blend.selectedCultivars.length > 0;
     const isIdle = phase === 'idle';
+    const isSynthesizing = phase === 'synthesizing';
 
     return (
         <div className="relative w-full h-full overflow-hidden bg-black select-none border-l border-white/10">
@@ -38,6 +40,13 @@ export default function CinematicRightPanel({ phase, blend, mode }: CinematicRig
             <AnimatePresence>
                 {phase === 'resolved' && (
                     <SmokeEffect />
+                )}
+            </AnimatePresence>
+
+            {/* LAYER 1.6: Synthesis Animation (Floating Symbols) */}
+            <AnimatePresence>
+                {isSynthesizing && (
+                    <FloatingSymbols />
                 )}
             </AnimatePresence>
 

@@ -16,6 +16,15 @@ export const dynamic = 'force-dynamic';
  */
 
 import { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  ArrowRight,
+  Search,
+  Settings,
+  ChevronDown,
+  ChevronUp,
+  Info
+} from 'lucide-react';
 import { OutcomeIntent, OutcomeResult } from '@/lib/goOutcomeEngine';
 import { resolveOutcome } from '@/lib/goOutcomeEngine';
 import { StrategicGuidance, ClarificationQuestion } from '@/lib/strategicGuidance';
@@ -80,7 +89,7 @@ export default function GOLineCalculator() {
   const [calibrationComplete, setCalibrationComplete] = useState(false);
 
   // Conversation state (for parsing/clarification only, NOT visually rendered)
-  const [conversationState, setConversationState] = useState<ConversationState>('active');
+  const [conversationState, setConversationState] = useState<'idle' | 'active' | 'resolved' | 'synthesizing'>('idle');
   const [userInput, setUserInput] = useState('');
 
   // Internal context tracking (structured, not raw chat - not visually rendered)
@@ -392,7 +401,8 @@ export default function GOLineCalculator() {
 
   // Handle resolution (when no clarification questions remain)
   const handleResolution = async (guidance: StrategicGuidance) => {
-    setConversationState('resolved');
+    // 1. Enter Synthesis Phase (Visual Delay)
+    setConversationState('synthesizing');
 
     // Translate StrategicGuidance to OutcomeIntent
     const translatedIntent = translateGuidanceToIntent(guidance, {});
@@ -401,12 +411,19 @@ export default function GOLineCalculator() {
 
     // Resolve outcome using deterministic engine (with variation logic)
     const resolvedOutcome = resolveOutcome(normalized);
+
+    // 2. Wait for animation (e.g. 3 seconds)
+    await new Promise(resolve => setTimeout(resolve, 3000));
+
     setOutcomeResult(resolvedOutcome);
 
     // Convert to stack format for PreRollStack
     const { segments, components } = convertToStackFormat(resolvedOutcome);
     setStackSegments(segments);
     setBreakdownComponents(components);
+
+    // 3. Reveal Result
+    setConversationState('resolved');
   };
 
   // Handle adjustment (when user adjusts sliders)
@@ -822,7 +839,7 @@ export default function GOLineCalculator() {
             <CinematicRightPanel
               phase={conversationState}
               blend={outcomeResult?.primary as any}
-              mode={consumptionMode}
+              mode={consumptionMode as any}
             />
           </div>
         </div>
