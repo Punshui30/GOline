@@ -3,7 +3,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import type { BlendCandidate } from '@/lib/goOutcomeEngine';
 import RadialBlendHUD from './RadialBlendHUD';
-import StackedBlendHUD from './StackedBlendHUD';
+
 import ConeExecutionPanel from './ConeExecutionPanel';
 
 interface CinematicRightPanelProps {
@@ -61,11 +61,7 @@ export default function CinematicRightPanel({ phase, blend, mode }: CinematicRig
                             transition={{ duration: 0.8, ease: "circOut" }}
                             className="relative"
                         >
-                            {isStack ? (
-                                <StackedBlendHUD blend={blend} />
-                            ) : (
-                                <RadialBlendHUD blend={blend} />
-                            )}
+                            <RadialBlendHUD blend={blend} />
                         </motion.div>
                     </div>
                 )}

@@ -527,7 +527,7 @@ export default function GOLineCalculator() {
     <main className="fixed inset-0 w-screen h-screen bg-[#0a0b0e] text-white flex flex-col overflow-hidden overscroll-none">
       {/* Header */}
       <div className="h-12 border-b border-white/5 bg-[#0a0b0e] flex items-center justify-center shrink-0 z-50">
-        <div className="text-xs font-bold tracking-[0.2em] text-[#D4AF37]/80">GO LINE // {consumptionMode === 'blend' ? 'HARMONIC' : 'SEQUENTIAL'}</div>
+        <div className="text-xs font-bold tracking-[0.2em] text-[#D4AF37]/80">GO LINE // CALCULATOR</div>
       </div>
 
       {/* 3-Column Grid - Height locked to remaining space */}
@@ -536,28 +536,46 @@ export default function GOLineCalculator() {
         {/* PANEL 1: INPUT (Left, 3 cols) - Scrollable internally */}
         <div className="col-span-3 border-r border-white/10 bg-[#0a0b0e] flex flex-col h-full overflow-hidden">
 
-          {/* Header / Mode Toggle - Sticky Top */}
-          <div className="p-6 pb-4 shrink-0 bg-[#0a0b0e]">
-            <div className="flex bg-white/5 p-1 rounded-full border border-white/5 mb-6">
-              <button
-                onClick={() => setConsumptionMode('blend')}
-                className={`flex-1 py-2 text-[10px] uppercase font-bold tracking-wider rounded-full transition-all ${consumptionMode === 'blend' ? 'bg-white text-black shadow-lg' : 'text-white/40 hover:text-white'}`}
-              >
-                Blend
-              </button>
-              <button
-                onClick={() => setConsumptionMode('stack')}
-                className={`flex-1 py-2 text-[10px] uppercase font-bold tracking-wider rounded-full transition-all ${consumptionMode === 'stack' ? 'bg-white text-black shadow-lg' : 'text-white/40 hover:text-white'}`}
-              >
-                Stack
-              </button>
-            </div>
-
-            <h2 className="text-xs font-mono text-white/40 uppercase tracking-widest mb-1">Intent Input</h2>
+          {/* Header - Sticky Top */}
+          <div className="p-6 pb-4 shrink-0 bg-[#0a0b0e] border-b border-white/5">
+            <h2 className="text-sm font-medium text-white mb-2">Describe the outcome you’re looking for</h2>
+            <p className="text-[10px] text-white/50 leading-relaxed max-w-[90%] font-sans">
+              There’s more than one way to get to the same experience.
+              Start from whatever reference you have — we’ll handle the rest.
+            </p>
           </div>
 
           {/* Scrollable Form Area */}
           <div className="flex-1 overflow-y-auto px-6 pb-24 scrollbar-thin scrollbar-thumb-white/10">
+
+            {/* Prompt Mode Guidance */}
+            <div className="py-6 space-y-4">
+              <div className="text-[10px] uppercase tracking-widest text-white/40 mb-3">You can start from any of these:</div>
+              <div className="space-y-3">
+                <div className="text-xs text-white/80 border-l border-white/10 pl-3 font-sans">
+                  <span className="block text-white/40 text-[9px] uppercase mb-1 font-mono">Desired feeling</span>
+                  “Relaxed but alert, no anxiety”
+                </div>
+                <div className="text-xs text-white/80 border-l border-white/10 pl-3 font-sans">
+                  <span className="block text-white/40 text-[9px] uppercase mb-1 font-mono">Problem → solution</span>
+                  “Pain relief and anti-nausea, but no jitters”
+                </div>
+                <div className="text-xs text-white/80 border-l border-white/10 pl-3 font-sans">
+                  <span className="block text-white/40 text-[9px] uppercase mb-1 font-mono">Memory-based reference</span>
+                  “Something like Blue Dream, but calmer”
+                </div>
+                <div className="text-xs text-white/80 border-l border-white/10 pl-3 font-sans">
+                  <span className="block text-white/40 text-[9px] uppercase mb-1 font-mono">Functional goal</span>
+                  “Focused and creative without racing thoughts”
+                </div>
+                <div className="text-xs text-white/80 border-l border-white/10 pl-3 font-sans">
+                  <span className="block text-white/40 text-[9px] uppercase mb-1 font-mono">Product-based reference</span>
+                  “I liked this product — can you recreate the feeling?”
+                  <div className="text-[9px] text-white/30 mt-1 italic">Labels with THC / terpene percentages work especially well.</div>
+                </div>
+              </div>
+            </div>
+
             <form onSubmit={handleSubmit} className="flex flex-col gap-6">
               <textarea
                 ref={inputRef}
@@ -569,7 +587,7 @@ export default function GOLineCalculator() {
                     handleSubmit();
                   }
                 }}
-                placeholder={consumptionMode === 'blend' ? "Describe the desired feeling state..." : "Describe the journey logic..."}
+                placeholder="Describe the experience you want to recreate…"
                 className="w-full p-4 bg-[#111216] border border-white/10 rounded-sm text-sm text-white placeholder-white/20 focus:outline-none focus:border-[#D4AF37]/50 resize-none font-sans leading-relaxed min-h-[160px]"
                 disabled={isProcessing}
               />
@@ -695,41 +713,32 @@ export default function GOLineCalculator() {
                   </p>
                 </div>
 
-                {/* Mode-Specific Display */}
-                {consumptionMode === 'stack' ? (
-                  <div className="bg-[#111216] border border-white/10 rounded-sm p-4">
-                    <h3 className="text-[10px] text-white/60 mb-4 uppercase tracking-wider">Sequential Stack</h3>
-                    <PreRollStack segments={stackSegments} height={300} />
+                {/* Mode-Specific Display: Forced to Blend Only */}
+                <div className="bg-[#111216] border border-white/10 rounded-sm p-4">
+                  {/* Composition List / Cards */}
+                  <div className="space-y-4 pt-2">
+                    <h4 className="text-[10px] text-white/40 uppercase tracking-widest mb-4">Formulation Insights</h4>
+
+                    {outcomeResult?.primary?.selectedCultivars?.map((cultivar: any, i: number) => {
+                      const strainData = STRAIN_LIBRARY[cultivar.id];
+                      if (!strainData) return null;
+
+                      // Ratios are typically 0-100 (e.g. 60, 40). Convert to decimal 0-1 for Card.
+                      const rawRatio = outcomeResult.primary.ratios?.[i] ?? 0;
+                      const percentage = rawRatio > 1 ? rawRatio / 100 : rawRatio;
+
+                      return (
+                        <StrainInsightCard
+                          key={cultivar.id}
+                          strain={strainData}
+                          percentage={percentage}
+                          role={cultivar.role}
+                          index={i}
+                        />
+                      );
+                    })}
                   </div>
-                ) : (
-                  <div className="bg-[#111216] border border-white/10 rounded-sm p-4">
-                    <h3 className="text-[10px] text-white/60 mb-4 uppercase tracking-wider">Harmonic Blend</h3>
-                    {/* In blend mode, we show composition breakdown immediately instead of stack */}
-                    {/* Composition List / Cards */}
-                    <div className="space-y-4 border-t border-white/10 pt-6">
-                      <h4 className="text-[10px] text-white/40 uppercase tracking-widest mb-4">Formulation Insights</h4>
-
-                      {outcomeResult?.primary?.selectedCultivars?.map((cultivar: any, i: number) => {
-                        const strainData = STRAIN_LIBRARY[cultivar.id];
-                        if (!strainData) return null;
-
-                        // Ratios are typically 0-100 (e.g. 60, 40). Convert to decimal 0-1 for Card.
-                        const rawRatio = outcomeResult.primary.ratios?.[i] ?? 0;
-                        const percentage = rawRatio > 1 ? rawRatio / 100 : rawRatio;
-
-                        return (
-                          <StrainInsightCard
-                            key={cultivar.id}
-                            strain={strainData}
-                            percentage={percentage}
-                            role={cultivar.role}
-                            index={i}
-                          />
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
+                </div>
 
                 {/* Calculation Methodology (Collapsible) */}
                 <div className="mt-8 border-t border-white/5 pt-4">
