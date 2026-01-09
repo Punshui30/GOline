@@ -401,9 +401,6 @@ export default function GOLineCalculator() {
 
   // Handle resolution (when no clarification questions remain)
   const handleResolution = async (guidance: StrategicGuidance) => {
-    // 1. Enter Synthesis Phase (Visual Delay)
-    setConversationState('synthesizing');
-
     // Translate StrategicGuidance to OutcomeIntent
     const translatedIntent = translateGuidanceToIntent(guidance, {});
     const normalized = normalizeIntent(translatedIntent);
@@ -411,10 +408,6 @@ export default function GOLineCalculator() {
 
     // Resolve outcome using deterministic engine (with variation logic)
     const resolvedOutcome = resolveOutcome(normalized);
-
-    // 2. Wait for animation (e.g. 3 seconds)
-    await new Promise(resolve => setTimeout(resolve, 3000));
-
     setOutcomeResult(resolvedOutcome);
 
     // Convert to stack format for PreRollStack
@@ -422,7 +415,7 @@ export default function GOLineCalculator() {
     setStackSegments(segments);
     setBreakdownComponents(components);
 
-    // 3. Reveal Result
+    // Reveal Result
     setConversationState('resolved');
   };
 

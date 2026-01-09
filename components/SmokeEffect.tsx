@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 
 export const SmokeEffect = ({ initialDelay = 0 }: { initialDelay?: number }) => {
     return (
-        <div className="absolute inset-0 z-20 pointer-events-none overflow-hidden flex items-center justify-center">
+        <div className="absolute inset-0 z-50 pointer-events-none overflow-hidden flex items-center justify-center">
             {/* Container aligned to center */}
             <div className="relative w-full h-full max-w-[600px] max-h-[600px] flex items-center justify-center">
                 {/* Multiple smoke layers */}
@@ -34,7 +34,7 @@ const SmokePuff = ({ delay, scale, x }: { delay: number; scale: number; x: numbe
                 repeat: 0 // Play once per cycle logic, handled by parent if needed reset, but user asked for "after circle takes shape"
             }}
             className="absolute w-64 h-64 rounded-full bg-gradient-to-t from-gray-500/20 to-gray-400/5 mix-blend-screen"
-            style={{ left: `calc(50% + ${x}px)`, top: '60%' }}
+            style={{ left: `calc(50% + ${x}px)`, top: '110%' }}
         />
     );
 };

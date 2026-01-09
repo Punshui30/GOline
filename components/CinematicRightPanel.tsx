@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import type { BlendCandidate } from '@/lib/goOutcomeEngine';
 import RadialBlendHUD from './RadialBlendHUD';
 import SmokeEffect from './SmokeEffect';
-import FloatingSymbols from './FloatingSymbols';
 
 import ConeExecutionPanel from './ConeExecutionPanel';
 
@@ -18,7 +17,6 @@ export default function CinematicRightPanel({ phase, blend, mode }: CinematicRig
     // 'active' = idle/input. 'resolved' = result.
     const hasResult = phase === 'resolved' && blend && blend.selectedCultivars && blend.selectedCultivars.length > 0;
     const isIdle = phase === 'idle';
-    const isSynthesizing = phase === 'synthesizing';
 
     return (
         <div className="relative w-full h-full overflow-hidden bg-black select-none border-l border-white/10">
@@ -41,12 +39,7 @@ export default function CinematicRightPanel({ phase, blend, mode }: CinematicRig
                 <SmokeEffect initialDelay={2.5} />
             )}
 
-            {/* LAYER 1.6: Synthesis Animation (Floating Symbols) */}
-            <AnimatePresence>
-                {isSynthesizing && (
-                    <FloatingSymbols />
-                )}
-            </AnimatePresence>
+
 
             {/* LAYER 2: IDLE STATE (Purely Visual - No Instructional Text) */}
             {isIdle && (
