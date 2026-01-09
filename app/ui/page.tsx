@@ -17,7 +17,7 @@ export const dynamic = 'force-dynamic';
 
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import OutcomeInputPanel from '@/components/OutcomeInputPanel';
+// import OutcomeInputPanel from '@/components/OutcomeInputPanel';
 import ResolvingPanel from '@/components/ResolvingPanel';
 import ResultPanel from '@/components/ResultPanel';
 import type { ResolvedBlend } from '@/components/ResolutionPanel';
@@ -120,18 +120,8 @@ export default function UISandbox() {
               key="input-phase"
               {...phaseContainer}
             >
-              <OutcomeInputPanel
-                userInput={userInput}
-                mode={mode}
-                currentClarification={null}
-                clarificationAnswers={{}}
-                isProcessing={isProcessing}
-                onInputChange={setUserInput}
-                onModeChange={setMode}
-                onSubmit={handleSubmit}
-                onClarificationAnswer={() => { }}
-                onClearClarification={() => { }}
-              />
+              {/* <OutcomeInputPanel ... /> */}
+              <div className="p-6 text-xs text-white/30">Legacy UI Sandbox Input Disabled</div>
             </motion.div>
           )}
 

@@ -20,8 +20,9 @@ import { type ResolvedBlend } from '@/components/ResolutionPanel';
 import UsageProtocol from '@/components/UsageProtocol';
 import AgeGate from '@/components/AgeGate';
 import OnboardingOverlay from '@/components/OnboardingOverlay';
-import VisualizationPanel from '@/components/VisualizationPanel';
-import OutcomeInputPanel from '@/components/OutcomeInputPanel';
+// Imports removed during cleanup - Page is Legacy
+// import VisualizationPanel from '@/components/VisualizationPanel';
+// import OutcomeInputPanel from '@/components/OutcomeInputPanel';
 import ResolvingPanel from '@/components/ResolvingPanel';
 import CinematicRightPanel from '@/components/CinematicRightPanel';
 import { generateDeterministicExplanation, type DeterministicExplanation } from '@/lib/outcomeBrain/deterministicExplanation';
@@ -952,39 +953,14 @@ export default function Home() {
           {/* Input Panel - Left Column */}
           {ageGateComplete && (
             <div className="col-span-12 lg:col-span-4 overflow-y-auto">
-              <div className="h-full p-6">
-                <OutcomeInputPanel
-                  userInput={userInput}
-                  mode={consumptionMode}
-                  currentClarification={currentClarification}
-                  clarificationAnswers={clarificationAnswers}
-                  isProcessing={isProcessing}
-                  onInputChange={handleInputChange}
-                  onModeChange={setConsumptionMode}
-                  onSubmit={handleAnalyze}
-                  onClarificationAnswer={handleClarificationAnswer}
-                  onClearClarification={() => {
-                    setCurrentClarification(null);
-                    setResolvedAxes(new Set());
-                    setClarificationAnswers({});
-                  }}
-                />
-              </div>
+              <div className="p-6 text-xs text-white/30">Legacy Input Disabled (See /go-calculator)</div>
             </div>
           )}
 
           {/* Visualization Panel - Center Column */}
           {ageGateComplete && (
             <div className="col-span-12 lg:col-span-4 overflow-hidden">
-              <VisualizationPanel
-                mode={consumptionMode}
-                state={
-                  outcomePhase === 'input' ? 'idle' :
-                    outcomePhase === 'resolving' ? 'calculating' :
-                      outcomePhase === 'result' ? 'resolved' : 'idle'
-                }
-                blendData={resolvedBlend}
-              />
+              <div className="p-6 text-xs text-white/30">Legacy Visualization Disabled</div>
             </div>
           )}
 
