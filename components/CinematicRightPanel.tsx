@@ -3,7 +3,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import type { BlendCandidate } from '@/lib/goOutcomeEngine';
 import RadialBlendHUD from './RadialBlendHUD';
-import StackedBlendHUD from './('./StackedBlendHUD');
+import StackedBlendHUD from './StackedBlendHUD';
 import ConeExecutionPanel from './ConeExecutionPanel';
 
 interface CinematicRightPanelProps {
