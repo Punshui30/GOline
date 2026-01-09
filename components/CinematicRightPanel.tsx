@@ -3,22 +3,20 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import type { BlendCandidate } from '@/lib/goOutcomeEngine';
 import RadialBlendHUD from './RadialBlendHUD';
+import SmokeEffect from './SmokeEffect';
 
 import ConeExecutionPanel from './ConeExecutionPanel';
 
 interface CinematicRightPanelProps {
-    phase: string;
+    phase: 'idle' | 'active' | 'resolved';
     blend?: BlendCandidate | null;
-    mode: 'blend' | 'stack';
+    mode: 'pre-roll' | 'flower' | 'concentrate';
 }
 
 export default function CinematicRightPanel({ phase, blend, mode }: CinematicRightPanelProps) {
-    const isResolving = phase === 'resolving'; // Keep solving if used, but active/resolved is main.
     // 'active' = idle/input. 'resolved' = result.
     const hasResult = phase === 'resolved' && blend && blend.selectedCultivars && blend.selectedCultivars.length > 0;
-
-    // Use explicit mode passed from parent
-    const isStack = mode === 'stack';
+    const isIdle = phase === 'idle';
 
     return (
         <div className="relative w-full h-full overflow-hidden bg-black select-none border-l border-white/10">
@@ -36,8 +34,15 @@ export default function CinematicRightPanel({ phase, blend, mode }: CinematicRig
                 <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_2px,3px_100%] opacity-10" />
             </div>
 
+            {/* LAYER 1.5: Smoke Animation (Behind HUD) */}
+            <AnimatePresence>
+                {phase === 'resolved' && (
+                    <SmokeEffect />
+                )}
+            </AnimatePresence>
+
             {/* LAYER 2: IDLE STATE (Purely Visual - No Instructional Text) */}
-            {!isResolving && !hasResult && (
+            {isIdle && (
                 <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
                     {/* Pulsing Core - "System Ready" State Visual - Subtle Application */}
                     <div className="relative">

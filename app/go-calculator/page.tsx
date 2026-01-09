@@ -110,11 +110,15 @@ export default function GOLineCalculator() {
   const [ageGateComplete, setAgeGateComplete] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showCalcDetails, setShowCalcDetails] = useState(false);
-  const [showPromptTips, setShowPromptTips] = useState(false);
+  const [showPromptTips, setShowPromptTips] = useState(true);
   const [logoClickCount, setLogoClickCount] = useState(0);
   const [logoClickTimer, setLogoClickTimer] = useState<NodeJS.Timeout | null>(null);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [expandedStrainId, setExpandedStrainId] = useState<string | null>(null);
+
+  // Sales Pitch Mode State
+  const [salesMode, setSalesMode] = useState(false);
+  const [salesToast, setSalesToast] = useState<{ title: string; message: string } | null>(null);
 
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -176,6 +180,50 @@ export default function GOLineCalculator() {
       }
     };
   }, [logoClickTimer]);
+
+  // Sales Pitch Demo Listener
+  useEffect(() => {
+    const handleDemoRun = (e: CustomEvent) => {
+      const intent = e.detail.intent;
+      // 1. Enter Sales Mode
+      setSalesMode(true);
+      setPresetSelected(true); // Ensure we are past the landing screen
+      setCalibrationComplete(true); // Skip calibration
+      setSalesToast({ title: 'Step 1: Intent Capture', message: 'User expresses need in natural language. No Strain names required.' });
+
+      // 2. Type Intent (Visual Simulation)
+      let i = 0;
+      setUserInput('');
+      const typeInterval = setInterval(() => {
+        if (i < intent.length) {
+          setUserInput(prev => prev + intent.charAt(i));
+          i++;
+        } else {
+          clearInterval(typeInterval);
+
+          // 3. Trigger Submission after typing
+          setTimeout(() => {
+            setSalesToast({ title: 'Step 2: Processing', message: 'Engine converts vague terms into precise chemical targets (Terpenes/Cannabinoids).' });
+            handleUserMessage(intent);
+
+            // 4. Show Result Hooks
+            setTimeout(() => {
+              setSalesToast({ title: 'Step 3: Business Value', message: 'Upsell Opportunity: Logic prioritized slow-moving inventory as the perfect "Modulator".' });
+
+              setTimeout(() => {
+                setSalesToast({ title: 'Step 4: Retention', message: 'Loyalty Hook: "This specific feeling" is now a repeatable SKU they can return for.' });
+              }, 6000);
+
+            }, 4000);
+
+          }, 800);
+        }
+      }, 30);
+    };
+
+    window.addEventListener('go-demo-run' as any, handleDemoRun);
+    return () => window.removeEventListener('go-demo-run' as any, handleDemoRun);
+  }, []);
 
   // Handle preset selection
   const handlePresetSelect = (preset: Preset) => {
@@ -615,7 +663,7 @@ export default function GOLineCalculator() {
             onClick={() => setShowInventoryPortal(true)}
             className="absolute right-4 top-1/2 -translate-y-1/2 text-[9px] uppercase tracking-widest text-white/20 hover:text-[#D4AF37] transition-colors font-mono"
           >
-            Admin
+            Admin Panel
           </button>
         )}
       </div>
@@ -642,34 +690,34 @@ export default function GOLineCalculator() {
             <div className="py-6">
               <button
                 onClick={() => setShowPromptTips(!showPromptTips)}
-                className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-white/40 hover:text-white/60 transition-colors mb-3 group w-full text-left"
+                className="flex items-center gap-2 text-xs uppercase tracking-widest text-white/40 hover:text-white/60 transition-colors mb-4 group w-full text-left"
               >
                 <span>You can start from any of these</span>
                 <span className="text-white/20 group-hover:text-white/40 font-mono">{showPromptTips ? '[-]' : '[+]'}</span>
               </button>
 
               {showPromptTips && (
-                <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
-                  <div className="text-xs text-white/80 border-l border-white/10 pl-3 font-sans">
-                    <span className="block text-white/40 text-[9px] uppercase mb-1 font-mono">Desired feeling</span>
+                <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                  <div className="text-sm text-white/80 border-l border-white/10 pl-4 font-sans leading-relaxed">
+                    <span className="block text-white/40 text-[10px] uppercase mb-1 font-mono">Desired feeling</span>
                     “Relaxed but alert, no anxiety”
                   </div>
-                  <div className="text-xs text-white/80 border-l border-white/10 pl-3 font-sans">
-                    <span className="block text-white/40 text-[9px] uppercase mb-1 font-mono">Problem → solution</span>
+                  <div className="text-sm text-white/80 border-l border-white/10 pl-4 font-sans leading-relaxed">
+                    <span className="block text-white/40 text-[10px] uppercase mb-1 font-mono">Problem → solution</span>
                     “Pain relief and anti-nausea, but no jitters”
                   </div>
-                  <div className="text-xs text-white/80 border-l border-white/10 pl-3 font-sans">
-                    <span className="block text-white/40 text-[9px] uppercase mb-1 font-mono">Memory-based reference</span>
+                  <div className="text-sm text-white/80 border-l border-white/10 pl-4 font-sans leading-relaxed">
+                    <span className="block text-white/40 text-[10px] uppercase mb-1 font-mono">Memory-based reference</span>
                     “Something like Blue Dream, but calmer”
                   </div>
-                  <div className="text-xs text-white/80 border-l border-white/10 pl-3 font-sans">
-                    <span className="block text-white/40 text-[9px] uppercase mb-1 font-mono">Functional goal</span>
+                  <div className="text-sm text-white/80 border-l border-white/10 pl-4 font-sans leading-relaxed">
+                    <span className="block text-white/40 text-[10px] uppercase mb-1 font-mono">Functional goal</span>
                     “Focused and creative without racing thoughts”
                   </div>
-                  <div className="text-xs text-white/80 border-l border-white/10 pl-3 font-sans">
-                    <span className="block text-white/40 text-[9px] uppercase mb-1 font-mono">Product-based reference</span>
+                  <div className="text-sm text-white/80 border-l border-white/10 pl-4 font-sans leading-relaxed">
+                    <span className="block text-white/40 text-[10px] uppercase mb-1 font-mono">Product-based reference</span>
                     “I liked this product — can you recreate the feeling?”
-                    <div className="text-[9px] text-white/30 mt-1 italic">Labels with THC / terpene percentages work especially well.</div>
+                    <div className="text-[10px] text-white/30 mt-1 italic">Labels with THC / terpene percentages work especially well.</div>
                   </div>
                 </div>
               )}
@@ -887,6 +935,29 @@ export default function GOLineCalculator() {
         onClose={() => setShowInventoryPortal(false)}
         onSave={(items) => setInventory(items)}
       />
+
+      {/* Sales Pitch Overlay */}
+      <AnimatePresence>
+        {salesMode && salesToast && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.9 }}
+            key={salesToast.title}
+            className="fixed bottom-12 left-0 right-0 z-[200] flex justify-center pointer-events-none"
+          >
+            <div className="bg-[#D4AF37] text-black px-8 py-6 rounded-sm shadow-[0_0_50px_rgba(212,175,55,0.4)] max-w-xl w-full mx-4 border border-white/20 relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-1 h-full bg-white/40" />
+              <div className="flex items-start justify-between">
+                <div>
+                  <h3 className="text-xs font-bold uppercase tracking-[0.2em] mb-2 text-black/60">{salesToast.title}</h3>
+                  <p className="text-lg font-medium leading-snug">{salesToast.message}</p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* BUILD FINGERPRINT */}
       <div className="fixed bottom-2 right-2 text-[9px] text-white/20 font-mono pointer-events-none z-[100]">

@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 import AdminInventoryCapture from '@/components/AdminInventoryCapture';
 
-type PortalPanel = 'WHY' | 'USE_CASES' | 'ROI' | 'DATA' | 'INVENTORY' | 'DEMO';
+type PortalPanel = 'WHY' | 'USE_CASES' | 'INVENTORY' | 'DEMO';
 
 export default function IndustryModePortal() {
     const [isOpen, setIsOpen] = useState(false);
@@ -46,9 +46,7 @@ export default function IndustryModePortal() {
                         <NavButton active={activePanel === 'INVENTORY'} onClick={() => setActivePanel('INVENTORY')} label="Inventory" variant="accent" />
                         <NavButton active={activePanel === 'WHY'} onClick={() => setActivePanel('WHY')} label="Why GO" />
                         <NavButton active={activePanel === 'USE_CASES'} onClick={() => setActivePanel('USE_CASES')} label="Use Cases" />
-                        <NavButton active={activePanel === 'ROI'} onClick={() => setActivePanel('ROI')} label="ROI Model" />
-                        <NavButton active={activePanel === 'DATA'} onClick={() => setActivePanel('DATA')} label="Data" />
-                        <NavButton active={activePanel === 'DEMO'} onClick={() => setActivePanel('DEMO')} label="Demo" />
+                        <NavButton active={activePanel === 'DEMO'} onClick={() => setActivePanel('DEMO')} label="Sales Pitch" />
                     </div>
 
                     {/* Content */}
@@ -59,9 +57,7 @@ export default function IndustryModePortal() {
                             <div className="p-6">
                                 {activePanel === 'WHY' && <WhyPanel />}
                                 {activePanel === 'USE_CASES' && <UseCasesPanel />}
-                                {activePanel === 'ROI' && <ROIPanel />}
-                                {activePanel === 'DATA' && <DataPanel />}
-                                {activePanel === 'DEMO' && <DemoPanel onClose={() => setIsOpen(false)} />}
+                                {activePanel === 'DEMO' && <SalesDemoPanel onClose={() => setIsOpen(false)} />}
                             </div>
                         )}
                     </div>
@@ -155,80 +151,7 @@ function UseCasesPanel() {
     );
 }
 
-function ROIPanel() {
-    return (
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-10">
-            <h1 className="text-4xl font-light">ROI Model</h1>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                <Metric value="+22%" label="Basket Size" sub="Via dual-strain blending" />
-                <Metric value="-15%" label="Returns" sub="Due to effect dissatisfaction" />
-                <Metric value="3.5x" label="Repeat Purchase" sub="On named outcome blends" />
-                <Metric value="-40%" label="Training Hours" sub="Staff ramp-up time" />
-            </div>
-            <p className="text-xs text-gray-500 italic border-t border-white/10 pt-4">
-                * Modeled metrics based on pilot deployments. Results vary by inventory turnover and implementation depth.
-            </p>
-        </motion.div>
-    );
-}
-
-function DataPanel() {
-    return (
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-10">
-            <h1 className="text-4xl font-light">Data Layer Integrity</h1>
-            <div className="grid md:grid-cols-2 gap-12">
-                <div className="space-y-6">
-                    <h3 className="text-xl text-[#D4AF37]">Active Inputs</h3>
-                    <ul className="space-y-4">
-                        <li className="flex gap-4">
-                            <span className="font-mono text-xs text-gray-500 pt-1">01</span>
-                            <div>
-                                <strong className="block text-white">Terpene Profiling</strong>
-                                <span className="text-gray-400 text-sm">Full vector analysis of 40+ terpenes.</span>
-                            </div>
-                        </li>
-                        <li className="flex gap-4">
-                            <span className="font-mono text-xs text-gray-500 pt-1">02</span>
-                            <div>
-                                <strong className="block text-white">Cannabinoid Ratios</strong>
-                                <span className="text-gray-400 text-sm">THC:CBD:Minor cannabinoid interplay.</span>
-                            </div>
-                        </li>
-                        <li className="flex gap-4">
-                            <span className="font-mono text-xs text-gray-500 pt-1">03</span>
-                            <div>
-                                <strong className="block text-white">Inventory State</strong>
-                                <span className="text-gray-400 text-sm">Real-time availability constraints.</span>
-                            </div>
-                        </li>
-                    </ul>
-                </div>
-
-                <div className="space-y-6">
-                    <h3 className="text-xl text-gray-500">Excluded (Safety)</h3>
-                    <ul className="space-y-4 opacity-60">
-                        <li className="flex gap-4">
-                            <span className="font-mono text-xs text-gray-600 pt-1">X</span>
-                            <div>
-                                <strong className="block text-gray-400">Medical Diagnosis</strong>
-                                <span className="text-gray-500 text-sm">We do not diagnose or treat conditions.</span>
-                            </div>
-                        </li>
-                        <li className="flex gap-4">
-                            <span className="font-mono text-xs text-gray-600 pt-1">X</span>
-                            <div>
-                                <strong className="block text-gray-400">PII Storage</strong>
-                                <span className="text-gray-500 text-sm">No personal health data is retained.</span>
-                            </div>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-        </motion.div>
-    );
-}
-
-function DemoPanel({ onClose }: { onClose: () => void }) {
+function SalesDemoPanel({ onClose }: { onClose: () => void }) {
     const runDemo = (intent: string) => {
         // Dispatch event for page.tsx to pick up
         window.dispatchEvent(new CustomEvent('go-demo-run', { detail: { intent } }));
@@ -237,9 +160,9 @@ function DemoPanel({ onClose }: { onClose: () => void }) {
 
     return (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-10">
-            <h1 className="text-4xl font-light">Live Simulations</h1>
+            <h1 className="text-4xl font-light">Sales Pitch Mode</h1>
             <p className="text-xl text-gray-400 max-w-2xl font-light">
-                Trigger live calculation scenarios to demonstrate the engine's speed and logic.
+                Launch a self-guided demonstration that narrates the business value of the system while it operates.
             </p>
 
             <div className="grid gap-4 max-w-md">
@@ -247,22 +170,8 @@ function DemoPanel({ onClose }: { onClose: () => void }) {
                     onClick={() => runDemo("I need deep sleep without anxiety")}
                     className="bg-white text-black p-4 rounded-lg font-medium hover:bg-gray-200 transition-colors text-left flex justify-between group"
                 >
-                    <span>Sleep & Anxiety</span>
+                    <span>Pitch: Upsells & Loyalty</span>
                     <span className="text-gray-400 group-hover:text-black">→</span>
-                </button>
-                <button
-                    onClick={() => runDemo("Creative energy for social situations")}
-                    className="bg-zinc-800 text-white p-4 rounded-lg font-medium hover:bg-zinc-700 transition-colors text-left flex justify-between border border-white/10"
-                >
-                    <span>Social Creativity</span>
-                    <span className="text-gray-500">→</span>
-                </button>
-                <button
-                    onClick={() => runDemo("Heavy body relief for pain management")}
-                    className="bg-zinc-800 text-white p-4 rounded-lg font-medium hover:bg-zinc-700 transition-colors text-left flex justify-between border border-white/10"
-                >
-                    <span>Pain & Body Load</span>
-                    <span className="text-gray-500">→</span>
                 </button>
             </div>
         </motion.div>

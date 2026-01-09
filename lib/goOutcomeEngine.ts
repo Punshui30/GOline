@@ -452,7 +452,30 @@ export function resolveOutcome(intent: OutcomeIntent, mode: 'blend' | 'stack' = 
     }
   }
 
-  // 3. Alternates
+  // 3. Tertiary (Anchor/Accent)
+  // Find a third strain that complements the first two
+  if (freshCandidates.length > 2 && selectedStrains.length === 2) {
+    // Re-rank remainder
+    const bestTertiary = freshCandidates
+      .filter(c => !selectedStrains.some(s => s.id === c.strain.id))
+      .map(c => {
+        const pen = diversityPenalty(c.strain, selectedStrains);
+        return {
+          ...c,
+          blendScore: c.adjustedScore * pen
+        };
+      }).sort((a, b) => b.blendScore - a.blendScore)[0];
+
+    if (bestTertiary) {
+      selectedStrains.push(bestTertiary.strain);
+      assignedRoles.push('anchor');
+
+      const topTerps = getTopTerpenes(bestTertiary.strain, 1);
+      if (topTerps[0]) blendNotes.push(`Anchored by ${topTerps[0].name}`);
+    }
+  }
+
+  // 4. Alternates
   // Just take the next best raw scores that aren't used
   const usedIds = new Set(selectedStrains.map(s => s.id));
   const alternates = freshCandidates
@@ -470,6 +493,11 @@ export function resolveOutcome(intent: OutcomeIntent, mode: 'blend' | 'stack' = 
       notes: [`Alternative Option`]
     }));
 
+  // Determine Ratios
+  let ratios = [100];
+  if (selectedStrains.length === 2) ratios = [60, 40];
+  if (selectedStrains.length === 3) ratios = [50, 30, 20];
+
   return {
     primary: {
       selectedCultivars: selectedStrains.map((s, i) => ({
@@ -477,7 +505,7 @@ export function resolveOutcome(intent: OutcomeIntent, mode: 'blend' | 'stack' = 
         displayName: s.name,
         role: assignedRoles[i]
       })),
-      ratios: selectedStrains.length === 2 ? [60, 40] : [100],
+      ratios,
       confidenceScore: 0.95,
       distance: 0,
       notes: blendNotes
