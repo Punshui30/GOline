@@ -28,7 +28,7 @@ export default function CinematicRightPanel({ phase, blend }: CinematicRightPane
             {/* LAYER 0: Spline Scene (Base) */}
             <div className="absolute inset-0 z-0">
                 <SplineScene
-                    scene="https://prod.spline.design/kZDDjO5HuC9GJqM9/scene.splinecode"
+                    scene="https://prod.spline.design/U9O6K7fXziMEU7Wu/scene.splinecode"
                     className="w-full h-full"
                 />
             </div>
