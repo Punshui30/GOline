@@ -28,6 +28,21 @@ function PlaceholderRobot(props: any) {
     );
 }
 
+// Basic Error Boundary to catch 404s
+class ErrorBoundary extends React.Component<{ fallback: React.ReactNode, children: React.ReactNode }, { hasError: boolean }> {
+    constructor(props: any) {
+        super(props);
+        this.state = { hasError: false };
+    }
+    static getDerivedStateFromError() {
+        return { hasError: true };
+    }
+    render() {
+        if (this.state.hasError) return this.props.fallback;
+        return this.props.children;
+    }
+}
+
 // GLB Loader Component
 function RobotModel({ url }: { url: string }) {
     const { scene } = useGLTF(url);
@@ -50,7 +65,9 @@ export default function RobotScene({ modelUrl }: { modelUrl?: string }) {
                 {/* Floating Animation Wrapper */}
                 <Float speed={2} rotationIntensity={0.5} floatIntensity={0.5}>
                     <Suspense fallback={<PlaceholderRobot />}>
-                        {modelUrl ? <RobotModel url={modelUrl} /> : <PlaceholderRobot />}
+                        <ErrorBoundary fallback={<PlaceholderRobot />}>
+                            {modelUrl ? <RobotModel url={modelUrl} /> : <PlaceholderRobot />}
+                        </ErrorBoundary>
                     </Suspense>
                 </Float>
             </Canvas>
