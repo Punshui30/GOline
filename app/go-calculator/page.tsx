@@ -437,7 +437,7 @@ export default function GOLineCalculator() {
           </div>
         </div>
 
-        <SecretInventoryPortal
+        <SecretInventoryPortalComponent
           isOpen={showInventoryPortal}
           onClose={() => setShowInventoryPortal(false)}
           onSave={(items) => setInventory(items)}
@@ -533,7 +533,7 @@ export default function GOLineCalculator() {
           </div>
         </div>
 
-        <SecretInventoryPortal
+        <SecretInventoryPortalComponent
           isOpen={showInventoryPortal}
           onClose={() => setShowInventoryPortal(false)}
           onSave={(items) => setInventory(items)}
