@@ -1,156 +1,70 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface OnboardingOverlayProps {
   onComplete: () => void;
-  onSkip: () => void;
+  onSkip?: () => void;
 }
 
-export default function OnboardingOverlay({ onComplete, onSkip }: OnboardingOverlayProps) {
-  const [step, setStep] = useState(1);
-  const [reducedMotion, setReducedMotion] = useState(false);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-      setReducedMotion(mediaQuery.matches);
-      const handleChange = (e: MediaQueryListEvent) => setReducedMotion(e.matches);
-      mediaQuery.addEventListener('change', handleChange);
-      return () => mediaQuery.removeEventListener('change', handleChange);
-    }
-  }, []);
-
-  const handleNext = () => {
-    if (step < 3) {
-      setStep(step + 1);
-    } else {
-      onComplete();
-    }
-  };
-
-  const handleSkip = () => {
-    onSkip();
-  };
-
+export default function OnboardingOverlay({ onComplete }: OnboardingOverlayProps) {
   return (
     <AnimatePresence>
       <motion.div
-        initial={{ opacity: 1 }}
+        initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#0A0A0A] text-white"
+        className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-md p-4"
       >
         <motion.div
-          initial={reducedMotion ? {} : { opacity: 0, scale: 0.95, y: 8 }}
-          animate={reducedMotion ? {} : { opacity: 1, scale: 1, y: 0 }}
-          transition={reducedMotion ? {} : { duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
-          className="relative max-w-2xl w-full mx-4 bg-[#111216] border border-white/10 rounded-xl p-8 lg:p-12 shadow-2xl"
+          initial={{ opacity: 0, scale: 0.95, y: 10 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ delay: 0.1, duration: 0.4 }}
+          className="max-w-2xl w-full bg-[#111216] border border-white/10 rounded-sm p-8 lg:p-10 shadow-2xl relative overflow-hidden"
         >
-          <AnimatePresence mode="wait">
-            {step === 1 && (
-              <motion.div
-                key="step1"
-                initial={reducedMotion ? {} : { opacity: 0, x: -8 }}
-                animate={reducedMotion ? {} : { opacity: 1, x: 0 }}
-                exit={reducedMotion ? {} : { opacity: 0, x: 8 }}
-                transition={reducedMotion ? {} : { duration: 0.3 }}
-                className="space-y-6"
-              >
-                <h2 className="font-serif text-3xl lg:text-4xl font-light text-go mb-2">
-                  What is the Guided Outcome Calculator?
-                </h2>
-                <div className="space-y-4 text-sm font-sans text-go-muted leading-relaxed">
-                  <p>
-                    The Guided Outcome Calculator translates your desired mental or physical state into structured cannabis blends. Instead of recommending a single strain, it builds intentional combinations that work together to achieve your goal.
-                  </p>
-                  <p>
-                    The system uses real lab-tested terpene and cannabinoid data to calculate how different strains interact when combined. This allows for more reliable and predictable outcomes than single-strain recommendations.
-                  </p>
-                </div>
-              </motion.div>
-            )}
-
-            {step === 2 && (
-              <motion.div
-                key="step2"
-                initial={reducedMotion ? {} : { opacity: 0, x: -8 }}
-                animate={reducedMotion ? {} : { opacity: 1, x: 0 }}
-                exit={reducedMotion ? {} : { opacity: 0, x: 8 }}
-                transition={reducedMotion ? {} : { duration: 0.3 }}
-                className="space-y-6"
-              >
-                <h2 className="font-serif text-3xl lg:text-4xl font-light text-go mb-2">
-                  Simultaneous Blends vs Sequential Stacks
-                </h2>
-                <div className="space-y-4 text-sm font-sans text-go-muted leading-relaxed">
-                  <div>
-                    <h3 className="text-go font-medium mb-2">Simultaneous Blend</h3>
-                    <p>
-                      Represents simultaneous consumption. All components are consumed together, and their effects resolve together. The visualization uses overlapping or merged forms to show how compounds interact.
-                    </p>
-                  </div>
-                  <div>
-                    <h3 className="text-go font-medium mb-2">Sequential Stack</h3>
-                    <p>
-                      Represents ordered consumption. Components are consumed in a specific sequence, and the order determines the progression of effects. The visualization uses layered or directional forms to show the sequence.
-                    </p>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-
-            {step === 3 && (
-              <motion.div
-                key="step3"
-                initial={reducedMotion ? {} : { opacity: 0, x: -8 }}
-                animate={reducedMotion ? {} : { opacity: 1, x: 0 }}
-                exit={reducedMotion ? {} : { opacity: 0, x: 8 }}
-                transition={reducedMotion ? {} : { duration: 0.3 }}
-                className="space-y-6"
-              >
-                <h2 className="font-serif text-3xl lg:text-4xl font-light text-go mb-2">
-                  Reading Visualizations and Results
-                </h2>
-                <div className="space-y-4 text-sm font-sans text-go-muted leading-relaxed">
-                  <p>
-                    The visualization panel shows the system's reasoning process. During calculation, you'll see abstract motion representing the analysis. Once resolved, you'll see either a Blend or Stack visualization depending on your selected mode.
-                  </p>
-                  <p>
-                    Colors in the visualization encode functional roles: Energy, Balance, Grounding, Calm. These are not decorative—they represent how each component contributes to your desired outcome.
-                  </p>
-                  <p>
-                    Results show multiple blend recommendations. You can select between options to compare different approaches to achieving your goal.
-                  </p>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          <div className="flex items-center justify-between mt-8 pt-6 border-t border-go">
-            <button
-              onClick={handleSkip}
-              className="text-sm font-sans text-go-muted hover:text-go transition-go uppercase tracking-wider"
-            >
-              Skip
-            </button>
-            <div className="flex items-center gap-2">
-              {[1, 2, 3].map((s) => (
-                <div
-                  key={s}
-                  className={`w-2 h-2 rounded-full transition-go ${s === step ? 'bg-amber' : 'bg-go-border'
-                    }`}
-                />
-              ))}
+          <div className="space-y-8 relative z-10">
+            <div className="space-y-6">
+              <h2 className="font-serif text-3xl lg:text-4xl text-[#D4AF37]">Chasing a feeling, not a strain.</h2>
+              <div className="text-sm text-white/60 leading-relaxed space-y-4 font-sans">
+                <p>You’ve probably noticed this already — you can’t always find the same strain twice.</p>
+                <p>Even when the name is the same, batches change. Growers change. Terpene percentages shift. THC varies. Effects drift. That’s not a flaw in cannabis. It’s just biology.</p>
+                <p>So instead of asking “Do you have that one strain I liked?”, this system starts with a better question:</p>
+                <p className="text-white font-medium text-lg border-l-2 border-[#D4AF37] pl-4 py-1 italic">How do you want to feel?</p>
+                <p>Using real lab data from live dispensary inventory, we analyze terpene balance, cannabinoid ratios, biphasic effects, and known interactions to recreate the experience you’re looking for — even when the original strain is gone.</p>
+                <p>The result isn’t a guess. It’s a calculated blend designed for consistency.</p>
+              </div>
             </div>
+
+            <div className="bg-white/5 p-6 rounded-sm border border-white/5">
+              <h3 className="text-[10px] uppercase tracking-widest text-[#D4AF37] mb-4 font-bold">How you can start</h3>
+              <ul className="space-y-3 text-sm text-white/80">
+                <li className="flex gap-3 items-center">
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#D4AF37]" />
+                  Describe the feeling you want
+                </li>
+                <li className="flex gap-3 items-center">
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#D4AF37]" />
+                  Tell us what worked for you before
+                </li>
+                <li className="flex gap-3 items-center">
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#D4AF37]" />
+                  Or share a product or label you enjoyed
+                </li>
+              </ul>
+              <div className="mt-4 pt-4 border-t border-white/10 text-xs text-white/40 italic">
+                Different inputs. Same goal. Reliable outcomes — even when the menu keeps changing.
+              </div>
+            </div>
+
             <button
-              onClick={handleNext}
-              className="px-6 py-3 border-2 border-amber text-amber text-xs font-sans uppercase tracking-widest hover:bg-amber hover:text-go-bg active:bg-amber-active hover:shadow-amber-sm transition-go cursor-pointer rounded-lg font-medium"
+              onClick={onComplete}
+              className="w-full py-4 bg-[#D4AF37] text-black font-bold tracking-[0.2em] hover:bg-[#E5C158] transition-colors rounded-sm uppercase text-xs"
             >
-              {step < 3 ? 'Next' : 'Start'}
+              Enter System
             </button>
           </div>
+
+          <div className="absolute top-0 right-0 w-64 h-64 bg-[#D4AF37]/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
         </motion.div>
       </motion.div>
     </AnimatePresence>

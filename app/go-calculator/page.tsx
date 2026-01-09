@@ -26,7 +26,9 @@ import PreRollStack, { type StackSegment } from '@/components/PreRollStack';
 import CompositionBreakdown, { type BlendComponent } from '@/components/CompositionBreakdown';
 import SecretInventoryPortal, { type InventoryItem } from '@/components/SecretInventoryPortal';
 import CinematicRightPanel from '@/components/CinematicRightPanel';
-import OnboardingModal from '@/components/OnboardingModal';
+import OnboardingModal from '@/components/OnboardingModal'; // Keeping if needed, but likely unused
+import OnboardingOverlay from '@/components/OnboardingOverlay';
+import AgeGate from '@/components/AgeGate';
 import StrainInsightCard from '@/components/StrainInsightCard';
 import { STRAIN_LIBRARY } from '@/lib/strainLibrary';
 import { generateEffectiveExplanation } from '@/lib/generateEffectiveExplanation';
@@ -104,6 +106,7 @@ export default function GOLineCalculator() {
 
   // Secret inventory portal state
   const [showInventoryPortal, setShowInventoryPortal] = useState(false);
+  const [ageGateComplete, setAgeGateComplete] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showCalcDetails, setShowCalcDetails] = useState(false);
   const [showPromptTips, setShowPromptTips] = useState(false);
@@ -113,17 +116,31 @@ export default function GOLineCalculator() {
 
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  // Check onboarding status on mount
+  // Check status on mount
   useEffect(() => {
-    const hasSeen = localStorage.getItem('hasSeenOnboarding');
-    if (!hasSeen) {
+    if (typeof window === 'undefined') return;
+
+    // 1. Check Age Gate (Persistent)
+    const storedAge = localStorage.getItem('go_age_verified');
+    if (storedAge) {
+      setAgeGateComplete(true);
+    }
+
+    // 2. Check Onboarding (Session-based)
+    const onboardingSeen = sessionStorage.getItem('go_onboarding_session');
+    if (!onboardingSeen) {
       setShowOnboarding(true);
     }
   }, []);
 
+  const handleAgeComplete = (age: number) => {
+    setAgeGateComplete(true);
+    localStorage.setItem('go_age_verified', 'true');
+  };
+
   const handleOnboardingClose = () => {
-    localStorage.setItem('hasSeenOnboarding', 'true');
     setShowOnboarding(false);
+    sessionStorage.setItem('go_onboarding_session', 'true');
   };
 
   // Logo click detection (6 clicks within 3 seconds)
@@ -526,6 +543,18 @@ export default function GOLineCalculator() {
   // --- RENDER: VIEW 3 - STRICT DASHBOARD ---
   return (
     <main className="fixed inset-0 w-screen h-screen bg-[#0a0b0e] text-white flex flex-col overflow-hidden overscroll-none">
+      {/* 1. Age Gate - Blocking */}
+      {!ageGateComplete && (
+        <AgeGate onComplete={handleAgeComplete} />
+      )}
+
+      {/* 2. Onboarding Overlay - Session Based, Dashboard Visible Behind */}
+      {ageGateComplete && showOnboarding && (
+        <OnboardingOverlay
+          onComplete={handleOnboardingClose}
+        />
+      )}
+
       {/* Header */}
       <div className="h-12 border-b border-white/5 bg-[#0a0b0e] flex items-center justify-center shrink-0 z-50">
         <div className="text-xs font-bold tracking-[0.2em] text-[#D4AF37]/80">GO LINE // CALCULATOR</div>
