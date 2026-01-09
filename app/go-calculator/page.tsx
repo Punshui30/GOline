@@ -31,6 +31,7 @@ import OnboardingOverlay from '@/components/OnboardingOverlay';
 import AgeGate from '@/components/AgeGate';
 import StrainInsightCard from '@/components/StrainInsightCard';
 import BlendExecutionCalculator from '@/components/BlendExecutionCalculator';
+import SecretInventoryPortal from '@/components/SecretInventoryPortal';
 import { STRAIN_LIBRARY } from '@/lib/strainLibrary';
 import { generateEffectiveExplanation } from '@/lib/generateEffectiveExplanation';
 
@@ -558,8 +559,18 @@ export default function GOLineCalculator() {
       )}
 
       {/* Header */}
-      <div className="h-12 border-b border-white/5 bg-[#0a0b0e] flex items-center justify-center shrink-0 z-50">
+      <div className="h-12 border-b border-white/5 bg-[#0a0b0e] flex items-center justify-center shrink-0 z-50 relative">
         <div className="text-xs font-bold tracking-[0.2em] text-[#D4AF37]/80">GO LINE // CALCULATOR</div>
+
+        {/* Phase 5: Admin Button */}
+        {process.env.NEXT_PUBLIC_ADMIN_ENABLED === 'true' && (
+          <button
+            onClick={() => setShowInventoryPortal(true)}
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-[9px] uppercase tracking-widest text-white/20 hover:text-[#D4AF37] transition-colors font-mono"
+          >
+            Admin
+          </button>
+        )}
       </div>
 
       {/* 3-Column Grid - Height locked to remaining space */}

@@ -31,7 +31,7 @@ type TabMode = 'manual' | 'camera' | 'barcode';
 export default function SecretInventoryPortal({ isOpen, onClose, onSave }: SecretInventoryPortalProps) {
   const [activeTab, setActiveTab] = useState<TabMode>('manual');
   const [items, setItems] = useState<InventoryItem[]>([]);
-  
+
   // Manual entry form state
   const [formData, setFormData] = useState<InventoryItem>({
     strainName: '',
@@ -70,9 +70,9 @@ export default function SecretInventoryPortal({ isOpen, onClose, onSave }: Secre
     // 2. Capture photo
     // 3. Send to OCR service
     // 4. Parse results
-    
+
     setCameraActive(true);
-    
+
     // Simulated OCR result (requires manual confirmation)
     setTimeout(() => {
       setOcrResult({
@@ -91,7 +91,7 @@ export default function SecretInventoryPortal({ isOpen, onClose, onSave }: Secre
         ...formData,
         ...ocrResult,
       } as InventoryItem;
-      
+
       setItems([...items, confirmedItem]);
       setOcrResult(null);
       setFormData({
@@ -114,14 +114,21 @@ export default function SecretInventoryPortal({ isOpen, onClose, onSave }: Secre
   };
 
   return (
-    <div className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-4">
-      <div className="bg-[#1A1A1A] border border-white/10 rounded-lg w-full max-w-4xl max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 z-[100] flex justify-end">
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+        onClick={onClose}
+      />
+
+      {/* Drawer */}
+      <div className="relative w-full max-w-md h-full bg-[#111216] border-l border-white/10 shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-white/10">
-          <h2 className="text-xl font-medium text-white">Dispensary Inventory Configuration</h2>
+        <div className="flex items-center justify-between p-6 border-b border-white/10 bg-[#0a0b0e]">
+          <h2 className="text-sm font-bold text-[#D4AF37] uppercase tracking-widest">Admin Inventory</h2>
           <button
             onClick={onClose}
-            className="text-white/60 hover:text-white transition-colors"
+            className="text-white/40 hover:text-white transition-colors"
           >
             ✕
           </button>
@@ -131,31 +138,28 @@ export default function SecretInventoryPortal({ isOpen, onClose, onSave }: Secre
         <div className="flex border-b border-white/10">
           <button
             onClick={() => setActiveTab('manual')}
-            className={`px-6 py-3 text-sm font-medium transition-colors ${
-              activeTab === 'manual'
-                ? 'text-white border-b-2 border-[#D4AF37]'
-                : 'text-white/60 hover:text-white/80'
-            }`}
+            className={`px-6 py-3 text-sm font-medium transition-colors ${activeTab === 'manual'
+              ? 'text-white border-b-2 border-[#D4AF37]'
+              : 'text-white/60 hover:text-white/80'
+              }`}
           >
             Manual Entry
           </button>
           <button
             onClick={() => setActiveTab('camera')}
-            className={`px-6 py-3 text-sm font-medium transition-colors ${
-              activeTab === 'camera'
-                ? 'text-white border-b-2 border-[#D4AF37]'
-                : 'text-white/60 hover:text-white/80'
-            }`}
+            className={`px-6 py-3 text-sm font-medium transition-colors ${activeTab === 'camera'
+              ? 'text-white border-b-2 border-[#D4AF37]'
+              : 'text-white/60 hover:text-white/80'
+              }`}
           >
             Camera Scan
           </button>
           <button
             onClick={() => setActiveTab('barcode')}
-            className={`px-6 py-3 text-sm font-medium transition-colors ${
-              activeTab === 'barcode'
-                ? 'text-white border-b-2 border-[#D4AF37]'
-                : 'text-white/60 hover:text-white/80'
-            }`}
+            className={`px-6 py-3 text-sm font-medium transition-colors ${activeTab === 'barcode'
+              ? 'text-white border-b-2 border-[#D4AF37]'
+              : 'text-white/60 hover:text-white/80'
+              }`}
           >
             Barcode / QR Scan
           </button>
@@ -389,17 +393,17 @@ export default function SecretInventoryPortal({ isOpen, onClose, onSave }: Secre
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 p-6 border-t border-white/10">
+        <div className="flex items-center justify-end gap-3 p-6 border-t border-white/10 bg-[#0a0b0e]">
           <button
             onClick={onClose}
-            className="px-6 py-2 bg-white/10 text-white font-medium text-sm rounded hover:bg-white/20 transition-colors"
+            className="px-4 py-2 text-xs text-white/40 hover:text-white transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
             disabled={items.length === 0}
-            className="px-6 py-2 bg-[#D4AF37] text-[#1A1A1A] font-medium text-sm rounded hover:bg-[#B8860B] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-6 py-2 bg-[#D4AF37] text-black font-bold text-xs uppercase tracking-wider rounded-sm hover:bg-[#b5952f] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Save Inventory
           </button>
