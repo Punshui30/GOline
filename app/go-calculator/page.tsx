@@ -113,6 +113,7 @@ export default function GOLineCalculator() {
   const [logoClickCount, setLogoClickCount] = useState(0);
   const [logoClickTimer, setLogoClickTimer] = useState<NodeJS.Timeout | null>(null);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [expandedStrainId, setExpandedStrainId] = useState<string | null>(null);
 
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -773,6 +774,8 @@ export default function GOLineCalculator() {
                           percentage={percentage}
                           role={cultivar.role}
                           index={i}
+                          isExpanded={expandedStrainId === cultivar.id}
+                          onToggle={() => setExpandedStrainId(prev => prev === cultivar.id ? null : cultivar.id)}
                         />
                       );
                     })}
