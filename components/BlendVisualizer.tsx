@@ -10,84 +10,87 @@ interface BlendVisualizerProps {
     mode?: 'blend' | 'stack';
 }
 
+// Role-based functional colors
+const ROLE_COLORS = {
+    // Legacy support
+    driver: "#D4AF37",
+    modulator: "#94A3B8",
+    anchor: "#4A5D23",
+    // Strict roles
+    primary: "#D4AF37",
+    secondary: "#94A3B8",
+    supporting: "#4A5D23",
+    // Fallback
+    corrective: "#94A3B8"
+};
+
+function polarToCartesian(centerX: number, centerY: number, radius: number, angleInDegrees: number) {
+    const angleInRadians = (angleInDegrees - 90) * Math.PI / 180.0;
+
+    return {
+        x: centerX + (radius * Math.cos(angleInRadians)),
+        y: centerY + (radius * Math.sin(angleInRadians))
+    };
+}
+
+function describeArc(x: number, y: number, radius: number, startAngle: number, endAngle: number) {
+    const start = polarToCartesian(x, y, radius, endAngle);
+    const end = polarToCartesian(x, y, radius, startAngle);
+
+    const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
+
+    const d = [
+        "M", start.x, start.y,
+        "A", radius, radius, 0, largeArcFlag, 0, end.x, end.y
+    ].join(" ");
+
+    return d;
+}
+
 export default function BlendVisualizer({ blend, isAnimating = true, mode = 'blend' }: BlendVisualizerProps) {
-    const [animatedPercentages, setAnimatedPercentages] = useState<Record<string, number>>({});
     const [visible, setVisible] = useState(false);
 
     useEffect(() => {
-        // Reset animation state when blend changes
         setVisible(false);
-        setAnimatedPercentages({});
-
-        if (isAnimating) {
-            // Start animation sequence
-            const timer = setTimeout(() => {
-                setVisible(true);
-
-                // Animate each cultivar sequentially
-                blend.primaryBlend.forEach((strain, index) => {
-                    setTimeout(() => {
-                        setAnimatedPercentages(prev => ({
-                            ...prev,
-                            [strain.id || index]: 0
-                        }));
-
-                        // Animate from 0 to target percentage over 600ms
-                        const startTime = Date.now();
-                        const duration = 600;
-                        const target = strain.percentage;
-
-                        const animate = () => {
-                            const elapsed = Date.now() - startTime;
-                            const progress = Math.min(elapsed / duration, 1);
-                            // Ease-out curve
-                            const eased = 1 - Math.pow(1 - progress, 3);
-                            const current = target * eased;
-
-                            setAnimatedPercentages(prev => ({
-                                ...prev,
-                                [strain.id || index]: current
-                            }));
-
-                            if (progress < 1) {
-                                requestAnimationFrame(animate);
-                            }
-                        };
-
-                        requestAnimationFrame(animate);
-                    }, index * 150); // Stagger by 150ms
-                });
-            }, 100);
-
-            return () => clearTimeout(timer);
-        } else {
-            // Instant render if not animating
-            setVisible(true);
-            const instant: Record<string, number> = {};
-            blend.primaryBlend.forEach((strain, index) => {
-                instant[strain.id || index] = strain.percentage;
-            });
-            setAnimatedPercentages(instant);
-        }
-    }, [blend, isAnimating]);
+        const timer = setTimeout(() => setVisible(true), 100);
+        return () => clearTimeout(timer);
+    }, [blend]);
 
     const sortedStrains = blend.primaryBlend;
-    const isSingleCultivar = sortedStrains.length === 1;
+    const isStack = mode === 'stack';
 
-    // Calculate text size based on percentage (larger % → larger text)
-    const getPercentageTextSize = (percentage: number): string => {
-        if (percentage >= 50) return 'text-4xl lg:text-5xl';
-        if (percentage >= 30) return 'text-3xl lg:text-4xl';
-        if (percentage >= 15) return 'text-2xl lg:text-3xl';
-        return 'text-xl lg:text-2xl';
-    };
+    // Radial Calculation
+    let currentAngle = 0;
+    const segments = sortedStrains.map((strain) => {
+        const percentage = strain.percentage;
+        const angle = (percentage / 100) * 360;
+        const startAngle = currentAngle;
+        const endAngle = currentAngle + angle;
+        currentAngle += angle;
+
+        // Normalize role to lowercase for color mapping if type mismatch
+        const roleKey = (strain.role || 'driver').toLowerCase() as keyof typeof ROLE_COLORS;
+        const color = ROLE_COLORS[roleKey] || ROLE_COLORS.driver;
+        const dominance = Math.max(0.4, percentage / 100); // Minimum opacity 0.4 for visibility
+
+        return {
+            ...strain,
+            startAngle,
+            endAngle,
+            color,
+            dominance
+        };
+    });
+
+    // Determine Blend Name safely
+    const label = blend.rationaleSummary;
 
     return (
-        <div className="w-full mb-12 overflow-visible">
-            {mode === 'stack' ? (
-                // Stack Mode: Vertical Sequence
-                <div className="flex flex-col w-full gap-4 relative">
-                    {/* Connecting Line running through background */}
+        <div className="w-full flex justify-center items-center min-h-[300px]">
+            {isStack ? (
+                // Stack Mode: Vertical Sequence with preserved logic
+                <div className="flex flex-col w-full gap-4 relative max-w-2xl">
+                    {/* Connecting Line */}
                     {sortedStrains.length > 1 && (
                         <div className="absolute left-8 top-8 bottom-8 w-px bg-go-border z-0 hidden lg:block" />
                     )}
@@ -100,11 +103,7 @@ export default function BlendVisualizer({ blend, isAnimating = true, mode = 'ble
                             transition={{ delay: index * 0.15 }}
                             className="relative z-10 flex items-center gap-6 p-4 bg-glass border border-go rounded-xl"
                         >
-                            {/* Seq Number */}
-                            <div
-                                className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-mono border bg-nearblack"
-                                style={{ borderColor: getPercentageTextSize(strain.percentage).includes('text-4') ? '#D4AF37' : '#94A3B8' }} // Approximate color logic
-                            >
+                            <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-mono border bg-nearblack border-go-border text-white">
                                 {index + 1}
                             </div>
 
@@ -118,77 +117,84 @@ export default function BlendVisualizer({ blend, isAnimating = true, mode = 'ble
                         </motion.div>
                     ))}
                 </div>
-            ) : isSingleCultivar ? (
-                // Single cultivar: card with vertical flex stack
-                <div className="w-full border border-energy bg-bg-glass p-8 lg:p-10 rounded-2xl shadow-amber-md">
-                    <div className="flex flex-col gap-4 items-center text-center">
-                        <div className={`font-serif font-light text-energy ${getPercentageTextSize(100)}`}>
-                            100%
-                        </div>
-                        <div className="text-sm font-sans text-go-muted uppercase tracking-wider">
-                            {getRoleDisplayName(sortedStrains[0].role)}
-                        </div>
-                        <motion.div
-                            initial={{ opacity: 0, y: 8 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{
-                                delay: 0.3,
-                                duration: 0.4,
-                                ease: 'easeOut'
-                            }}
-                            className="text-xl lg:text-3xl font-serif font-light text-white"
-                        >
-                            {sortedStrains[0].name}
-                        </motion.div>
-                    </div>
-                </div>
             ) : (
-                // BLEND Mode: Proportional Bar (Concurrent/Simultaneous)
-                <div className="flex w-full border border-go min-h-[140px] lg:min-h-[160px] items-stretch overflow-hidden rounded-2xl shadow-lg">
-                    {sortedStrains.map((strain, index) => {
-                        const animatedWidth = animatedPercentages[strain.id || index] || 0;
-                        const displayWidth = isAnimating ? animatedWidth : strain.percentage;
+                // RADIAL MODE (SVG)
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: visible ? 1 : 0, scale: visible ? 1 : 0.95 }}
+                    transition={{ duration: 0.8, ease: "easeOut" }}
+                    className="relative w-[300px] h-[300px] lg:w-[400px] lg:h-[400px]"
+                >
+                    <svg
+                        viewBox="0 0 400 400"
+                        className="w-full h-full drop-shadow-2xl"
+                        style={{ overflow: 'visible' }}
+                    >
+                        <defs>
+                            <filter id="softGlow">
+                                <feGaussianBlur stdDeviation="4" result="blur" />
+                                <feMerge>
+                                    <feMergeNode in="blur" />
+                                    <feMergeNode in="SourceGraphic" />
+                                </feMerge>
+                            </filter>
+                        </defs>
 
-                        return (
-                            <div
-                                key={strain.id || index}
-                                className="flex flex-col justify-center items-center border-r border-go-border last:border-r-0 bg-glass transition-all duration-300 p-5 lg:p-6 backdrop-blur-md"
-                                style={{
-                                    width: `${displayWidth}%`,
-                                    minWidth: displayWidth > 0 ? (sortedStrains.length > 3 ? '100px' : '120px') : '0px',
-                                    opacity: visible && displayWidth > 0 ? 1 : 0,
-                                }}
-                            >
-                                {/* Vertical flex stack: percentage (most prominent), role, name */}
-                                <div className="flex flex-col gap-3 items-center text-center">
-                                    <div className={`font-serif font-light ${getPercentageTextSize(strain.percentage)} leading-tight ${
-                                        // Use accent color for dominant contributor (highest percentage)
-                                        strain.percentage === Math.max(...sortedStrains.map(s => s.percentage))
-                                            ? 'text-energy'
-                                            : 'text-white'
-                                        }`}>
-                                        {Math.round(strain.percentage)}%
-                                    </div>
-                                    <div className="text-[10px] font-sans font-medium uppercase tracking-wider text-go-subtle">
-                                        {getRoleDisplayName(strain.role)}
-                                    </div>
-                                    <motion.div
-                                        initial={{ opacity: 0, y: 8 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{
-                                            delay: index * 0.15 + 0.2,
-                                            duration: 0.4,
-                                            ease: 'easeOut'
-                                        }}
-                                        className="text-sm lg:text-base font-serif font-light text-white break-words px-2"
-                                    >
-                                        {strain.name}
-                                    </motion.div>
-                                </div>
+                        {/* Contribution Ring */}
+                        <g transform="translate(0, 0)">
+                            {/* SVG coordinates are 0-400, center is 200,200 */}
+                            {segments.map((seg, i) => (
+                                <g key={seg.id || i}>
+                                    <path
+                                        d={describeArc(200, 200, 140, seg.startAngle, seg.endAngle - 2)} // -2 for small gap between segments
+                                        fill="none"
+                                        stroke={seg.color}
+                                        strokeWidth={28}
+                                        strokeLinecap="round"
+                                        filter="url(#softGlow)"
+                                        opacity={0.9}
+                                    />
+                                    {/* Optional: Add percentage label near segment? Only if large enough */}
+                                    {seg.percentage > 15 && (
+                                        <text
+                                            x={polarToCartesian(200, 200, 175, seg.startAngle + (seg.endAngle - seg.startAngle) / 2).x}
+                                            y={polarToCartesian(200, 200, 175, seg.startAngle + (seg.endAngle - seg.startAngle) / 2).y}
+                                            textAnchor="middle"
+                                            dominantBaseline="middle"
+                                            fill="white"
+                                            fontSize="14"
+                                            className="font-mono opacity-80"
+                                        >
+                                            {Math.round(seg.percentage)}%
+                                        </text>
+                                    )}
+                                </g>
+                            ))}
+                        </g>
+
+                        {/* Inner Field */}
+                        <circle
+                            cx="200"
+                            cy="200"
+                            r="90"
+                            fill="rgba(255,255,255,0.02)"
+                            stroke="rgba(255,255,255,0.1)"
+                            strokeWidth="1"
+                        />
+
+                        {/* Label - Center */}
+                        <foreignObject x="110" y="110" width="180" height="180">
+                            <div className="w-full h-full flex flex-col items-center justify-center text-center p-2">
+                                <span className="text-xs uppercase tracking-widest text-[#94A3B8] mb-2 block">
+                                    Blend ID
+                                </span>
+                                <h3 className="text-xl lg:text-2xl font-serif text-[#E2E8F0] leading-tight">
+                                    {label}
+                                </h3>
                             </div>
-                        );
-                    })}
-                </div>
+                        </foreignObject>
+                    </svg>
+                </motion.div>
             )}
         </div>
     );

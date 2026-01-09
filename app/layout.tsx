@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import "@/styles/theme.css";
 import Header from "@/components/Header";
+import IndustryModePortal from "@/components/IndustryModePortal";
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://goline.netlify.app'),
@@ -44,6 +45,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-screen overflow-hidden">
       <body className="h-screen overflow-hidden bg-app text-app">
+        <IndustryModePortal />
         <div id="app-shell" className="h-screen flex flex-col overflow-hidden">
           <Header />
           <main className="flex-1 min-h-0 overflow-hidden">

@@ -17,7 +17,7 @@ export interface NamedStrainComponent {
   strainName: string; // Actual strain name from DEMO_MENU
   strainId: string; // DEMO_MENU id
   percentage: number; // 0-100, must sum to 100 for blend
-  role: "primary" | "corrective" | "supporting";
+  role: "driver" | "modulator" | "anchor";
   rationale?: string; // Why this strain was chosen
 }
 
@@ -170,14 +170,14 @@ function convertToNamedComponent(
   const strain = mapCultivarIdToStrainName(component.cultivarId);
 
   // Default role if missing (Math Engine doesn't assign roles until now, but might pass placeholder)
-  const role = ((component.role as any) || 'primary') as "primary" | "corrective" | "supporting";
+  const role = ((component.role as any) || 'driver') as "driver" | "modulator" | "anchor";
 
   return {
     strainName: strain.name,
     strainId: strain.id,
     percentage: component.ratio,
-    role, // This role is legacy/placeholder. StackingPlan derives the real temporal role.
-    rationale: 'Mathematically selected for vector fit',
+    role,
+    rationale: 'Mathematically selected for role optimization',
   };
 }
 
@@ -195,7 +195,7 @@ export function resolveToNamedStrains(outcome: OutcomeResult): NamedResolutionRe
 
   // Handle new format with primary + alternates
   const primaryCandidate = outcome.primary;
-  
+
   // Validation: OutcomeResult must have primary candidate
   if (!primaryCandidate || !primaryCandidate.selectedCultivars || primaryCandidate.selectedCultivars.length === 0) {
     throw new Error('OutcomeResult must have primary candidate with selectedCultivars');
@@ -206,7 +206,7 @@ export function resolveToNamedStrains(outcome: OutcomeResult): NamedResolutionRe
   if (primaryCandidate.selectedCultivars.length !== primaryCandidate.ratios.length) {
     throw new Error('OutcomeResult primary selectedCultivars and ratios must have the same length');
   }
-  
+
   // Use primary candidate for the main result
   const outcomeForProcessing = {
     selectedCultivars: primaryCandidate.selectedCultivars,
@@ -223,18 +223,11 @@ export function resolveToNamedStrains(outcome: OutcomeResult): NamedResolutionRe
     const cultivar = outcomeForProcessing.selectedCultivars[i];
     const ratio = outcomeForProcessing.ratios[i];
 
-    // Safety: ensure cultivar.id is valid
-    // The Math Engine outputs IDs from STRAIN_LIBRARY, which might not match the `resolveStrain` expectation 
-    // if `resolveStrain` expects "ref-..." prefixes.
-    // However, `goOutcomeEngine` now uses `STRAIN_LIBRARY` directly.
-    // We should check if `resolveStrain` handles raw IDs. 
-    // Assuming `resolveStrain` is robust or we bypass it if ID is already in library.
-
     const component = {
       cultivarId: cultivar.id,
       displayName: cultivar.displayName,
       ratio: ratio,
-      role: 'primary' // Placeholder
+      role: (cultivar as any).role // Pass the role from engine
     };
 
     const named = convertToNamedComponent(component);
@@ -257,7 +250,7 @@ export function resolveToNamedStrains(outcome: OutcomeResult): NamedResolutionRe
     stackingOptions,
     confidenceScore: outcomeForProcessing.confidenceScore || 0.7,
     tradeoffs: outcomeForProcessing.notes || [],
-    rationaleSummary: outcomeForProcessing.notes?.[0] || 'Optimized Blend',
+    rationaleSummary: outcomeForProcessing.notes?.[0] || 'Optimized Role-Based Blend',
     resolutionMode: 'BLENDED',
     stack,
   };

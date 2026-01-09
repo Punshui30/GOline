@@ -15,17 +15,17 @@ import type { DeterministicExplanation } from '@/lib/outcomeBrain/deterministicE
 import { staggerContainer, itemFade } from '@/lib/motion';
 
 // Interfaces matching the new "Editorial" data structure
-export type CultivarRole = 'Anchor' | 'Modifier' | 'Synergist';
+export type CultivarRole = 'primary' | 'secondary' | 'supporting';
 
 // Map internal role names to consumer-friendly display names
 export function getRoleDisplayName(role: CultivarRole): string {
   switch (role) {
-    case 'Anchor':
-      return 'Primary Contributor';
-    case 'Modifier':
-      return 'Supporting Contributor';
-    case 'Synergist':
-      return 'Weighted Influence';
+    case 'primary':
+      return 'PRIMARY CONTRIBUTOR';
+    case 'secondary':
+      return 'SECONDARY CONTRIBUTOR';
+    case 'supporting':
+      return 'SUPPORTING CONTRIBUTOR';
     default:
       return role;
   }
@@ -35,7 +35,9 @@ export interface ResolvedCultivar {
   id: string;
   name: string;
   role: CultivarRole;
+  rank: number; // 1-based rank
   percentage: number;
+  weight: number; // 0-1
   explanation: string;
   chemotypeId: string;
   weightGrams?: number;
@@ -93,8 +95,18 @@ export default function ResolutionPanel({ blend, intent, isComputing, onRefineOu
   const [showAlternates, setShowAlternates] = useState(false);
 
   // CRITICAL: Log what blend is being rendered and assert expectations
+  // CRITICAL: Log what blend is being rendered and assert expectations
   useEffect(() => {
     if (blend) {
+      // Phase A1: Strict Role Validation
+      const primaries = blend.primaryBlend.filter(c => c.role === 'primary');
+      if (primaries.length > 1) {
+        console.error('[GO_STRICT_VIOLATION] ❌ Multiple Primary Contributors detected!', primaries);
+      }
+      if (primaries.length === 0 && blend.primaryBlend.length > 0) {
+        console.warn('[GO_STRICT_VIOLATION] ⚠️ No Primary Contributor assigned (requires Rank 1)');
+      }
+
       const actualAlternateCount = blend.alternates?.length || 0;
 
       console.log('[UI] Rendering blend:', {

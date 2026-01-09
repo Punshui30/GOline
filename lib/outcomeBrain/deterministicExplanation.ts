@@ -1,4 +1,4 @@
-import { OutcomeIntent, OutcomeResult } from "@/lib/goOutcomeEngine";
+import { OutcomeIntent, OutcomeResult, getTopTerpenes } from "@/lib/goOutcomeEngine";
 import { STRAIN_LIBRARY } from "@/lib/strainLibrary";
 
 export type DeterministicExplanation = {
@@ -11,73 +11,55 @@ export function generateDeterministicExplanation(
   intent: OutcomeIntent,
   result: OutcomeResult
 ): DeterministicExplanation {
-  // Handle new format with primary + alternates
   const primaryCandidate = result.primary;
   const strains = primaryCandidate.selectedCultivars
     .map((c) => STRAIN_LIBRARY[c.id])
     .filter(Boolean);
 
   const primaryStrain = strains[0];
+  const secondaryStrain = strains[1];
   const isBlend = strains.length > 1;
-
-  // Use primary candidate's ratios for calculations
-  const ratios = primaryCandidate.ratios;
-  
-  const axes = [
-    { key: "activation", label: "energy / alertness", value: intent.activation },
-    { key: "cognitiveEndurance", label: "mental endurance", value: intent.cognitiveEndurance },
-    { key: "anxietySensitivity", label: "anxiety control", value: intent.anxietySensitivity },
-    { key: "bodyLoadPreference", label: "body vs head effect", value: intent.bodyLoadPreference ?? 0.5 },
-  ];
-
-  const dominantAxis =
-    axes
-      .filter((a) => typeof a.value === "number")
-      .sort(
-        (a, b) =>
-          Math.abs((b.value ?? 0) - 0.5) - Math.abs((a.value ?? 0) - 0.5)
-      )[0] || axes[0];
 
   const bullets: string[] = [];
 
-  if (isBlend) {
-    bullets.push(
-      `This result uses a ${strains.length}-cultivar blend to more closely match your desired ${dominantAxis.label}.`
-    );
-    bullets.push(
-      "No single cultivar minimized the distance across all requested dimensions, so a blend produced a tighter overall fit."
-    );
-  } else if (primaryStrain) {
-    bullets.push(
-      `${primaryStrain.name} alone already aligns closely with your requested ${dominantAxis.label}.`
-    );
-    bullets.push(
-      "Introducing additional cultivars would have increased deviation from your target profile."
-    );
+  // A4.4 Role-Aware Explanation Logic
+
+  // 1. Primary Driver Explanation
+  if (primaryStrain) {
+    // Get Rarity-Weighted Top Terpenes (A4.3)
+    const topTerps = getTopTerpenes(primaryStrain, 2);
+    const mainTerp = topTerps[0];
+
+    if (mainTerp) {
+      bullets.push(`${primaryStrain.name} was selected for its distinct ${mainTerp.name} profile.`);
+      bullets.push(`The dominance of ${mainTerp.name} (weighted by rarity) aligns with your intent.`);
+    } else {
+      bullets.push(`${primaryStrain.name} offers the closest overall match to your effect targets.`);
+    }
   }
 
-  if (intent.anxietySensitivity > 0.6) {
-    bullets.push(
-      "Strains with higher anxiety risk were penalized heavily based on your sensitivity setting."
-    );
+  // 2. Secondary Modulator Explanation
+  if (isBlend && secondaryStrain) {
+    const modTerps = getTopTerpenes(secondaryStrain, 1);
+    if (modTerps[0]) {
+      bullets.push(`${secondaryStrain.name} modulates the experience by introducing ${modTerps[0].name}.`);
+    } else {
+      bullets.push(`${secondaryStrain.name} adds diversity to the chemical profile to prevent effect fatigue.`);
+    }
   }
 
-  if (intent.activation > 0.7 && primaryStrain && primaryStrain.effects.calm > 60) {
-    bullets.push(
-      "A small amount of calming effect was accepted to preserve mental clarity and functional control."
-    );
+  // 3. User Constraints (Why we avoided things)
+  if (intent.anxietySensitivity > 0.7) {
+    bullets.push("High-stimulation terpenes were penalized to respect your anxiety sensitivity.");
   }
-
-  let confidenceNote: string | undefined;
-  if (primaryCandidate.confidenceScore < 0.65) {
-    confidenceNote =
-      "This intent required balancing competing goals, so the result is an optimized compromise rather than a perfect match.";
+  if (intent.avoidSedation) {
+    bullets.push("Heavily sedating profiles were filtered out.");
   }
 
   return {
-    headline: isBlend ? "Why this blend was selected" : "Why this strain was selected",
+    headline: isBlend ? "Why this blend works" : "Why this strain works",
     bullets,
-    confidenceNote,
+    confidenceNote: primaryCandidate.confidenceScore < 0.8 ? "This result required balancing competing priorities." : undefined,
   };
 }
 

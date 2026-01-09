@@ -23,7 +23,7 @@ import OnboardingOverlay from '@/components/OnboardingOverlay';
 import VisualizationPanel from '@/components/VisualizationPanel';
 import OutcomeInputPanel from '@/components/OutcomeInputPanel';
 import ResolvingPanel from '@/components/ResolvingPanel';
-import ResultPanel from '@/components/ResultPanel';
+import CinematicRightPanel from '@/components/CinematicRightPanel';
 import { generateDeterministicExplanation, type DeterministicExplanation } from '@/lib/outcomeBrain/deterministicExplanation';
 import { StrategicGuidance } from '@/lib/strategicGuidance';
 import { translateGuidanceToIntent } from '@/lib/guidanceToIntent';
@@ -71,6 +71,7 @@ interface Window {
 }
 
 export default function Home() {
+
   // Phase 1 (FREE): User input
   const [userInput, setUserInput] = useState('');
 
@@ -370,7 +371,13 @@ export default function Home() {
   };
 
   // Phase 1: Free expression - get strategic guidance from LLM
-  const handleAnalyze = async () => {
+  const handleAnalyze = async (overrideInput?: any) => {
+    const effectiveInput = typeof overrideInput === 'string' ? overrideInput : userInput;
+
+    if (typeof overrideInput === 'string') {
+      setUserInput(effectiveInput);
+    }
+
     if (isListening && recognitionRef.current) {
       try {
         explicitStopRef.current = true;
@@ -444,7 +451,7 @@ export default function Home() {
           setDeterministicExplanation(generateDeterministicExplanation(referenceIntent, resolvedOutcome));
 
           // Generate LLM explanations asynchronously (non-blocking)
-          generateLLMExplanations(blend, originalUserInput || userInput || 'Default blend selection', referenceIntent);
+          generateLLMExplanations(blend, originalUserInput || effectiveInput || 'Default blend selection', referenceIntent);
 
           setOutcomePhase('result');
           setIsProcessing(false);
@@ -457,7 +464,7 @@ export default function Home() {
       return;
     }
 
-    if (!userInput.trim()) {
+    if (!effectiveInput.trim()) {
       setError('Please enter your desired outcome');
       setIsProcessing(false);
       return;
@@ -467,7 +474,7 @@ export default function Home() {
       const guidanceResponse = await fetch('/api/intent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: userInput.trim() }),
+        body: JSON.stringify({ text: effectiveInput.trim() }),
       });
 
       let guidanceData: GuidanceResponse;
@@ -546,6 +553,19 @@ export default function Home() {
       setIsProcessing(false);
     }
   };
+
+  // Listen for Demo Mode events from Industry Portal
+  useEffect(() => {
+    const handleDemo = (e: CustomEvent) => {
+      const text = e.detail?.intent;
+      if (text) {
+        // Run analysis (skipping initial input phase UI)
+        handleAnalyze(text);
+      }
+    };
+    window.addEventListener('go-demo-run', handleDemo as EventListener);
+    return () => window.removeEventListener('go-demo-run', handleDemo as EventListener);
+  }, []);
 
   const handleLock = (finalGuidance: StrategicGuidance, answers: Record<string, string | string[]>) => {
     if (isListening && recognitionRef.current) {
@@ -968,27 +988,13 @@ export default function Home() {
             </div>
           )}
 
-          {/* Results Panel - Right Column */}
-          {ageGateComplete && outcomePhase === 'result' && resolvedBlend && (
-            <div className="col-span-12 lg:col-span-4 overflow-y-auto">
-              <div className="h-full p-6">
-                <ResultPanel
-                  blend={resolvedBlend}
-                  intent={intent}
-                  isProcessing={isProcessing}
-                  deterministicExplanation={deterministicExplanation}
-                  llmExplanation={llmExplanation}
-                  llmUsageInstructions={llmUsageInstructions}
-                  blendNickname={blendNickname}
-                  blendHashtag={blendHashtag}
-                  shareCaption={shareCaption}
-                  onRefineOutcome={handleRefineOutcome}
-                  onShowUsageProtocol={handleShowUsageProtocol}
-                  onAdjustment={handleAdjustment}
-                  hasResolved={hasResolved}
-                  mode={consumptionMode}
-                />
-              </div>
+          {/* Cinematic Right Panel - Right Column */}
+          {ageGateComplete && (
+            <div className="col-span-12 lg:col-span-4 overflow-hidden h-full relative border-l border-white/5 bg-black">
+              <CinematicRightPanel
+                phase={outcomePhase}
+                blend={resolvedBlend}
+              />
             </div>
           )}
         </div>
