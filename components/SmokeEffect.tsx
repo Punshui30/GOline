@@ -2,16 +2,16 @@
 import React, { useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 
-export const SmokeEffect = () => {
+export const SmokeEffect = ({ initialDelay = 0 }: { initialDelay?: number }) => {
     return (
-        <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden flex items-center justify-center">
+        <div className="absolute inset-0 z-20 pointer-events-none overflow-hidden flex items-center justify-center">
             {/* Container aligned to center */}
             <div className="relative w-full h-full max-w-[600px] max-h-[600px] flex items-center justify-center">
                 {/* Multiple smoke layers */}
-                <SmokePuff delay={0} scale={1} x={0} />
-                <SmokePuff delay={0.5} scale={1.2} x={-20} />
-                <SmokePuff delay={1.2} scale={0.8} x={30} />
-                <SmokePuff delay={2.0} scale={1.5} x={10} />
+                <SmokePuff delay={initialDelay + 0} scale={1} x={0} />
+                <SmokePuff delay={initialDelay + 0.5} scale={1.2} x={-20} />
+                <SmokePuff delay={initialDelay + 1.2} scale={0.8} x={30} />
+                <SmokePuff delay={initialDelay + 2.0} scale={1.5} x={10} />
             </div>
         </div>
     );

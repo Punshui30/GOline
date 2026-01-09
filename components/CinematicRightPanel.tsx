@@ -37,11 +37,9 @@ export default function CinematicRightPanel({ phase, blend, mode }: CinematicRig
             </div>
 
             {/* LAYER 1.5: Smoke Animation (Behind HUD) */}
-            <AnimatePresence>
-                {phase === 'resolved' && (
-                    <SmokeEffect />
-                )}
-            </AnimatePresence>
+            {phase === 'resolved' && (
+                <SmokeEffect initialDelay={2.5} />
+            )}
 
             {/* LAYER 1.6: Synthesis Animation (Floating Symbols) */}
             <AnimatePresence>
