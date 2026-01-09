@@ -27,6 +27,8 @@ import CompositionBreakdown, { type BlendComponent } from '@/components/Composit
 import SecretInventoryPortal, { type InventoryItem } from '@/components/SecretInventoryPortal';
 import CinematicRightPanel from '@/components/CinematicRightPanel';
 import OnboardingModal from '@/components/OnboardingModal';
+import StrainInsightCard from '@/components/StrainInsightCard';
+import { STRAIN_LIBRARY } from '@/lib/strainLibrary';
 
 // Conversation state exists for parsing/clarification but is NOT visually rendered
 type ConversationState = 'active' | 'resolved';
@@ -697,15 +699,24 @@ export default function GOLineCalculator() {
                   <div className="bg-[#111216] border border-white/10 rounded-sm p-4">
                     <h3 className="text-[10px] text-white/60 mb-4 uppercase tracking-wider">Harmonic Blend</h3>
                     {/* In blend mode, we show composition breakdown immediately instead of stack */}
-                    <div className="space-y-3">
-                      {breakdownComponents.map((comp, i) => (
-                        <div key={i} className="flex justify-end items-center text-xs">
-                          <span className="text-white/60 mr-2 text-right">{comp.name}</span>
-                          <div className="w-20 h-1 bg-white/10 rounded-full overflow-hidden">
-                            <div className="h-full bg-[#D4AF37]" style={{ width: `${comp.percentage * 100}%` }} />
-                          </div>
-                        </div>
-                      ))}
+                    {/* Composition List / Cards */}
+                    <div className="space-y-4 border-t border-white/10 pt-6">
+                      <h4 className="text-[10px] text-white/40 uppercase tracking-widest mb-4">Formulation Insights</h4>
+
+                      {outcomeResult?.primary?.primaryBlend?.map((cultivar: any, i: number) => {
+                        const strainData = STRAIN_LIBRARY[cultivar.id];
+                        if (!strainData) return null;
+
+                        return (
+                          <StrainInsightCard
+                            key={cultivar.id}
+                            strain={strainData}
+                            percentage={cultivar.percentage}
+                            role={cultivar.role}
+                            index={i}
+                          />
+                        );
+                      })}
                     </div>
                   </div>
                 )}
