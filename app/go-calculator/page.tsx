@@ -25,8 +25,7 @@ import {
   ChevronUp,
   Info
 } from 'lucide-react';
-import { OutcomeIntent, OutcomeResult } from '@/lib/goOutcomeEngine';
-import { resolveOutcome } from '@/lib/goOutcomeEngine';
+// import { resolveOutcome } from '@/lib/goOutcomeEngine'; // Removed: Legacy Engine Quarantined
 import { StrategicGuidance, ClarificationQuestion } from '@/lib/strategicGuidance';
 import { translateGuidanceToIntent } from '@/lib/guidanceToIntent';
 import { ClarificationAxis, parseResolvedAxes, getAxisFromQuestionType } from '@/lib/clarificationAxes';
@@ -34,14 +33,41 @@ import { presets, type Preset, type BaselineCalibration as PresetBaselineCalibra
 import PreRollStack, { type StackSegment } from '@/components/PreRollStack';
 import CompositionBreakdown, { type BlendComponent } from '@/components/CompositionBreakdown';
 import CinematicRightPanel from '@/components/CinematicRightPanel';
-import OnboardingModal from '@/components/OnboardingModal'; // Keeping if needed, but likely unused
+import OnboardingModal from '@/components/OnboardingModal';
 import OnboardingOverlay from '@/components/OnboardingOverlay';
 import AgeGate from '@/components/AgeGate';
 import StrainInsightCard from '@/components/StrainInsightCard';
 import BlendExecutionCalculator from '@/components/BlendExecutionCalculator';
 import SecretInventoryPortalComponent, { type InventoryItem } from '@/components/SecretInventoryPortal';
-import { STRAIN_LIBRARY } from '@/lib/strainLibrary';
+// import { STRAIN_LIBRARY } from '@/lib/strainLibrary'; // Legacy Quarantined
 import { generateEffectiveExplanation } from '@/lib/generateEffectiveExplanation';
+
+// New Engine Imports
+import { calculateBlends, EngineMode, Intent as StrictIntent, EngineOutput as StrictEngineOutput } from '@/lib/engine_core/go_calc_engine_strict';
+import { ACTIVE_INVENTORY } from '@/lib/data/active_inventory';
+
+// Legacy Type Stub for UI compatibility (OutcomeIntent is used heavily in UI)
+export interface OutcomeIntent {
+  activation: number;
+  anxietySensitivity: number;
+  cognitiveEndurance: number;
+  bodyLoadPreference: number;
+  temporalOnset: number;
+  activationTarget?: number;
+  physicalRelief?: number;
+  cognitiveClarity?: number;
+  functionalEnergy?: number;
+  avoidSedation?: boolean;
+  overshootTolerance?: 'low' | 'moderate' | 'high';
+  durationPreference?: 'impulse' | 'sustained' | 'extended';
+}
+
+export interface OutcomeResult {
+  primary: {
+    selectedCultivars: Array<{ displayName: string; id: string }>;
+    ratios: number[];
+  }
+}
 
 // Conversation state exists for parsing/clarification but is NOT visually rendered
 type ConversationState = 'active' | 'resolved';
@@ -103,8 +129,9 @@ export default function GOLineCalculator() {
 
 
   // Resolution state (for PreRollStack)
+  // Resolution state
   const [intent, setIntent] = useState<OutcomeIntent | null>(null);
-  const [outcomeResult, setOutcomeResult] = useState<OutcomeResult | null>(null);
+  const [outcomeResult, setOutcomeResult] = useState<StrictEngineOutput | null>(null);
   const [stackSegments, setStackSegments] = useState<StackSegment[]>([]);
   const [breakdownComponents, setBreakdownComponents] = useState<BlendComponent[]>([]);
 
@@ -343,34 +370,60 @@ export default function GOLineCalculator() {
     }
   };
 
-  // Convert OutcomeResult to StackSegment and BlendComponent format
-  // IMPORTANT: Uses the new OutcomeResult format with primary + alternates
-  const convertToStackFormat = (outcome: OutcomeResult) => {
-    // Handle new format with primary + alternates
-    if (outcome.failure) {
-      throw new Error(`Resolution failed: ${outcome.failure.reason || 'Unknown error'}`);
+  // Helper: Map UI Intent to Strict Engine Intent
+  const mapUiIntentToStrict = (uiIntent: OutcomeIntent): StrictIntent => {
+    // Mapping logic:
+    // activation -> energy (-1 to range?)
+    // UI activation is 0-1. 0.5 neutral.
+    // Strict energy: -1.0 to 1.0.
+    // 0.0 -> -1.0, 0.5 -> 0.0, 1.0 -> 1.0.
+    const energy = (uiIntent.activation - 0.5) * 2.0;
+
+    // focus? cognitiveClarity + cognitiveEndurance?
+    // cognitiveClarity (0-1).
+    const focus = uiIntent.cognitiveClarity ?? 0.5;
+
+    // mood?
+    const mood = uiIntent.functionalEnergy ? (uiIntent.functionalEnergy - 0.5) * 2 : 0.0;
+
+    // body? bodyLoadPreference
+    const body = uiIntent.bodyLoadPreference ?? 0.5; // Strict: 0-1 (body load)
+
+    // creativity?
+    const creativity = 0.5; // Default
+
+    // maxAnxiety
+    // anxietySensitivity (0-1). 1=High Sensitivity -> Lower MaxAnxiety.
+    // 0.5 = 0.3 defaults.
+    // If sens=1.0 -> maxAnxiety=0.1. If sens=0.0 -> maxAnxiety=0.6.
+    // Linear map: 0.6 - (sens * 0.5) => (0->0.6, 1->0.1)
+    const maxAnxiety = 0.6 - ((uiIntent.anxietySensitivity ?? 0.5) * 0.5);
+
+    return {
+      targetEffects: { energy, focus, mood, body, creativity },
+      constraints: { maxAnxiety },
+      context: {
+        // We could map calibrated baseline here if available globally
+        timeOfDay: undefined, // Add logic if UI captures it
+        tolerance: undefined,
+        experience: undefined
+      }
+    };
+  };
+
+  // Convert Strict Output to Stack Format
+  const convertToStackFormat = (output: StrictEngineOutput) => {
+    if (output.error || output.recommendations.length === 0) {
+      throw new Error(output.error || "No valid blend found");
     }
 
-    const primary = outcome.primary;
+    const primaryRec = output.recommendations[0];
 
-    // Validate: must have named strains
-    if (!primary.selectedCultivars || primary.selectedCultivars.length === 0) {
-      throw new Error('Resolution without cultivar names is invalid');
-    }
-
-    const hasUnnamed = primary.selectedCultivars.some(c => !c.displayName || c.displayName.trim() === '');
-    if (hasUnnamed) {
-      throw new Error('Resolution contains unnamed cultivars - invalid resolution');
-    }
-
-    // Assign roles based on ratio order: largest = foundation, second = modulator, rest = accent
-    const sorted = primary.selectedCultivars
-      .map((cultivar, index) => ({
-        cultivar,
-        ratio: primary.ratios[index],
-        index,
-      }))
-      .sort((a, b) => b.ratio - a.ratio);
+    const sorted = primaryRec.cultivars.map((c, idx) => ({
+      name: c.name,
+      ratio: c.ratio,
+      index: idx
+    })).sort((a, b) => b.ratio - a.ratio);
 
     const segments: StackSegment[] = sorted.map((item, idx) => {
       let role: 'foundation' | 'modulator' | 'accent' = 'accent';
@@ -378,24 +431,13 @@ export default function GOLineCalculator() {
       else if (idx === 1) role = 'modulator';
 
       return {
-        name: item.cultivar.displayName,
+        name: item.name,
         percentage: item.ratio,
         role,
       };
     });
 
-    // Also create breakdown components (horizontal bars)
-    const components: BlendComponent[] = sorted.map((item, idx) => {
-      let role: 'foundation' | 'modulator' | 'accent' = 'accent';
-      if (idx === 0) role = 'foundation';
-      else if (idx === 1) role = 'modulator';
-
-      return {
-        name: item.cultivar.displayName,
-        percentage: item.ratio,
-        role,
-      };
-    });
+    const components: BlendComponent[] = segments; // Format matches
 
     return { segments, components };
   };
@@ -407,17 +449,31 @@ export default function GOLineCalculator() {
     const normalized = normalizeIntent(translatedIntent);
     setIntent(normalized);
 
-    // Resolve outcome using deterministic engine (with variation logic)
-    const resolvedOutcome = resolveOutcome(normalized);
-    setOutcomeResult(resolvedOutcome);
+    // Resolve outcome using deterministic engine (STRICT MODE)
+    const strictIntent = mapUiIntentToStrict(normalized);
+    // Use ACTIVE_INVENTORY (migrated data)
+    const result = calculateBlends(ACTIVE_INVENTORY, strictIntent, "PRODUCTION");
+
+    if (result.error) {
+      // Handle error gracefully?
+      console.error("Engine Error:", result.error, result.errorReason);
+      // For now, let it throw or set empty?
+      // UI expects a result.
+    }
+
+    setOutcomeResult(result);
 
     // Convert to stack format for PreRollStack
-    const { segments, components } = convertToStackFormat(resolvedOutcome);
-    setStackSegments(segments);
-    setBreakdownComponents(components);
+    try {
+      const { segments, components } = convertToStackFormat(result);
+      setStackSegments(segments);
+      setBreakdownComponents(components);
 
-    // Reveal Result
-    setConversationState('resolved');
+      // Reveal Result
+      setConversationState('resolved');
+    } catch (e: any) {
+      setError(e.message);
+    }
   };
 
   // Handle adjustment (when user adjusts sliders)
@@ -441,11 +497,16 @@ export default function GOLineCalculator() {
     setIntent(normalized);
 
     // Re-resolve with updated intent
-    const resolvedOutcome = resolveOutcome(normalized);
+    const resolvedOutcome = calculateBlends(ACTIVE_INVENTORY, mapUiIntentToStrict(normalized), "PRODUCTION");
     setOutcomeResult(resolvedOutcome);
-    const { segments, components } = convertToStackFormat(resolvedOutcome);
-    setStackSegments(segments);
-    setBreakdownComponents(components);
+
+    try {
+      const { segments, components } = convertToStackFormat(resolvedOutcome);
+      setStackSegments(segments);
+      setBreakdownComponents(components);
+    } catch (e) {
+      // ignore re-calc errors during slide?
+    }
   };
 
   // Handle submit (Enter key or button)

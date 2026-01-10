@@ -1,0 +1,37 @@
+-----------------------------------------
+GO ENGINE STRICT VERIFICATION
+-----------------------------------------
+
+Running Test: test_001 - Balanced daytime focus blend, moderate THC
+✅ PASS
+
+Running Test: test_002 - Evening relaxation, high myrcene, anxiety constraint test
+✅ PASS
+
+Running Test: test_003 - Creative mood boost, unknown terpene handling
+✅ PASS
+
+Running Test: test_004 - THC constraint violation - no valid blends
+❌ FAIL
+   - Expected error 'All blends violate THC constraints', got 'NO_VALID_BLEND'
+
+Running Test: test_005 - Anxiety constraint violation - no valid blends
+✅ PASS
+
+Running Test: test_006 - CBD buffering effect on anxiety
+✅ PASS
+
+Running Test: test_007 - Three-cultivar blend complexity test
+✅ PASS
+
+Running Test: test_008 - Beginner with complexity penalty
+✅ PASS
+
+Running Test: test_009 - Multiple unknown terpenes, high confidence penalty
+✅ PASS
+
+Running Test: test_010 - Edge case - all cultivars unavailable
+✅ PASS
+
+-----------------------------------------
+SUMMARY: 9 Passed, 1 Failed

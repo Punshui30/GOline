@@ -1,0 +1,580 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "purpose": "Test vectors for GO Calculator Engine verification",
+    "note": "Synthetic data for testing only - NOT real-world cultivar profiles"
+  },
+  "testCases": [
+    {
+      "id": "test_001",
+      "description": "Balanced daytime focus blend, moderate THC",
+      "intent": {
+        "targetEffects": {
+          "energy": 0.5,
+          "focus": 0.8,
+          "mood": 0.3,
+          "body": 0.2,
+          "creativity": 0.4
+        },
+        "constraints": {
+          "maxAnxiety": 0.3,
+          "minTHC": 15.0,
+          "maxTHC": 22.0
+        },
+        "context": {
+          "timeOfDay": "morning",
+          "tolerance": "medium",
+          "experience": "intermediate"
+        }
+      },
+      "inventory": {
+        "timestamp": "2026-01-10T09:00:00Z",
+        "cultivars": [
+          {
+            "id": "c001",
+            "name": "Test Cultivar Alpha",
+            "thcPercent": 18.5,
+            "cbdPercent": 0.3,
+            "available": true,
+            "terpenes": {
+              "pinene": 1.2,
+              "limonene": 0.8,
+              "caryophyllene": 0.5,
+              "myrcene": 0.3,
+              "unknown_terpene_x": 0.1
+            }
+          },
+          {
+            "id": "c002",
+            "name": "Test Cultivar Beta",
+            "thcPercent": 20.1,
+            "cbdPercent": 0.2,
+            "available": true,
+            "terpenes": {
+              "limonene": 1.5,
+              "pinene": 0.6,
+              "linalool": 0.4,
+              "terpinolene": 0.3
+            }
+          },
+          {
+            "id": "c003",
+            "name": "Test Cultivar Gamma",
+            "thcPercent": 24.2,
+            "cbdPercent": 0.1,
+            "available": true,
+            "terpenes": {
+              "myrcene": 2.1,
+              "caryophyllene": 0.9,
+              "humulene": 0.5
+            }
+          }
+        ]
+      },
+      "expectedBehavior": {
+        "shouldSucceed": true,
+        "topRecommendationContains": ["c001", "c002"],
+        "excludedCultivars": ["c003"],
+        "exclusionReasons": ["c003: myrcene-dominant profile conflicts with energy target"]
+      }
+    },
+    {
+      "id": "test_002",
+      "description": "Evening relaxation, high myrcene, anxiety constraint test",
+      "intent": {
+        "targetEffects": {
+          "energy": -0.7,
+          "focus": 0.1,
+          "mood": 0.2,
+          "body": 0.9,
+          "creativity": 0.0
+        },
+        "constraints": {
+          "maxAnxiety": 0.25
+        },
+        "context": {
+          "timeOfDay": "night",
+          "tolerance": "low",
+          "experience": "beginner"
+        }
+      },
+      "inventory": {
+        "timestamp": "2026-01-10T21:00:00Z",
+        "cultivars": [
+          {
+            "id": "c004",
+            "name": "Test Cultivar Delta",
+            "thcPercent": 16.3,
+            "cbdPercent": 0.8,
+            "available": true,
+            "terpenes": {
+              "myrcene": 2.5,
+              "linalool": 0.9,
+              "caryophyllene": 0.6,
+              "bisabolol": 0.3
+            }
+          },
+          {
+            "id": "c005",
+            "name": "Test Cultivar Epsilon",
+            "thcPercent": 22.7,
+            "cbdPercent": 0.1,
+            "available": true,
+            "terpenes": {
+              "limonene": 1.8,
+              "terpinolene": 1.2,
+              "pinene": 0.5
+            }
+          },
+          {
+            "id": "c006",
+            "name": "Test Cultivar Zeta",
+            "thcPercent": 14.9,
+            "cbdPercent": 1.2,
+            "available": true,
+            "terpenes": {
+              "myrcene": 1.8,
+              "nerolidol": 0.7,
+              "humulene": 0.5,
+              "unknown_terp_y": 0.2
+            }
+          }
+        ]
+      },
+      "expectedBehavior": {
+        "shouldSucceed": true,
+        "topRecommendationContains": ["c004", "c006"],
+        "excludedCultivars": ["c005"],
+        "exclusionReasons": ["c005: high THC + stimulating terpenes exceed anxiety constraint"]
+      }
+    },
+    {
+      "id": "test_003",
+      "description": "Creative mood boost, unknown terpene handling",
+      "intent": {
+        "targetEffects": {
+          "energy": 0.3,
+          "focus": 0.4,
+          "mood": 0.8,
+          "body": 0.1,
+          "creativity": 0.9
+        },
+        "constraints": {
+          "maxAnxiety": 0.35
+        }
+      },
+      "inventory": {
+        "timestamp": "2026-01-10T14:00:00Z",
+        "cultivars": [
+          {
+            "id": "c007",
+            "name": "Test Cultivar Eta",
+            "thcPercent": 19.2,
+            "cbdPercent": 0.4,
+            "available": true,
+            "terpenes": {
+              "terpinolene": 1.4,
+              "limonene": 1.1,
+              "ocimene": 0.8,
+              "valencene": 0.4,
+              "rare_terpene_alpha": 0.3,
+              "rare_terpene_beta": 0.2
+            }
+          },
+          {
+            "id": "c008",
+            "name": "Test Cultivar Theta",
+            "thcPercent": 17.8,
+            "cbdPercent": 0.3,
+            "available": true,
+            "terpenes": {
+              "limonene": 2.0,
+              "pinene": 0.7,
+              "geraniol": 0.6,
+              "phellandrene": 0.4
+            }
+          }
+        ]
+      },
+      "expectedBehavior": {
+        "shouldSucceed": true,
+        "notes": "c007 contains 2 unknown terpenes, should incur confidence penalty but remain viable",
+        "confidencePenalty": 0.2
+      }
+    },
+    {
+      "id": "test_004",
+      "description": "THC constraint violation - no valid blends",
+      "intent": {
+        "targetEffects": {
+          "energy": 0.0,
+          "focus": 0.5,
+          "mood": 0.5,
+          "body": 0.5,
+          "creativity": 0.5
+        },
+        "constraints": {
+          "maxAnxiety": 0.3,
+          "minTHC": 25.0,
+          "maxTHC": 28.0
+        }
+      },
+      "inventory": {
+        "timestamp": "2026-01-10T10:00:00Z",
+        "cultivars": [
+          {
+            "id": "c009",
+            "name": "Test Cultivar Iota",
+            "thcPercent": 15.2,
+            "cbdPercent": 0.5,
+            "available": true,
+            "terpenes": {
+              "myrcene": 1.5,
+              "caryophyllene": 0.8
+            }
+          },
+          {
+            "id": "c010",
+            "name": "Test Cultivar Kappa",
+            "thcPercent": 18.9,
+            "cbdPercent": 0.3,
+            "available": true,
+            "terpenes": {
+              "limonene": 1.2,
+              "pinene": 0.9
+            }
+          }
+        ]
+      },
+      "expectedBehavior": {
+        "shouldSucceed": false,
+        "error": "All blends violate THC constraints",
+        "maxBlendTHC": 18.9
+      }
+    },
+    {
+      "id": "test_005",
+      "description": "Anxiety constraint violation - no valid blends",
+      "intent": {
+        "targetEffects": {
+          "energy": 0.9,
+          "focus": 0.9,
+          "mood": 0.8,
+          "body": 0.0,
+          "creativity": 0.7
+        },
+        "constraints": {
+          "maxAnxiety": 0.15
+        }
+      },
+      "inventory": {
+        "timestamp": "2026-01-10T15:00:00Z",
+        "cultivars": [
+          {
+            "id": "c011",
+            "name": "Test Cultivar Lambda",
+            "thcPercent": 26.3,
+            "cbdPercent": 0.1,
+            "available": true,
+            "terpenes": {
+              "terpinolene": 1.8,
+              "limonene": 1.2,
+              "cymene": 0.5
+            }
+          },
+          {
+            "id": "c012",
+            "name": "Test Cultivar Mu",
+            "thcPercent": 24.1,
+            "cbdPercent": 0.2,
+            "available": true,
+            "terpenes": {
+              "pinene": 1.5,
+              "limonene": 1.0,
+              "pulegone": 0.4
+            }
+          }
+        ]
+      },
+      "expectedBehavior": {
+        "shouldSucceed": false,
+        "error": "NO_VALID_BLEND",
+        "reason": "High THC + stimulating terpenes exceed maxAnxiety=0.15"
+      }
+    },
+    {
+      "id": "test_006",
+      "description": "CBD buffering effect on anxiety",
+      "intent": {
+        "targetEffects": {
+          "energy": 0.4,
+          "focus": 0.6,
+          "mood": 0.5,
+          "body": 0.3,
+          "creativity": 0.4
+        },
+        "constraints": {
+          "maxAnxiety": 0.3,
+          "minCBD": 2.0
+        }
+      },
+      "inventory": {
+        "timestamp": "2026-01-10T11:00:00Z",
+        "cultivars": [
+          {
+            "id": "c013",
+            "name": "Test Cultivar Nu",
+            "thcPercent": 18.5,
+            "cbdPercent": 3.2,
+            "available": true,
+            "terpenes": {
+              "pinene": 1.0,
+              "limonene": 0.8,
+              "caryophyllene": 0.9,
+              "linalool": 0.5
+            }
+          },
+          {
+            "id": "c014",
+            "name": "Test Cultivar Xi",
+            "thcPercent": 20.2,
+            "cbdPercent": 2.8,
+            "available": true,
+            "terpenes": {
+              "limonene": 1.3,
+              "myrcene": 0.9,
+              "bisabolol": 0.4
+            }
+          }
+        ]
+      },
+      "expectedBehavior": {
+        "shouldSucceed": true,
+        "notes": "CBD:THC ratio > 0.25 triggers anxiety reduction modifier",
+        "anxietyReduction": "30% from CBD buffering"
+      }
+    },
+    {
+      "id": "test_007",
+      "description": "Three-cultivar blend complexity test",
+      "intent": {
+        "targetEffects": {
+          "energy": 0.2,
+          "focus": 0.7,
+          "mood": 0.6,
+          "body": 0.4,
+          "creativity": 0.5
+        },
+        "constraints": {
+          "maxAnxiety": 0.3
+        },
+        "context": {
+          "experience": "expert"
+        }
+      },
+      "inventory": {
+        "timestamp": "2026-01-10T16:00:00Z",
+        "cultivars": [
+          {
+            "id": "c015",
+            "name": "Test Cultivar Omicron",
+            "thcPercent": 17.4,
+            "cbdPercent": 0.4,
+            "available": true,
+            "terpenes": {
+              "pinene": 1.8,
+              "eucalyptol": 0.6,
+              "camphene": 0.3
+            }
+          },
+          {
+            "id": "c016",
+            "name": "Test Cultivar Pi",
+            "thcPercent": 19.8,
+            "cbdPercent": 0.3,
+            "available": true,
+            "terpenes": {
+              "limonene": 1.4,
+              "valencene": 0.8,
+              "geraniol": 0.5
+            }
+          },
+          {
+            "id": "c017",
+            "name": "Test Cultivar Rho",
+            "thcPercent": 16.2,
+            "cbdPercent": 0.6,
+            "available": true,
+            "terpenes": {
+              "myrcene": 1.2,
+              "linalool": 1.0,
+              "caryophyllene": 0.7,
+              "nerolidol": 0.4
+            }
+          }
+        ]
+      },
+      "expectedBehavior": {
+        "shouldSucceed": true,
+        "preferredBlendSize": 3,
+        "notes": "Expert experience level has negative complexity penalty for 3-cultivar blends"
+      }
+    },
+    {
+      "id": "test_008",
+      "description": "Beginner with complexity penalty",
+      "intent": {
+        "targetEffects": {
+          "energy": -0.3,
+          "focus": 0.2,
+          "mood": 0.4,
+          "body": 0.7,
+          "creativity": 0.1
+        },
+        "constraints": {
+          "maxAnxiety": 0.25
+        },
+        "context": {
+          "tolerance": "low",
+          "experience": "beginner"
+        }
+      },
+      "inventory": {
+        "timestamp": "2026-01-10T20:00:00Z",
+        "cultivars": [
+          {
+            "id": "c018",
+            "name": "Test Cultivar Sigma",
+            "thcPercent": 12.8,
+            "cbdPercent": 1.5,
+            "available": true,
+            "terpenes": {
+              "myrcene": 2.2,
+              "linalool": 1.3,
+              "terpineol": 0.6
+            }
+          },
+          {
+            "id": "c019",
+            "name": "Test Cultivar Tau",
+            "thcPercent": 14.1,
+            "cbdPercent": 0.9,
+            "available": true,
+            "terpenes": {
+              "myrcene": 1.8,
+              "caryophyllene": 1.1,
+              "borneol": 0.5,
+              "fenchol": 0.3
+            }
+          }
+        ]
+      },
+      "expectedBehavior": {
+        "shouldSucceed": true,
+        "preferredBlendSize": 2,
+        "notes": "Beginner experience applies +0.05 complexity penalty to 3-cultivar blends"
+      }
+    },
+    {
+      "id": "test_009",
+      "description": "Multiple unknown terpenes, high confidence penalty",
+      "intent": {
+        "targetEffects": {
+          "energy": 0.0,
+          "focus": 0.5,
+          "mood": 0.5,
+          "body": 0.5,
+          "creativity": 0.5
+        },
+        "constraints": {
+          "maxAnxiety": 0.35
+        }
+      },
+      "inventory": {
+        "timestamp": "2026-01-10T12:00:00Z",
+        "cultivars": [
+          {
+            "id": "c020",
+            "name": "Test Cultivar Upsilon",
+            "thcPercent": 18.9,
+            "cbdPercent": 0.4,
+            "available": true,
+            "terpenes": {
+              "limonene": 1.0,
+              "myrcene": 0.8,
+              "exotic_terp_1": 0.5,
+              "exotic_terp_2": 0.4,
+              "exotic_terp_3": 0.3,
+              "exotic_terp_4": 0.2
+            }
+          },
+          {
+            "id": "c021",
+            "name": "Test Cultivar Phi",
+            "thcPercent": 17.3,
+            "cbdPercent": 0.5,
+            "available": true,
+            "terpenes": {
+              "pinene": 1.2,
+              "caryophyllene": 0.9,
+              "linalool": 0.6
+            }
+          }
+        ]
+      },
+      "expectedBehavior": {
+        "shouldSucceed": true,
+        "notes": "c020 has 4 unknown terpenes = 0.4 confidence penalty",
+        "preferredRecommendation": "Blend favoring c021 due to confidence penalty on c020"
+      }
+    },
+    {
+      "id": "test_010",
+      "description": "Edge case - all cultivars unavailable",
+      "intent": {
+        "targetEffects": {
+          "energy": 0.5,
+          "focus": 0.5,
+          "mood": 0.5,
+          "body": 0.5,
+          "creativity": 0.5
+        },
+        "constraints": {
+          "maxAnxiety": 0.3
+        }
+      },
+      "inventory": {
+        "timestamp": "2026-01-10T13:00:00Z",
+        "cultivars": [
+          {
+            "id": "c022",
+            "name": "Test Cultivar Chi",
+            "thcPercent": 18.0,
+            "cbdPercent": 0.3,
+            "available": false,
+            "terpenes": {
+              "limonene": 1.5,
+              "pinene": 0.9
+            }
+          },
+          {
+            "id": "c023",
+            "name": "Test Cultivar Psi",
+            "thcPercent": 19.5,
+            "cbdPercent": 0.4,
+            "available": false,
+            "terpenes": {
+              "myrcene": 1.8,
+              "caryophyllene": 0.7
+            }
+          }
+        ]
+      },
+      "expectedBehavior": {
+        "shouldSucceed": false,
+        "error": "NO_AVAILABLE_CULTIVARS",
+        "reason": "All cultivars marked as unavailable"
+      }
+    }
+  ]
+}
