@@ -664,7 +664,7 @@ export default function GOLineCalculator() {
 
   // --- RENDER: VIEW 3 - STRICT DASHBOARD ---
   return (
-    <main className="fixed inset-0 w-screen h-screen bg-[#0a0b0e] text-white flex flex-col overflow-hidden overscroll-none">
+    <main className="min-h-screen w-full bg-[#0a0b0e] text-white flex flex-col overflow-auto overscroll-none">
       {/* 1. Age Gate - Blocking (Handled at top level now) */}
 
 
