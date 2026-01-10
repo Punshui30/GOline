@@ -68,4 +68,4 @@ export const mapLegacyIntentToStrict = (uiIntent: OutcomeIntent): Intent => {
     };
 };
 
-export const getTopTerpenes = (chemotype: any) => []; // Stub function usage
+export const getTopTerpenes = (chemotype: any, limit?: number) => [] as any[]; // Stub function usage

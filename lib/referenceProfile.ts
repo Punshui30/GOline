@@ -72,20 +72,28 @@ export function referenceProfileToIntent(reference: ReferenceProfile): OutcomeIn
   const activationTarget = Math.max(0.1, Math.min(0.9, vectors.energy * 0.8 + (1 - vectors.bodyRelaxation) * 0.2));
   const anxietySensitivity = Math.max(0.1, Math.min(0.9, vectors.anxietyRisk * 0.7 + (reference.thc > 20 ? 0.2 : 0)));
   const cognitiveEndurance = Math.max(0.1, Math.min(0.9, vectors.clarity * 0.6 + vectors.duration * 0.4));
-  const overshootTolerance = Math.max(0.1, Math.min(0.9, 0.5 - (vectors.anxietyRisk * 0.3)));
+  const overshootValue = 0.5 - (vectors.anxietyRisk * 0.3);
+  let tol: 'low' | 'moderate' | 'high' = 'moderate';
+  if (overshootValue > 0.6) tol = 'high';
+  else if (overshootValue < 0.4) tol = 'low';
+
+  let dur: 'impulse' | 'sustained' | 'extended' = 'sustained';
+  if (vectors.duration > 0.8) dur = 'extended';
+  else if (vectors.duration < 0.4) dur = 'impulse';
 
   return {
     activation: activationTarget, // Map activationTarget to activation
     activationTarget,
     anxietySensitivity,
     cognitiveEndurance,
-    overshootTolerance,
+    bodyLoadPreference: vectors.bodyRelaxation > 0.5 ? 0.7 : 0.4,
+    overshootTolerance: tol,
     avoidSedation: false, // Default to false for reference profiles
     physicalRelief: vectors.bodyRelaxation > 0.6 ? 0.7 : undefined,
     cognitiveClarity: vectors.clarity > 0.6 ? 0.75 : undefined,
     functionalEnergy: vectors.energy > 0.5 && vectors.energy < 0.8 ? 0.6 : undefined,
     temporalOnset: vectors.duration > 0.5 ? 0.6 : 0.3,
-    durationPreference: vectors.duration > 0.5 ? 0.7 : 0.4,
+    durationPreference: dur,
   };
 }
 

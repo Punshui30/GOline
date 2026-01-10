@@ -11,7 +11,7 @@ import { type BlendCandidate } from '@/lib/engine_core/legacy_compat';
  * 4. Tone: Confident, neutral, non-marketing ("Show the work").
  */
 export function generateEffectiveExplanation(blend: BlendCandidate): string {
-    if (!blend || !blend.selectedCultivars || blend.selectedCultivars.length === 0) {
+    if (!blend || !blend.cultivars || blend.cultivars.length === 0) {
         return "This recommendation is based on your selected criteria.";
     }
 
@@ -20,16 +20,15 @@ export function generateEffectiveExplanation(blend: BlendCandidate): string {
         myrcene: 0, limonene: 0, caryophyllene: 0, pinene: 0, humulene: 0, linalool: 0, terpinolene: 0
     };
 
-    // Weights should sum to roughly 1 or 100
-    const ratios = blend.ratios || [100];
-    const totalRatio = ratios.reduce((a, b) => a + b, 0);
+    // Weights sum calculated from cultivar ratios
+    const totalRatio = blend.cultivars.reduce((a, b) => a + (b.ratio || 0), 0);
 
-    blend.selectedCultivars.forEach((cultivar, idx) => {
+    blend.cultivars.forEach((cultivar) => {
         const strain = STRAIN_LIBRARY[cultivar.id];
         if (!strain) return;
 
         // Convert ratio strength to 0-1
-        const weight = (ratios[idx] || 0) / totalRatio;
+        const weight = totalRatio > 0 ? (cultivar.ratio || 0) / totalRatio : 0;
 
         // Add weighted terpenes
         Object.keys(aggregateProfile).forEach((key) => {

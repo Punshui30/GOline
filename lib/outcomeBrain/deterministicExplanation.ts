@@ -1,4 +1,4 @@
-import { OutcomeIntent, OutcomeResult, getTopTerpenes } from '@/lib/engine_core/legacy_compat';
+import { OutcomeIntent, BlendCandidate, getTopTerpenes } from '@/lib/engine_core/legacy_compat';
 import { STRAIN_LIBRARY } from "@/lib/strainLibrary";
 
 export type DeterministicExplanation = {
@@ -9,11 +9,10 @@ export type DeterministicExplanation = {
 
 export function generateDeterministicExplanation(
   intent: OutcomeIntent,
-  result: OutcomeResult
+  result: BlendCandidate
 ): DeterministicExplanation {
-  const primaryCandidate = result.primary;
-  const strains = primaryCandidate.selectedCultivars
-    .map((c) => STRAIN_LIBRARY[c.id])
+  const strains = result.cultivars
+    .map((c: any) => STRAIN_LIBRARY[c.id])
     .filter(Boolean);
 
   const primaryStrain = strains[0];
@@ -22,11 +21,9 @@ export function generateDeterministicExplanation(
 
   const bullets: string[] = [];
 
-  // A4.4 Role-Aware Explanation Logic
-
   // 1. Primary Driver Explanation
   if (primaryStrain) {
-    // Get Rarity-Weighted Top Terpenes (A4.3)
+    // Get Rarity-Weighted Top Terpenes
     const topTerps = getTopTerpenes(primaryStrain, 2);
     const mainTerp = topTerps[0];
 
@@ -48,7 +45,7 @@ export function generateDeterministicExplanation(
     }
   }
 
-  // 3. User Constraints (Why we avoided things)
+  // 3. User Constraints
   if (intent.anxietySensitivity > 0.7) {
     bullets.push("High-stimulation terpenes were penalized to respect your anxiety sensitivity.");
   }
@@ -59,7 +56,7 @@ export function generateDeterministicExplanation(
   return {
     headline: isBlend ? "Why this blend works" : "Why this strain works",
     bullets,
-    confidenceNote: primaryCandidate.confidenceScore < 0.8 ? "This result required balancing competing priorities." : undefined,
+    confidenceNote: result.metrics.score < 0.8 ? "This result required balancing competing priorities." : undefined,
   };
 }
 

@@ -1,0 +1,10 @@
+lib/outcomeBrain/deterministicExplanation.ts(1,25): error TS2305: Module '"@/lib/engine_core/legacy_compat"' has no exported member 'OutcomeResult'.
+lib/outcomeBrain/deterministicExplanation.ts(16,11): error TS7006: Parameter 'c' implicitly has an 'any' type.
+lib/outcomeBrain/deterministicExplanation.ts(30,52): error TS2554: Expected 1 arguments, but got 2.
+lib/outcomeBrain/deterministicExplanation.ts(34,84): error TS2339: Property 'name' does not exist on type 'never'.
+lib/outcomeBrain/deterministicExplanation.ts(35,49): error TS2339: Property 'name' does not exist on type 'never'.
+lib/outcomeBrain/deterministicExplanation.ts(43,54): error TS2554: Expected 1 arguments, but got 2.
+lib/outcomeBrain/deterministicExplanation.ts(45,99): error TS2339: Property 'name' does not exist on type 'never'.
+lib/outcomeBrain/temporalPharmacokinetics.ts(139,50): error TS2365: Operator '>' cannot be applied to types 'string' and 'number'.
+lib/referenceProfile.ts(82,5): error TS2322: Type 'number' is not assignable to type '"low" | "high" | "moderate" | undefined'.
+lib/referenceProfile.ts(88,5): error TS2322: Type 'number' is not assignable to type '"impulse" | "sustained" | "extended" | undefined'.

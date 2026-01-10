@@ -43,14 +43,14 @@ export default function BlendExecutionCalculator({ blend }: BlendExecutionCalcul
 
     // Calculation Logic
     const executionData = useMemo(() => {
-        if (!blend || !blend.selectedCultivars) return [];
+        if (!blend || !blend.cultivars) return [];
 
         const totalTarget = unitSize * quantity;
-        const totalRatio = blend.ratios.reduce((a, b) => a + b, 0);
+        const totalRatio = blend.cultivars.reduce((a, b) => a + (b.ratio || 0), 0);
 
-        return blend.selectedCultivars.map((cultivar, idx) => {
-            const ratio = blend.ratios[idx] || 0;
-            const percentage = ratio / totalRatio;
+        return blend.cultivars.map((cultivar) => {
+            const ratio = cultivar.ratio || 0;
+            const percentage = totalRatio > 0 ? ratio / totalRatio : 0;
             const requiredGrams = totalTarget * percentage;
 
             // Check inventory
@@ -58,13 +58,13 @@ export default function BlendExecutionCalculator({ blend }: BlendExecutionCalcul
             const available = availableStr ? parseFloat(availableStr) : Infinity;
 
             const isInsufficient = available < requiredGrams;
-            const maxPossibleUnits = availableStr
+            const maxPossibleUnits = (availableStr && percentage > 0)
                 ? Math.floor(available / (unitSize * percentage))
                 : Infinity;
 
             return {
                 id: cultivar.id,
-                name: cultivar.displayName, // Or map from library if needed, but displayName usually exists
+                name: cultivar.name,
                 percentage,
                 requiredGrams,
                 available,
@@ -72,7 +72,7 @@ export default function BlendExecutionCalculator({ blend }: BlendExecutionCalcul
                 maxPossibleUnits
             };
         });
-    }, [blend, unitSize, quantity, inventoryMap, customSizeValue, isCustomSize]);
+    }, [blend, unitSize, quantity, inventoryMap]);
 
     // Aggregate Alerts
     const insufficientStrains = executionData.filter(d => d.isInsufficient);

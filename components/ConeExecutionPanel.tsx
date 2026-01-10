@@ -15,14 +15,14 @@ export default function ConeExecutionPanel({ blend }: ConeExecutionPanelProps) {
 
     const presets = [0.5, 0.75, 1.0, 1.25];
 
-    // Adapter for legacy ResolvedBlend vs new BlendCandidate
-    const steps = 'selectedCultivars' in blend
-        ? blend.selectedCultivars.map((c, i) => ({
+    // Adapter for legacy ResolvedBlend (UI) vs new BlendCandidate (Engine)
+    const steps = ('cultivars' in blend && Array.isArray(blend.cultivars))
+        ? blend.cultivars.map(c => ({
             id: c.id,
-            name: c.displayName,
-            percentage: blend.ratios?.[i] || 0
+            name: c.name,
+            percentage: (c as any).percentage ?? ((c as any).ratio * 100)
         }))
-        : blend.primaryBlend;
+        : (blend as any).primaryBlend || [];
 
     return (
         <div className="absolute bottom-8 right-8 z-50 flex flex-col items-end pointer-events-auto">
@@ -59,7 +59,7 @@ export default function ConeExecutionPanel({ blend }: ConeExecutionPanelProps) {
 
                         {/* Calculation Display */}
                         <div className="space-y-4 mb-6">
-                            {steps.map(strain => {
+                            {steps.map((strain: { id: string; name: string; percentage: number }) => {
                                 const grams = (targetWeight * (strain.percentage / 100)); // Simple Math
                                 return (
                                     <div key={strain.id} className="flex justify-between items-baseline">

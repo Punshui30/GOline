@@ -136,7 +136,7 @@ export function predictTemporalProfile(
     }
   }
 
-  if (intent.durationPreference !== undefined && intent.durationPreference > 0.6) {
+  if (intent.durationPreference !== undefined && intent.durationPreference === 'extended') {
     // Long duration preference - emphasize sedating terpenes in tail
     if (!hasSedatingTerpenes) {
       tailEffects.push('extended relaxation');
