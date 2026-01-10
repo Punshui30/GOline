@@ -63,6 +63,7 @@ const MOCK_INTENT: OutcomeIntent = {
   cognitiveEndurance: 0.6,
   activationTarget: 0.7,
   bodyLoadPreference: 0.5,
+  temporalOnset: 0.5,
 };
 
 const MOCK_EXPLANATION: DeterministicExplanation = {
