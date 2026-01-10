@@ -128,10 +128,10 @@ export default function GOLineCalculator() {
   }
 
   return (
-    <main className="w-screen h-screen bg-[#0a0b0e] text-white flex overflow-hidden font-sans selection:bg-[#D4AF37]/30">
+    <main className="h-screen bg-[#0a0b0e] text-white grid grid-cols-[1fr_2fr_1fr] grid-rows-[1fr] overflow-hidden font-sans selection:bg-[#D4AF37]/30">
 
       {/* --- LEFT PANEL: INTENT (400px) --- */}
-      <section className="w-[400px] flex-shrink-0 flex flex-col border-r border-white/5 bg-black/20 backdrop-blur-xl relative z-10">
+      <section className="min-h-0 h-full flex flex-col border-r border-white/5 bg-black/20 backdrop-blur-xl relative z-10">
         {/* Header */}
         <div className="h-16 flex items-center px-6 border-b border-white/5">
           <button onClick={handleLogoClick} className="text-xs font-bold tracking-[0.2em] text-[#D4AF37] hover:text-white transition-colors">
@@ -187,7 +187,7 @@ export default function GOLineCalculator() {
 
 
       {/* --- CENTER PANEL: VISUALIZATION (Flex) --- */}
-      <section className="flex-grow relative flex items-center justify-center bg-gradient-to-br from-[#0a0b0e] via-black to-[#050505]">
+      <section className="min-h-0 h-full relative flex items-center justify-center bg-gradient-to-br from-[#0a0b0e] via-black to-[#050505]">
         {/* Background Decoration */}
         <div className="absolute inset-0 pointer-events-none opacity-20 bg-[radial-gradient(circle_at_center,_transparent_0%,_#000_100%)]" />
 
@@ -211,7 +211,7 @@ export default function GOLineCalculator() {
 
 
       {/* --- RIGHT PANEL: ANALYSIS (450px) --- */}
-      <section className="w-[450px] flex-shrink-0 border-l border-white/5 bg-black/40 backdrop-blur-xl relative z-10">
+      <section className="min-h-0 h-full border-l border-white/5 bg-black/40 backdrop-blur-xl relative z-10">
         {/* Uses the CinematicRightPanel, but we pass strict params */}
         {/* Note: CinematicRightPanel expects specific props. We map engineOutput. */}
         <CinematicRightPanel
