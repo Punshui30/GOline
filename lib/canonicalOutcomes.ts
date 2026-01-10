@@ -5,7 +5,7 @@
  * Each outcome has fixed vector ranges, not prose.
  */
 
-import { OutcomeIntent } from './goOutcomeEngine';
+import { OutcomeIntent } from './engine_core/legacy_compat';
 
 export interface CanonicalOutcome {
   id: string;

@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import type { BlendCandidate } from '@/lib/goOutcomeEngine';
+import type { BlendCandidate } from '@/lib/engine_core/legacy_compat';
 import RadialBlendHUD from './RadialBlendHUD';
 import SmokeEffect from './SmokeEffect';
 

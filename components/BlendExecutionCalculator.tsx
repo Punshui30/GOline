@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { type BlendCandidate } from '@/lib/goOutcomeEngine';
+import { type BlendCandidate } from '@/lib/engine_core/legacy_compat';
 
 interface BlendExecutionCalculatorProps {
     blend: BlendCandidate;

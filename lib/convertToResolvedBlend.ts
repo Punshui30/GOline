@@ -1,6 +1,6 @@
 import { NamedResolutionResult } from '@/lib/namedResolution';
 import { ResolvedBlend, ResolvedCultivar, CultivarRole } from '@/components/ResolutionPanel';
-import { OutcomeResult, BlendCandidate } from '@/lib/goOutcomeEngine';
+import { OutcomeResult, BlendCandidate } from '@/lib/engine_core/legacy_compat';
 
 /**
  * Helper to enforce Phase A1 "Single Primary" rule.

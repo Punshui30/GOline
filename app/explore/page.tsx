@@ -13,7 +13,7 @@ import { useState } from 'react';
 import { parseLabelText, ParsedLabel, ParsedInventory } from '@/lib/labelParser';
 import { exploreOutcomes, OutcomeEvaluation } from '@/lib/outcomeExplorer';
 import ResolutionPanel, { ResolvedBlend } from '@/components/ResolutionPanel';
-import { OutcomeIntent } from '@/lib/goOutcomeEngine';
+import { OutcomeIntent } from '@/lib/engine_core/legacy_compat';
 
 type InputMethod = 'text' | 'ocr' | 'barcode' | 'manual';
 
@@ -26,13 +26,13 @@ export default function ExplorePage() {
 
   const handleParseLabel = () => {
     if (!labelText.trim()) return;
-    
+
     const parsed = parseLabelText(labelText);
     if (!parsed) {
       alert('Could not parse label. Please ensure cultivar name is included.');
       return;
     }
-    
+
     setParsedInventory({
       items: [parsed],
       confirmed: false,
@@ -41,7 +41,7 @@ export default function ExplorePage() {
 
   const handleConfirmInventory = () => {
     if (!parsedInventory) return;
-    
+
     setParsedInventory({
       ...parsedInventory,
       confirmed: true,
@@ -50,7 +50,7 @@ export default function ExplorePage() {
 
   const handleExploreOutcomes = () => {
     if (!parsedInventory || !parsedInventory.confirmed) return;
-    
+
     const results = exploreOutcomes(parsedInventory.items);
     setEvaluations(results);
   };
@@ -67,7 +67,7 @@ export default function ExplorePage() {
       <div className="min-h-screen bg-[#0a0b0e] text-white p-8">
         <div className="max-w-4xl mx-auto">
           <h1 className="text-2xl font-medium mb-8">Add what you have</h1>
-          
+
           <div className="grid grid-cols-2 gap-4">
             <button
               onClick={() => setInputMethod('text')}
@@ -76,7 +76,7 @@ export default function ExplorePage() {
               <div className="text-sm font-medium mb-2">Paste label text</div>
               <div className="text-xs text-white/50">Copy and paste product label information</div>
             </button>
-            
+
             <button
               onClick={() => setInputMethod('ocr')}
               className="p-6 bg-white/5 border border-white/10 rounded-sm hover:bg-white/10 transition-colors text-left"
@@ -84,7 +84,7 @@ export default function ExplorePage() {
               <div className="text-sm font-medium mb-2">Scan label</div>
               <div className="text-xs text-white/50">Use camera to scan product label</div>
             </button>
-            
+
             <button
               onClick={() => setInputMethod('barcode')}
               className="p-6 bg-white/5 border border-white/10 rounded-sm hover:bg-white/10 transition-colors text-left"
@@ -92,7 +92,7 @@ export default function ExplorePage() {
               <div className="text-sm font-medium mb-2">Scan barcode / QR</div>
               <div className="text-xs text-white/50">Scan product barcode or QR code</div>
             </button>
-            
+
             <button
               onClick={() => setInputMethod('manual')}
               className="p-6 bg-white/5 border border-white/10 rounded-sm hover:bg-white/10 transition-colors text-left"
@@ -117,9 +117,9 @@ export default function ExplorePage() {
           >
             ← Back
           </button>
-          
+
           <h1 className="text-2xl font-medium mb-6">Enter label information</h1>
-          
+
           {inputMethod === 'text' && (
             <div className="space-y-4">
               <textarea
@@ -137,7 +137,7 @@ export default function ExplorePage() {
               </button>
             </div>
           )}
-          
+
           {inputMethod === 'ocr' && (
             <div className="text-center py-12">
               <div className="text-sm text-white/50 mb-4">Camera OCR coming soon</div>
@@ -149,7 +149,7 @@ export default function ExplorePage() {
               </button>
             </div>
           )}
-          
+
           {inputMethod === 'barcode' && (
             <div className="text-center py-12">
               <div className="text-sm text-white/50 mb-4">Barcode scanning coming soon</div>
@@ -161,7 +161,7 @@ export default function ExplorePage() {
               </button>
             </div>
           )}
-          
+
           {inputMethod === 'manual' && (
             <div className="space-y-4">
               <div>
@@ -199,9 +199,9 @@ export default function ExplorePage() {
           >
             ← Back
           </button>
-          
+
           <h1 className="text-2xl font-medium mb-6">Confirm Inventory</h1>
-          
+
           <div className="bg-white/5 border border-white/10 rounded-sm p-6 mb-6">
             <div className="text-sm font-medium mb-4">We found:</div>
             {parsedInventory.items.map((item, idx) => (
@@ -232,7 +232,7 @@ export default function ExplorePage() {
               </div>
             ))}
           </div>
-          
+
           <div className="flex gap-4">
             <button
               onClick={() => setParsedInventory(null)}
@@ -263,9 +263,9 @@ export default function ExplorePage() {
           >
             ← Back
           </button>
-          
+
           <h1 className="text-2xl font-medium mb-6">Explore Achievable Outcomes</h1>
-          
+
           <button
             onClick={handleExploreOutcomes}
             className="px-6 py-2 bg-white text-[#0a0b0e] font-medium rounded-sm hover:bg-white/90 mb-8"
@@ -288,19 +288,18 @@ export default function ExplorePage() {
           >
             ← Back
           </button>
-          
+
           <h1 className="text-2xl font-medium mb-8">Outcome Exploration</h1>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {evaluations.map((evaluation) => (
               <div
                 key={evaluation.outcome.id}
                 onClick={() => handleOutcomeClick(evaluation)}
-                className={`p-6 border rounded-sm cursor-pointer transition-colors ${
-                  evaluation.status === 'achievable'
+                className={`p-6 border rounded-sm cursor-pointer transition-colors ${evaluation.status === 'achievable'
                     ? 'bg-white/5 border-white/20 hover:bg-white/10'
                     : 'bg-white/5 border-white/10 opacity-60'
-                }`}
+                  }`}
               >
                 <div className="flex items-start justify-between mb-3">
                   <div>
@@ -315,7 +314,7 @@ export default function ExplorePage() {
                     {evaluation.status === 'achievable' ? '✔' : '✖'}
                   </div>
                 </div>
-                
+
                 <div className="text-sm text-white/70 mb-2">
                   {evaluation.status === 'achievable' ? (
                     <span className="text-white/80">Tap to view blend</span>
@@ -323,13 +322,13 @@ export default function ExplorePage() {
                     <span>Not achievable</span>
                   )}
                 </div>
-                
+
                 {evaluation.status === 'not_achievable' && evaluation.reason && (
                   <div className="text-xs text-white/50 mb-2">
                     Reason: {evaluation.reason}
                   </div>
                 )}
-                
+
                 {evaluation.status === 'not_achievable' && (
                   <div className="text-xs text-white/40 italic mt-2">
                     Requires ≥1 additional distinct cultivar
@@ -347,7 +346,7 @@ export default function ExplorePage() {
   if (selectedOutcome && selectedOutcome.resolution) {
     // Derive intent from outcome for adjustment controls
     const intent: OutcomeIntent = selectedOutcome.outcome.intent;
-    
+
     return (
       <div className="min-h-screen bg-[#0a0b0e] text-white p-8">
         <div className="max-w-4xl mx-auto">
@@ -357,9 +356,9 @@ export default function ExplorePage() {
           >
             ← Back to outcomes
           </button>
-          
+
           <h1 className="text-2xl font-medium mb-6">{selectedOutcome.outcome.label}</h1>
-          
+
           <ResolutionPanel
             blend={selectedOutcome.resolution}
             intent={{

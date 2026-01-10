@@ -8,7 +8,7 @@
  * This is an additive framing layer, not a replacement for existing logic.
  */
 
-import { OutcomeIntent } from '../goOutcomeEngine';
+import { OutcomeIntent } from '../engine_core/legacy_compat';
 import { BlendDoseAnalysis } from './biphasicModeling';
 import { SignalDensityAnalysis } from './saturationAnalysis';
 import { RiskAssessment } from './riskWeighting';

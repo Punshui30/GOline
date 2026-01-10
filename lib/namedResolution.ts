@@ -6,7 +6,7 @@
  * Uses deterministic, index-based mapping - NO heuristic matching, NO fallbacks.
  */
 
-import { OutcomeResult } from './goOutcomeEngine';
+import { OutcomeResult } from './engine_core/legacy_compat';
 import { resolveStrain } from './resolveNamedStrains';
 import { STRAIN_LIBRARY, type Strain } from './strainLibrary';
 

@@ -7,7 +7,7 @@
  * This is an additive layer that influences selection, not a filter.
  */
 
-import { OutcomeIntent } from '../goOutcomeEngine';
+import { OutcomeIntent } from '../engine_core/legacy_compat';
 import { BlendDoseAnalysis } from './biphasicModeling';
 import { SignalDensityAnalysis } from './saturationAnalysis';
 

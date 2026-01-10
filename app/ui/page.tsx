@@ -21,7 +21,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import ResolvingPanel from '@/components/ResolvingPanel';
 import ResultPanel from '@/components/ResultPanel';
 import type { ResolvedBlend } from '@/components/ResolutionPanel';
-import type { OutcomeIntent } from '@/lib/goOutcomeEngine';
+import type { OutcomeIntent } from '@/lib/engine_core/legacy_compat';
 import type { DeterministicExplanation } from '@/lib/outcomeBrain/deterministicExplanation';
 import { phaseContainer } from '@/lib/motion';
 

@@ -3,7 +3,7 @@
  * Notes must include strain names, ratios, path type, and why this blend was chosen
  */
 
-import { BlendCandidate } from './goOutcomeEngine';
+import { BlendCandidate } from './engine_core/legacy_compat';
 import { Strain } from './strainLibrary';
 
 export interface BlendNotesInput {

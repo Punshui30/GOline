@@ -8,7 +8,7 @@
  */
 
 import { CanonicalCultivar } from '@/data/canonicalCultivars';
-import { OutcomeIntent } from '../goOutcomeEngine';
+import { OutcomeIntent } from '../engine_core/legacy_compat';
 import { BlendDoseAnalysis } from './biphasicModeling';
 
 export interface TemporalProfile {

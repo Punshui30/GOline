@@ -1,5 +1,5 @@
 import { STRAIN_LIBRARY, type Strain, type TerpeneProfile } from '@/lib/strainLibrary';
-import { type BlendCandidate } from '@/lib/goOutcomeEngine';
+import { type BlendCandidate } from '@/lib/engine_core/legacy_compat';
 
 /**
  * Generate a credibility-building explanation for a recommended blend.

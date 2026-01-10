@@ -25,7 +25,7 @@ import {
   ChevronUp,
   Info
 } from 'lucide-react';
-// import { resolveOutcome } from '@/lib/goOutcomeEngine'; // Removed: Legacy Engine Quarantined
+// import { resolveOutcome } from '@/lib/engine_core/legacy_compat'; // Removed: Legacy Engine Quarantined
 import { StrategicGuidance, ClarificationQuestion } from '@/lib/strategicGuidance';
 import { translateGuidanceToIntent } from '@/lib/guidanceToIntent';
 import { ClarificationAxis, parseResolvedAxes, getAxisFromQuestionType } from '@/lib/clarificationAxes';

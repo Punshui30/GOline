@@ -9,7 +9,7 @@
  */
 
 import { StrategicGuidance, ClarificationQuestion } from './strategicGuidance';
-import { OutcomeIntent } from './goOutcomeEngine';
+import { OutcomeIntent } from './engine_core/legacy_compat';
 
 /**
  * Convert strategic guidance to numeric intent constraints

@@ -5,7 +5,7 @@
  * No persistence, no memory, no saved preferences.
  */
 
-import { OutcomeIntent } from './goOutcomeEngine';
+import { OutcomeIntent } from './engine_core/legacy_compat';
 import { computeEffectVectors } from './terpeneEffectVectors';
 import { type CanonicalChemotype } from '@/data/canonicalChemotypes';
 

@@ -5,13 +5,12 @@
  * Uses deterministic resolver - no recommendations, only enumeration.
  */
 
-import { resolveOutcome, OutcomeResult, OutcomeIntent } from './goOutcomeEngine';
-import { CANONICAL_OUTCOMES, CanonicalOutcome } from './canonicalOutcomes';
+import { CANONICAL_OUTCOMES, CanonicalOutcome } from './data/canonical_outcomes';
 import { ParsedLabel, mapLabelToChemotype } from './labelParser';
 import { canonicalChemotypes, type CanonicalChemotype } from '@/data/canonicalChemotypes';
-import { resolveToNamedStrains } from './namedResolution';
-import { convertToResolvedBlend } from './convertToResolvedBlend';
-import { ResolvedBlend } from '@/components/ResolutionPanel';
+import { ResolvedBlend, ResolvedCultivar } from '@/components/ResolutionPanel';
+import { calculateBlends, EngineMode, Cultivar, Inventory } from './engine_core/go_calc_engine_strict';
+import { mapLegacyIntentToStrict, OutcomeIntent } from './engine_core/legacy_compat';
 
 export interface OutcomeEvaluation {
   outcome: CanonicalOutcome;
@@ -21,121 +20,108 @@ export interface OutcomeEvaluation {
 }
 
 /**
- * Build temporary inventory from parsed labels
- * Only includes cultivars that can be mapped to canonical chemotypes
+ * Build strict inventory from parsed labels
  */
-function buildTemporaryInventory(labels: ParsedLabel[]): CanonicalChemotype[] {
-  const inventory: CanonicalChemotype[] = [];
-  
-  for (const label of labels) {
+function buildStrictInventory(labels: ParsedLabel[]): Inventory {
+  const cultivars: Cultivar[] = [];
+
+  labels.forEach((label, idx) => {
     const chemotype = mapLabelToChemotype(label, canonicalChemotypes);
+
     if (chemotype) {
-      inventory.push(chemotype);
+      cultivars.push({
+        id: chemotype.id || `temp_${idx}`,
+        name: label.cultivarName,
+        thcPercent: 20,
+        cbdPercent: 0.1,
+        terpenes: {
+          myrcene: 0.5,
+          limonene: 0.5,
+          ...chemotype.terpenes
+        } as any,
+        available: true,
+        dataFidelity: "PACKAGE_LABEL"
+      });
+    } else {
+      cultivars.push({
+        id: `manual_${idx}`,
+        name: label.cultivarName,
+        thcPercent: label.thc || 20,
+        cbdPercent: label.cbd || 0,
+        terpenes: {
+          myrcene: label.terpenes?.includes('myrcene') ? 1.0 : 0,
+          limonene: label.terpenes?.includes('limonene') ? 1.0 : 0,
+          caryophyllene: label.terpenes?.includes('caryophyllene') ? 1.0 : 0,
+        } as any,
+        available: true,
+        dataFidelity: "PACKAGE_LABEL"
+      });
     }
-  }
-  
-  return inventory;
+  });
+
+  return {
+    timestamp: new Date().toISOString(),
+    cultivars
+  };
 }
 
 /**
  * Evaluate a single outcome against inventory
- * Uses deterministic resolver and validates results against inventory constraints
  */
 function evaluateOutcome(
   outcome: CanonicalOutcome,
-  inventory: CanonicalChemotype[]
+  inventory: Inventory
 ): OutcomeEvaluation {
-  // If inventory is empty, mark as not achievable
-  if (inventory.length === 0) {
+  if (inventory.cultivars.length < 1) {
     return {
       outcome,
       status: 'not_achievable',
       reason: 'No valid cultivars in inventory',
     };
   }
-  
-  // Check minimum diversity requirement
-  if (inventory.length < 2) {
+
+  try {
+    const strictIntent = mapLegacyIntentToStrict(outcome.intent);
+    const result = calculateBlends(inventory, strictIntent, "DEMO");
+
+    if (result.error || result.recommendations.length === 0) {
+      return {
+        outcome,
+        status: 'not_achievable',
+        reason: result.errorReason || result.error || 'Resolution failed',
+      };
+    }
+
+    const primary = result.recommendations[0];
+
+    // Construct ResolvedBlend matching ResolutionPanel interface
+    const primaryBlend: ResolvedCultivar[] = primary.cultivars.map((c, idx) => ({
+      id: c.id,
+      name: c.name,
+      role: idx === 0 ? 'primary' : 'secondary',
+      rank: idx + 1,
+      percentage: c.ratio * 100,
+      weight: c.ratio,
+      explanation: "Selected by strict engine.",
+      chemotypeId: "unknown", // Stub
+      weightGrams: 1.0 * c.ratio // Stub
+    }));
+
+    const blend: ResolvedBlend = {
+      resolutionMode: "BLENDED",
+      confidenceScore: 0.9,
+      primaryBlend: primaryBlend,
+      tradeoffs: [],
+      rationaleSummary: "Strict engine selection based on available inventory.",
+      alternates: undefined
+    };
+
     return {
       outcome,
-      status: 'not_achievable',
-      reason: 'Insufficient diversity (requires ≥2 distinct cultivars)',
+      status: 'achievable',
+      resolution: blend,
     };
-  }
-  
-  try {
-    // Run resolver with the outcome's intent
-    // Note: Resolver uses global canonicalChemotypes, but we'll validate results
-    const result = resolveOutcome(outcome.intent);
-    
-    // Check for failure
-    if (result.failure) {
-      return {
-        outcome,
-        status: 'not_achievable',
-        reason: result.failure.reason === 'INSUFFICIENT_DISTINCT_CULTIVARS' 
-          ? 'Insufficient diversity (requires ≥2 distinct cultivars)'
-          : result.failure.reason === 'INVENTORY_TOO_NARROW'
-          ? 'Insufficient diversity (requires ≥2 distinct cultivars)'
-          : result.failure.details || result.failure.reason,
-      };
-    }
-    
-    // Handle new format with primary + alternates
-    const primary = result.primary;
-    
-    // Check if we have valid selectedCultivars
-    if (!primary.selectedCultivars || primary.selectedCultivars.length === 0) {
-      return {
-        outcome,
-        status: 'not_achievable',
-        reason: 'No valid resolution found',
-      };
-    }
-    
-    // Validate that all cultivars in result are in inventory
-    const inventoryIds = new Set(inventory.map(c => c.id));
-    const compositionIds = primary.selectedCultivars.map(c => c.id).filter(Boolean);
-    
-    if (compositionIds.length === 0) {
-      return {
-        outcome,
-        status: 'not_achievable',
-        reason: 'Composition has no valid cultivar IDs',
-      };
-    }
-    
-    const allInInventory = compositionIds.every(id => inventoryIds.has(id));
-    
-    if (!allInInventory) {
-      return {
-        outcome,
-        status: 'not_achievable',
-        reason: 'Resolution requires cultivars not in inventory',
-      };
-    }
-    
-    // Convert to named resolution and then to ResolvedBlend
-    try {
-      const named = resolveToNamedStrains(result);
-      const blend = convertToResolvedBlend(named, result);
-      
-      // Double-check that named strains map back to inventory
-      // This is a safety check - the mapping might use demo menu which could differ
-      // In production, we'd have a more robust mapping system
-      
-      return {
-        outcome,
-        status: 'achievable',
-        resolution: blend,
-      };
-    } catch (err) {
-      return {
-        outcome,
-        status: 'not_achievable',
-        reason: 'Failed to generate named resolution',
-      };
-    }
+
   } catch (err: any) {
     return {
       outcome,
@@ -149,19 +135,15 @@ function evaluateOutcome(
  * Evaluate all canonical outcomes against provided inventory
  */
 export function exploreOutcomes(labels: ParsedLabel[]): OutcomeEvaluation[] {
-  // Build temporary inventory
-  const inventory = buildTemporaryInventory(labels);
-  
-  if (inventory.length === 0) {
-    // All outcomes are not achievable if no valid inventory
+  const strictInventory = buildStrictInventory(labels);
+
+  if (strictInventory.cultivars.length === 0) {
     return CANONICAL_OUTCOMES.map(outcome => ({
       outcome,
       status: 'not_achievable' as const,
       reason: 'No valid cultivars found in labels',
     }));
   }
-  
-  // Evaluate each outcome
-  return CANONICAL_OUTCOMES.map(outcome => evaluateOutcome(outcome, inventory));
-}
 
+  return CANONICAL_OUTCOMES.map(outcome => evaluateOutcome(outcome, strictInventory));
+}

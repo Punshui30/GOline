@@ -1,4 +1,4 @@
-import { OutcomeIntent, OutcomeResult, getTopTerpenes } from "@/lib/goOutcomeEngine";
+import { OutcomeIntent, OutcomeResult, getTopTerpenes } from '@/lib/engine_core/legacy_compat';
 import { STRAIN_LIBRARY } from "@/lib/strainLibrary";
 
 export type DeterministicExplanation = {

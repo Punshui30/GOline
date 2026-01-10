@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 import type { ResolvedBlend } from '@/components/ResolutionPanel';
-import type { BlendCandidate } from '@/lib/goOutcomeEngine';
+import type { BlendCandidate } from '@/lib/engine_core/legacy_compat';
 
 interface RadialBlendHUDProps {
     blend: ResolvedBlend | BlendCandidate;

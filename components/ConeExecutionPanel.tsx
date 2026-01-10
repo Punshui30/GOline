@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { ResolvedBlend } from '@/components/ResolutionPanel';
-import type { BlendCandidate } from '@/lib/goOutcomeEngine';
+import type { BlendCandidate } from '@/lib/engine_core/legacy_compat';
 
 interface ConeExecutionPanelProps {
     blend: ResolvedBlend | BlendCandidate;

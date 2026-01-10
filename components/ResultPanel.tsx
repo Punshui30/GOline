@@ -1,7 +1,7 @@
 'use client';
 
 import ResolutionPanel, { type ResolvedBlend } from './ResolutionPanel';
-import type { OutcomeIntent } from '@/lib/goOutcomeEngine';
+import type { OutcomeIntent } from '@/lib/engine_core/legacy_compat';
 import type { DeterministicExplanation } from '@/lib/outcomeBrain/deterministicExplanation';
 
 interface ResultPanelProps {

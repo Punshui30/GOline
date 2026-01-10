@@ -10,8 +10,8 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import { OutcomeIntent, ResolutionType } from '@/lib/goOutcomeEngine';
-import { resolveOutcome } from '@/lib/goOutcomeEngine';
+import { OutcomeIntent, ResolutionType } from '@/lib/engine_core/legacy_compat';
+import { resolveOutcome } from '@/lib/engine_core/legacy_compat';
 import { resolveToNamedStrains, type NamedResolutionResult } from '@/lib/namedResolution';
 import ResolutionPanel, { type ResolvedBlend, type ResolvedCultivar, type CultivarRole } from '@/components/ResolutionPanel';
 import { StrategicGuidance, ClarificationQuestion } from '@/lib/strategicGuidance';

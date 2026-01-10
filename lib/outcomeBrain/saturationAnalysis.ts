@@ -9,7 +9,7 @@
 
 import { CanonicalCultivar } from '@/data/canonicalCultivars';
 import { BlendDoseAnalysis } from './biphasicModeling';
-import { OutcomeIntent } from '../goOutcomeEngine';
+import { OutcomeIntent } from '../engine_core/legacy_compat';
 
 export interface SignalDensityAnalysis {
   totalActiveTerpenes: number; // Count of terpenes above threshold

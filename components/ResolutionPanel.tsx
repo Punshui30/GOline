@@ -6,7 +6,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { OutcomeResult } from '@/lib/goOutcomeEngine';
+import { OutcomeResult } from '@/lib/engine_core/legacy_compat';
 import BlendVisualizer from './BlendVisualizer';
 import OutcomeTransitionBanner from './OutcomeTransitionBanner';
 import TypewriterText from './TypewriterText';

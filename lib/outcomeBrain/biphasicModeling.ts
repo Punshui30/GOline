@@ -8,7 +8,7 @@
  */
 
 import { CanonicalCultivar } from '@/data/canonicalCultivars';
-import { OutcomeIntent } from '../goOutcomeEngine';
+import { OutcomeIntent } from '../engine_core/legacy_compat';
 
 export interface DoseZone {
   name: string;
