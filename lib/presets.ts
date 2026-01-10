@@ -1,74 +1,79 @@
-/**
- * Optional preset entry points for GO Line calculator.
- * 
- * Presets pre-fill baseline calibration and initial intent context.
- * They do NOT bypass StrategicGuidance inference - they are starting conditions only.
- */
-
-export interface BaselineCalibration {
-  thcTolerance?: 'low' | 'moderate' | 'high';
-  anxietySensitivity?: 'low' | 'moderate' | 'high';
-  experienceLevel?: 'occasional' | 'regular' | 'experienced';
-}
+import { OutcomeIntent } from './engine_core/legacy_compat';
 
 export interface Preset {
   id: string;
   name: string;
   description: string;
-  baselineCalibration: BaselineCalibration;
-  initialIntentText: string;
+  intent: OutcomeIntent;
 }
 
 export const presets: Preset[] = [
   {
-    id: 'social-no-anxiety',
-    name: 'Social / No Anxiety',
-    description: 'Energizing for social settings, avoiding anxiety triggers',
-    baselineCalibration: {
-      anxietySensitivity: 'high',
-      experienceLevel: 'regular',
-    },
-    initialIntentText: 'I need something energizing for social settings, but I\'m sensitive to anxiety. I want to feel alert and engaged without feeling overwhelmed or paranoid.',
+    id: 'relaxed_alert',
+    name: 'Relaxed but Alert',
+    description: 'Calm body with a sharp mind. Good for working or reading.',
+    intent: {
+      activation: 0.6,          // Moderate energy
+      anxietySensitivity: 0.3,  // Low anxiety concern
+      cognitiveEndurance: 0.8,  // High focus
+      bodyLoadPreference: 0.4,  // Light body load
+      temporalOnset: 0.5,
+      functionalEnergy: 0.7,    // Mood lift
+      cognitiveClarity: 0.9,    // Very clear
+      avoidSedation: true,
+      overshootTolerance: 'moderate',
+      durationPreference: 'sustained'
+    }
   },
   {
-    id: 'creative-focus',
-    name: 'Creative Focus',
-    description: 'Sustained mental clarity for creative work, avoiding sedation',
-    baselineCalibration: {
-      thcTolerance: 'moderate',
-      experienceLevel: 'regular',
-    },
-    initialIntentText: 'I need sustained focus and mental clarity for creative work. I want to avoid sedation and maintain cognitive endurance throughout the session. Something that supports associative thinking and flow state.',
+    id: 'pain_relief_no_jitters',
+    name: 'Pain Relief, No Jitters',
+    description: 'Physical comfort without anxiety or racing thoughts.',
+    intent: {
+      activation: 0.3,          // Low energy/calm
+      anxietySensitivity: 0.9,  // High anxiety sensitivity (avoid jitters)
+      cognitiveEndurance: 0.4,  // Relaxed mind
+      bodyLoadPreference: 0.9,  // Heavy body relief
+      temporalOnset: 0.5,
+      functionalEnergy: 0.4,
+      physicalRelief: 1.0,      // Max relief
+      avoidSedation: false,
+      overshootTolerance: 'low',
+      durationPreference: 'extended'
+    }
   },
   {
-    id: 'end-of-day-calm',
-    name: 'End-of-Day Calm',
-    description: 'Relaxation and tension release, avoiding overstimulation',
-    baselineCalibration: {
-      thcTolerance: 'moderate',
-      anxietySensitivity: 'low',
-    },
-    initialIntentText: 'I need something for end-of-day relaxation. I want calm and tension release, mental quiet, without feeling sedated or overstimulated. Something that helps transition from active state to rest.',
+    id: 'focused_creative',
+    name: 'Focused + Creative',
+    description: 'Stimulating and cerebral. Best for brainstorming and art.',
+    intent: {
+      activation: 0.8,          // High energy
+      anxietySensitivity: 0.4,  // Moderate sensitivity
+      cognitiveEndurance: 0.7,  // Sustained focus
+      bodyLoadPreference: 0.2,  // Minimal body load
+      temporalOnset: 0.2,       // Fast onset
+      functionalEnergy: 0.9,    // High functionality
+      cognitiveClarity: 0.7,    // Creative flow (some haze ok?)
+      avoidSedation: true,
+      overshootTolerance: 'high',
+      durationPreference: 'impulse'
+    }
   },
   {
-    id: 'physical-relief',
-    name: 'Physical Relief',
-    description: 'Support for physical comfort, maintaining mental clarity',
-    baselineCalibration: {
-      thcTolerance: 'moderate',
-      experienceLevel: 'regular',
-    },
-    initialIntentText: 'I\'m looking for physical relief and comfort. I want to maintain mental clarity and avoid heavy sedation. Something that supports physical ease without clouding cognition.',
-  },
-  {
-    id: 'energy-endurance',
-    name: 'Energy Endurance',
-    description: 'Functional energy for extended activity, avoiding peak intensity',
-    baselineCalibration: {
-      thcTolerance: 'moderate',
-      anxietySensitivity: 'moderate',
-    },
-    initialIntentText: 'I need functional energy for extended activity. I want steady, sustained energy rather than a strong peak. Something that supports physical readiness and alertness without intensity spikes or crashes.',
-  },
+    id: 'sleep_clean',
+    name: 'Sleep (No Grogginess)',
+    description: 'Deep sedation that clears up by morning.',
+    intent: {
+      activation: 0.1,          // Very low energy
+      anxietySensitivity: 0.2,  // Low anxiety
+      cognitiveEndurance: 0.1,  // Turn off brain
+      bodyLoadPreference: 0.8,  // Heavy body
+      temporalOnset: 0.5,
+      functionalEnergy: 0.2,
+      physicalRelief: 0.7,
+      avoidSedation: false,
+      overshootTolerance: 'moderate',
+      durationPreference: 'sustained'
+    }
+  }
 ];
-

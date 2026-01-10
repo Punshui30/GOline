@@ -2,10 +2,12 @@
 
 import { motion } from 'framer-motion';
 import type { ResolvedBlend } from '@/components/ResolutionPanel';
-import type { BlendCandidate } from '@/lib/engine_core/legacy_compat';
+import type { BlendCandidate, OutcomeIntent } from '@/lib/engine_core/legacy_compat';
+import { generateBlendName } from '@/lib/blendNaming';
 
 interface RadialBlendHUDProps {
     blend: ResolvedBlend | BlendCandidate;
+    intent?: OutcomeIntent;
 }
 
 // Polar to Cartesian Helper
@@ -31,7 +33,7 @@ function describeArc(x: number, y: number, radius: number, startAngle: number, e
     return d;
 }
 
-export default function RadialBlendHUD({ blend }: RadialBlendHUDProps) {
+export default function RadialBlendHUD({ blend, intent }: RadialBlendHUDProps) {
     // Config
     const size = 600;
     const center = size / 2;
@@ -39,18 +41,42 @@ export default function RadialBlendHUD({ blend }: RadialBlendHUDProps) {
     const strokeWidth = 12; // Thin, technical
 
     // Data Mapping
-    const strains = 'selectedCultivars' in blend
-        ? blend.selectedCultivars.map((c, i) => ({
+    let strains: { id: string; name: string; role: string; percentage: number }[] = [];
+
+    // Safe Type Guard
+    if ('metrics' in blend) {
+        // BlendCandidate (Strict Engine Output format)
+        strains = blend.cultivars.map((c, i) => ({
             id: c.id,
-            name: c.displayName,
+            name: c.name,
+            role: i === 0 ? 'primary' : i === 1 ? 'secondary' : 'tertiary',
+            percentage: c.ratio * 100
+        }));
+    } else if ('primaryBlend' in blend) {
+        // ResolvedBlend (UI format)
+        strains = blend.primaryBlend.map((c, i) => ({
+            id: c.id,
+            name: c.name,
             role: c.role,
-            percentage: blend.ratios?.[i] || 0
-        }))
-        : blend.primaryBlend;
+            percentage: c.percentage
+        }));
+    } else {
+        // Fallback / Empty
+        strains = [];
+    }
+
     // Calculate start/end angles based on ratio (percentage of 360)
     let currentAngle = 0;
 
-    const arcs = strains.map(strain => {
+    // Ordered colors per spec: Primary (Gold), Secondary (Gray), Tertiary (Amber)
+    const COLORS = ['#FFD700', '#808080', '#9F8C56'];
+    const GLOWS = [
+        'drop-shadow(0 0 10px rgba(255, 215, 0, 0.5))', // Gold Glow
+        'none',                                         // Gray (Matte)
+        'drop-shadow(0 0 5px rgba(159, 140, 86, 0.3))'  // Amber (Subtle)
+    ];
+
+    const arcs = strains.map((strain, i) => {
         // ratio is out of 100 usually
         const ratio = strain.percentage / 100;
         const sweep = ratio * 360;
@@ -58,16 +84,26 @@ export default function RadialBlendHUD({ blend }: RadialBlendHUDProps) {
         const end = currentAngle + sweep - 4; // Gap of 4 degrees
         currentAngle += sweep;
 
-        const isPrimary = strain.role === 'primary' || strain.role === 'driver';
+        // Visual properties based on index
+        const color = COLORS[i] || '#444';
+        const glow = GLOWS[i] || 'none';
+        const opacity = i === 1 ? 0.5 : 1.0; // Muted gray secondary
 
         return {
             ...strain,
             path: describeArc(center, center, radius, start, end),
-            color: isPrimary ? '#FFD700' : 'rgba(255,255,255,0.4)', // Amber vs Dim
-            glow: isPrimary ? 'drop-shadow(0 0 10px rgba(255, 215, 0, 0.5))' : 'none',
-            opacity: isPrimary ? 1 : 0.6
+            color,
+            glow,
+            opacity
         };
     });
+
+    // Label Logic
+    const blendName = (strains.length > 1 && intent)
+        ? generateBlendName(intent) // Deterministic name
+        : (strains[0]?.name.split(' ')[0] || "Unknown"); // Single strain fallback
+
+    const subLabel = strains.length > 1 ? "Resolved Blend" : "Single Cultivar";
 
     return (
         <div className="relative flex items-center justify-center select-none" style={{ width: size, height: size }}>
@@ -87,7 +123,6 @@ export default function RadialBlendHUD({ blend }: RadialBlendHUDProps) {
 
             {/* 2. SVG Rings */}
             <svg width={size} height={size} className="absolute inset-0 rotate-180">
-                {/* Rotate 180 to start from top? Actually -90 offset in helper works. */}
                 {arcs.map((arc, i) => (
                     <motion.path
                         key={i}
@@ -115,17 +150,11 @@ export default function RadialBlendHUD({ blend }: RadialBlendHUDProps) {
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 1.5, duration: 1 }}
             >
-                <div className="text-[10px] text-amber tracking-[0.3em] font-bold uppercase mb-2">Resolved Blend</div>
-                <h2 className="text-3xl font-light text-white tracking-widest uppercase">
-                    {strains[0].name.split(' ')[0]}
-                    <span className="text-white/30 text-lg align-top ml-1">+</span>
+                <div className="text-[10px] text-amber tracking-[0.3em] font-bold uppercase mb-2">{subLabel}</div>
+                <h2 className="text-3xl font-light text-white tracking-widest uppercase px-4 leading-tight">
+                    {blendName}
                 </h2>
-                {/* No percentages here, just identity */}
             </motion.div>
-
-            {/* 4. Floating Labels (Optional, if we want them near arcs) */}
-            {/* For now keeping it clean as per "Readout" mental model. 
-          Detailed breakdown is in the tiles below/beside. */}
 
         </div>
     );

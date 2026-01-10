@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import type { BlendCandidate } from '@/lib/engine_core/legacy_compat';
+import type { BlendCandidate, OutcomeIntent } from '@/lib/engine_core/legacy_compat';
 import RadialBlendHUD from './RadialBlendHUD';
 import SmokeEffect from './SmokeEffect';
 
@@ -10,12 +10,13 @@ import ConeExecutionPanel from './ConeExecutionPanel';
 interface CinematicRightPanelProps {
     phase: 'idle' | 'active' | 'resolved' | 'synthesizing';
     blend?: BlendCandidate | null;
+    intent?: OutcomeIntent;
     mode: 'blend' | 'stack' | 'pre-roll' | 'flower' | 'concentrate';
 }
 
-export default function CinematicRightPanel({ phase, blend, mode }: CinematicRightPanelProps) {
+export default function CinematicRightPanel({ phase, blend, intent, mode }: CinematicRightPanelProps) {
     // 'active' = idle/input. 'resolved' = result.
-    const hasResult = phase === 'resolved' && blend && blend.selectedCultivars && blend.selectedCultivars.length > 0;
+    const hasResult = phase === 'resolved' && blend && blend.cultivars && blend.cultivars.length > 0;
     const isIdle = phase === 'idle';
 
     return (
@@ -66,7 +67,7 @@ export default function CinematicRightPanel({ phase, blend, mode }: CinematicRig
                             transition={{ duration: 0.8, ease: "circOut" }}
                             className="relative"
                         >
-                            <RadialBlendHUD blend={blend} />
+                            <RadialBlendHUD blend={blend} intent={intent} />
                         </motion.div>
                     </div>
                 )}

@@ -30,16 +30,6 @@ export interface BlendCandidate {
     };
 }
 
-// OutcomeResult stub
-export interface OutcomeResult {
-    primary?: any; // Loose typing to avoid deep chain of errors
-    failure?: {
-        reason: string;
-        details?: string;
-    };
-    [key: string]: any;
-}
-
 // Helper: Map UI Intent to Strict Engine Intent
 export const mapLegacyIntentToStrict = (uiIntent: OutcomeIntent): Intent => {
     // Mapping logic (Centralized):
